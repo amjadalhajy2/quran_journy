@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style> body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; } </style>
-    <!-- تضمين مكتبة Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="flex items-center justify-center min-h-screen">
@@ -23,17 +22,17 @@
         <form id="loginForm" class="space-y-5">
             <div>
                 <label class="block text-gray-700 text-sm font-bold mb-2">البريد الإلكتروني</label>
-                <input type="email" id="email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
+                <input type="email" id="email" value="tilawah.journy@gmail.com" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
             </div>
             <div>
                 <label class="block text-gray-700 text-sm font-bold mb-2">كلمة المرور</label>
                 <input type="password" id="password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
             </div>
             
-            <div id="errorMessage" class="hidden text-red-500 text-sm text-center font-bold"></div>
+            <div id="errorMessage" class="hidden bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center font-bold border border-red-200"></div>
 
             <button type="submit" id="submitBtn" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-emerald-700 transition flex justify-center items-center">
-                <span>دخول</span>
+                <span id="btnText">دخول</span>
                 <i id="loadingIcon" class="fas fa-spinner fa-spin ml-2 hidden"></i>
             </button>
         </form>
@@ -48,29 +47,47 @@
             const password = document.getElementById('password').value;
             const errorDiv = document.getElementById('errorMessage');
             const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
             const loadingIcon = document.getElementById('loadingIcon');
 
+            // تفعيل حالة التحميل
             errorDiv.classList.add('hidden');
             loadingIcon.classList.remove('hidden');
+            btnText.textContent = 'جاري التحقق...';
             submitBtn.disabled = true;
 
-            // مصادقة Supabase
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            try {
+                // 1. المصادقة مع Supabase
+                const { data: authData, error: authError } = await window.supabase.auth.signInWithPassword({ email, password });
 
-            if (error) {
-                errorDiv.textContent = 'البيانات غير صحيحة، يرجى المحاولة مرة أخرى.';
+                if (authError) {
+                    throw new Error("بيانات الدخول خاطئة: " + authError.message);
+                }
+
+                // 2. جلب الصلاحيات
+                const { data: userData, error: userError } = await window.supabase
+                    .from('users')
+                    .select('role')
+                    .eq('id', authData.user.id)
+                    .single();
+
+                if (userError || !userData) {
+                    throw new Error("تم الدخول، لكن حسابك غير مسجل في جدول المستخدمين العام.");
+                }
+
+                // 3. التوجيه بناءً على الصلاحية
+                if (userData.role === 'admin') window.location.href = 'admin_dashboard.html';
+                else if (userData.role === 'teacher') window.location.href = 'teacher_dashboard.html';
+                else window.location.href = 'student_dashboard.html';
+
+            } catch (err) {
+                // عرض الخطأ الفعلي للمستخدم
+                errorDiv.textContent = err.message;
                 errorDiv.classList.remove('hidden');
                 loadingIcon.classList.add('hidden');
+                btnText.textContent = 'دخول';
                 submitBtn.disabled = false;
-                return;
             }
-
-            // فحص مصفوفة الصلاحيات للتوجيه
-            const { data: userData } = await supabase.from('users').select('role').eq('id', data.user.id).single();
-            
-            if (userData.role === 'admin') window.location.href = 'admin_dashboard.html';
-            else if (userData.role === 'teacher') window.location.href = 'teacher_dashboard.html';
-            else window.location.href = 'student_dashboard.html';
         });
     </script>
 </body>
