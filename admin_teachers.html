@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>مدير النظام - إدارة المعلمين</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style> body { font-family: 'Tajawal', sans-serif; background-color: #f4f7f6; } </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="flex h-screen overflow-hidden text-gray-800">
+    <!-- انسخ نفس القائمة الجانبية (aside) من ملف admin_dashboard.html وضعها هنا (مع تغيير الخلفية الخضراء لتكون على رابط المعلمين) -->
+    
+    <main class="flex-1 flex flex-col overflow-y-auto bg-gray-50">
+        <header class="bg-white shadow-sm p-4 flex justify-between items-center border-b">
+            <h2 class="text-2xl font-bold text-gray-700">إدارة المعلمين</h2>
+        </header>
+
+        <div class="p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">قائمة المعلمين المعتمدين</h3>
+                <button class="bg-emerald-600 text-white px-5 py-2 rounded-lg font-bold shadow hover:bg-emerald-700 transition">
+                    <i class="fas fa-plus ml-2"></i> إضافة معلم جديد
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+                <table class="w-full text-right text-sm">
+                    <thead class="bg-gray-50 text-gray-500 border-b">
+                        <tr>
+                            <th class="px-6 py-4 font-bold">اسم المعلم</th>
+                            <th class="px-6 py-4 font-bold">البريد الإلكتروني</th>
+                            <th class="px-6 py-4 font-bold">تاريخ الانضمام</th>
+                            <th class="px-6 py-4 font-bold">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teachersTable" class="divide-y divide-gray-100">
+                        <tr><td colspan="4" class="px-6 py-4 text-center text-gray-400">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="supabase.js"></script>
+    <script>
+        async function loadTeachers() {
+            const { data, error } = await window.supabase.from('users').select('*').eq('role', 'teacher');
+            const tbody = document.getElementById('teachersTable');
+            tbody.innerHTML = '';
+            
+            if(data && data.length > 0) {
+                data.forEach(teacher => {
+                    const date = new Date(teacher.created_at).toLocaleDateString('ar-OM');
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 font-bold">${teacher.full_name}</td>
+                            <td class="px-6 py-4 text-gray-600">${teacher.email}</td>
+                            <td class="px-6 py-4">${date}</td>
+                            <td class="px-6 py-4">
+                                <button class="text-blue-500 hover:bg-blue-50 px-3 py-1 rounded ml-2"><i class="fas fa-edit"></i> تعديل</button>
+                                <button class="text-red-500 hover:bg-red-50 px-3 py-1 rounded"><i class="fas fa-ban"></i> إيقاف</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-400">لا يوجد معلمين حالياً.</td></tr>';
+            }
+        }
+        window.addEventListener('load', loadTeachers);
+    </script>
+</body>
+</html>
