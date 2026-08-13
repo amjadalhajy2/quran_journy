@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>باقات الاشتراك - منصة التحفيظ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style> 
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap'); 
+        body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="antialiased text-gray-800 flex flex-col min-h-screen">
+    
+    <!-- شريط التصفح -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-black text-emerald-600 flex items-center">
+                <i class="fas fa-quran mr-2 ml-2"></i> اقرأ وارتقِ
+            </a>
+            <div class="hidden md:flex space-x-6 space-x-reverse font-medium text-gray-600">
+                <a href="index.html" class="hover:text-emerald-600 transition">الرئيسية</a>
+                <a href="packages.html" class="text-emerald-600">باقات الاشتراك</a>
+                <a href="faq_privacy.html" class="hover:text-emerald-600 transition">الأسئلة الشائعة</a>
+            </div>
+            <a href="login.html" class="text-emerald-700 bg-emerald-50 px-5 py-2 rounded-lg font-bold hover:bg-emerald-100 transition">دخول</a>
+        </div>
+    </nav>
+
+    <!-- رأس الصفحة -->
+    <header class="bg-emerald-600 text-white py-16 text-center">
+        <h1 class="text-4xl font-black mb-4">باقات الاشتراك الشهرية</h1>
+        <p class="text-emerald-100 text-lg max-w-xl mx-auto">اختر الباقة المناسبة لهدفك، وابدأ رحلتك في حفظ وتثبيت القرآن الكريم وفق منهجية مدروسة.</p>
+    </header>
+
+    <!-- عرض الباقات -->
+    <main class="flex-grow container mx-auto px-6 py-16">
+        <div id="packages-container" class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <!-- حالة التحميل -->
+            <div class="col-span-1 md:col-span-3 text-center text-gray-500 py-10 font-bold text-lg">
+                <i class="fas fa-spinner fa-spin text-3xl mb-3 text-emerald-500 block"></i>
+                جاري تحميل الباقات المتاحة...
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-900 text-gray-400 py-8 text-center border-t border-gray-800 mt-auto">
+        <p>© 2026 منصة اقرأ وارتقِ. جميع الحقوق محفوظة.</p>
+    </footer>
+
+    <script src="supabase.js"></script>
+    <script>
+        async function fetchPackages() {
+            const container = document.getElementById('packages-container');
+            
+            try {
+                // جلب الباقات المفعلة فقط
+                const { data: packages, error } = await supabase
+                    .from('packages')
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('price', { ascending: true });
+
+                if (error) throw error;
+
+                if (packages.length === 0) {
+                    container.innerHTML = `<div class="col-span-1 md:col-span-3 text-center text-gray-500 font-bold">لا توجد باقات متاحة حالياً.</div>`;
+                    return;
+                }
+
+                container.innerHTML = ''; // تفريغ حالة التحميل
+
+                packages.forEach((pkg, index) => {
+                    // جعل الباقة الوسطى (أو الثانية) مميزة بصرياً
+                    const isPopular = index === 1; 
+                    const cardClass = isPopular ? 'border-2 border-emerald-500 shadow-xl relative transform md:-translate-y-4' : 'border border-gray-200 shadow-md';
+                    const badge = isPopular ? `<div class="absolute top-0 right-1/2 transform translate-x-1/2 -translate-y-1/2 bg-emerald-500 text-white px-4 py-1 rounded-full text-sm font-bold shadow">الأكثر طلباً</div>` : '';
+                    const btnClass = isPopular ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700';
+
+                    // تحويل المميزات (النصية) إلى قائمة (بافتراض أنها مفصولة بفاصلة أو سطر)
+                    const featuresList = pkg.features.split('\n').map(f => `<li class="flex items-center mb-3"><i class="fas fa-check-circle text-emerald-500 ml-2"></i> ${f}</li>`).join('');
+
+                    container.innerHTML += `
+                        <div class="bg-white rounded-2xl p-8 flex flex-col h-full ${cardClass}">
+                            ${badge}
+                            <h3 class="text-2xl font-bold text-gray-800 mb-2">${pkg.name}</h3>
+                            <div class="text-4xl font-black text-gray-900 mb-6">
+                                ${pkg.price} <span class="text-base text-gray-500 font-medium">ريال / شهرياً</span>
+                            </div>
+                            <ul class="text-gray-600 mb-8 flex-grow">
+                                ${featuresList}
+                            </ul>
+                            <a href="register.html?package=${pkg.id}" class="w-full block text-center py-3 rounded-lg font-bold transition duration-300 mt-auto ${btnClass}">
+                                اشترك الآن
+                            </a>
+                        </div>
+                    `;
+                });
+
+            } catch (err) {
+                container.innerHTML = `<div class="col-span-1 md:col-span-3 text-center text-red-500 font-bold">حدث خطأ أثناء جلب الباقات.</div>`;
+                console.error(err);
+            }
+        }
+
+        window.addEventListener('load', fetchPackages);
+    </script>
+</body>
+</html>
