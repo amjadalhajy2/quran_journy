@@ -1,16 +1,13 @@
-// supabase.js
-// يجب تضمين مكتبة Supabase في ملفات HTML قبل هذا الملف:
-// <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 const SUPABASE_URL = 'https://fwganswnfiwomsdxutjt.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_zroHxNDcmv5QApFYfWLoiA_XcVvHqKw';
 
-// تهيئة عميل قاعدة البيانات
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// الحل: نقوم بإنشاء الاتصال وتخزينه في نفس المتغير العام الذي حجزته المكتبة
+// لتفادي خطأ "Identifier has already been declared"
+window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // دالة للتحقق من الصلاحيات وتوجيه المستخدمين
 async function checkUserAccess(requiredRole = null) {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await window.supabase.auth.getUser();
     
     if (!user) {
         window.location.href = 'login.html';
@@ -18,7 +15,7 @@ async function checkUserAccess(requiredRole = null) {
     }
 
     // جلب دور المستخدم من قاعدة البيانات للتحقق من مصفوفة الصلاحيات
-    const { data: userData, error } = await supabase
+    const { data: userData, error } = await window.supabase
         .from('users')
         .select('role')
         .eq('id', user.id)
