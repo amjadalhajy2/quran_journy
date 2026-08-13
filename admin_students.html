@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>مدير النظام - إدارة الطلاب</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style> body { font-family: 'Tajawal', sans-serif; background-color: #f4f7f6; } </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="flex h-screen overflow-hidden text-gray-800">
+    
+    <!-- القائمة الجانبية -->
+    <aside class="w-64 bg-[#1a2b3c] text-white flex flex-col hidden md:flex shadow-2xl z-20">
+        <div class="p-6 text-xl font-bold border-b border-gray-700 flex items-center">
+            <i class="fas fa-shield-alt text-emerald-400 mr-2 ml-2"></i> الإدارة العليا
+        </div>
+        <nav class="flex-1 p-4 space-y-2 text-sm font-medium">
+            <a href="admin_dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-chart-pie ml-3"></i> لوحة المؤشرات</a>
+            <a href="admin_teachers.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-chalkboard-teacher ml-3"></i> إدارة المعلمين</a>
+            <a href="admin_new_registrations.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-user-plus ml-3"></i> طلبات التسجيل الجديدة</a>
+            <!-- الزر النشط -->
+            <a href="admin_students.html" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow"><i class="fas fa-user-graduate ml-3"></i> إدارة الطلاب المنتظمين</a>
+            <a href="admin_finances.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-file-invoice-dollar ml-3"></i> الإدارة المالية</a>
+            <a href="admin_packages.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-box ml-3"></i> إدارة الباقات</a>
+            <a href="admin_curriculum.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-book-open ml-3"></i> إدارة المقررات</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 flex flex-col overflow-y-auto bg-gray-50">
+        <header class="bg-white shadow-sm p-4 border-b flex justify-between items-center">
+            <h2 class="text-2xl font-bold text-gray-700">الطلاب المنتظمين</h2>
+            <div class="relative">
+                <input type="text" placeholder="بحث عن طالب..." class="border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-emerald-500 w-64">
+                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+            </div>
+        </header>
+
+        <div class="p-8">
+            <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+                <table class="w-full text-right text-sm">
+                    <thead class="bg-gray-50 text-gray-500 border-b">
+                        <tr>
+                            <th class="px-6 py-4 font-bold">اسم الطالب</th>
+                            <th class="px-6 py-4 font-bold">المستوى / الخطة</th>
+                            <th class="px-6 py-4 font-bold">الأجزاء المحفوظة</th>
+                            <th class="px-6 py-4 font-bold">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsTable" class="divide-y divide-gray-100">
+                        <tr><td colspan="4" class="px-6 py-4 text-center text-gray-400">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="supabase.js"></script>
+    <script>
+        async function loadActiveStudents() {
+            // جلب بيانات الطلاب المعتمدين (تجاوزوا المقابلة) من جدول المستخدمين والملفات
+            // نستخدم inner join للتأكد من جلب بيانات الطالب المرتبطة بملفه
+            const { data, error } = await window.supabase
+                .from('users')
+                .select(`
+                    id, full_name, email,
+                    student_profiles!inner (status, current_level, memorized_parts)
+                `)
+                .eq('role', 'student')
+                .eq('student_profiles.status', 'active');
+
+            const tbody = document.getElementById('studentsTable');
+            tbody.innerHTML = '';
+            
+            if(data && data.length > 0) {
+                data.forEach(user => {
+                    const profile = user.student_profiles[0];
+                    const level = profile.current_level || 'قيد التحديد';
+                    const parts = profile.memorized_parts || 0;
+                    
+                    // شريط تقدم بصري صغير
+                    const progressWidth = Math.min((parts / 30) * 100, 100);
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4">
+                                <div class="font-bold text-gray-800">${user.full_name}</div>
+                                <div class="text-xs text-gray-500">${user.email}</div>
+                            </td>
+                            <td class="px-6 py-4"><span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">${level}</span></td>
+                            <td class="px-6 py-4 w-48">
+                                <div class="flex justify-between text-xs mb-1 font-bold text-gray-600">
+                                    <span>${parts} أجزاء</span>
+                                    <span>30 جزء</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-emerald-500 h-2 rounded-full" style="width: ${progressWidth}%"></div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <button class="text-emerald-600 hover:bg-emerald-50 px-3 py-1 rounded transition text-sm font-bold"><i class="fas fa-chart-line mr-1"></i> السجل</button>
+                                <button class="text-gray-500 hover:text-red-500 mr-3"><i class="fas fa-cog"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-400">لا يوجد طلاب منتظمين حتى الآن (بانتظار اجتياز المقابلات).</td></tr>';
+            }
+        }
+        window.addEventListener('load', loadActiveStudents);
+    </script>
+</body>
+</html>
