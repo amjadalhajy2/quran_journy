@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة القيادة الإدارية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style> body { font-family: 'Tajawal', sans-serif; background-color: #f4f7f6; } </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="flex h-screen overflow-hidden text-gray-800">
+
+    <aside class="w-64 bg-[#1a2b3c] text-white flex flex-col hidden md:flex shadow-2xl">
+        <div class="p-6 text-xl font-bold border-b border-gray-700 flex items-center">
+            <i class="fas fa-chart-pie text-emerald-400 mr-2 ml-2"></i> النظام الإداري
+        </div>
+        <nav class="flex-1 p-4 space-y-2 text-sm font-medium">
+            <a href="#" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow"><i class="fas fa-layer-group ml-3"></i> لوحة المؤشرات</a>
+            <a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-users-cog ml-3"></i> مصفوفة الصلاحيات والمعلمين</a>
+            <a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-clipboard-list ml-3"></i> تتبع المبادرات والطلاب</a>
+            <a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-wallet ml-3"></i> التحليل المالي</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 flex flex-col overflow-y-auto bg-gray-50">
+        <header class="bg-white shadow-sm p-4 flex justify-between items-center border-b border-gray-200">
+            <h2 class="text-2xl font-bold text-gray-700">التصور التحليلي للبيانات</h2>
+            <button onclick="logout()" class="text-red-500 font-bold hover:bg-red-50 px-4 py-2 rounded-lg transition"><i class="fas fa-sign-out-alt ml-2"></i> تسجيل الخروج</button>
+        </header>
+
+        <div class="p-8">
+            <!-- المؤشرات الديناميكية -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-bold mb-1">الطلاب النشطين</p>
+                        <h3 class="text-3xl font-black text-gray-800" id="stat-students">--</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xl shadow-inner"><i class="fas fa-user-graduate"></i></div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-bold mb-1">الطلبات قيد المراجعة</p>
+                        <h3 class="text-3xl font-black text-gray-800" id="stat-pending">--</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center text-xl shadow-inner"><i class="fas fa-file-signature"></i></div>
+                </div>
+
+                <!-- التحكم بفتح/إغلاق التسجيل المربوط بقاعدة البيانات -->
+                <div class="bg-gradient-to-l from-emerald-600 to-emerald-500 p-6 rounded-xl shadow-md text-white flex items-center justify-between">
+                    <div>
+                        <p class="text-emerald-100 text-sm font-bold mb-1">استقبال التسجيل</p>
+                        <h3 class="text-2xl font-bold" id="reg-status-text">جاري التحقق...</h3>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="reg-toggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-emerald-800 peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-white"></div>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- جدول البيانات التحليلي -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-800 text-lg">الطلبات الحديثة بانتظار إسناد المعلم</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-gray-50 text-gray-500 border-b">
+                            <tr>
+                                <th class="px-6 py-4 font-bold">اسم الطالب</th>
+                                <th class="px-6 py-4 font-bold">تاريخ التسجيل</th>
+                                <th class="px-6 py-4 font-bold">حالة الدفع</th>
+                                <th class="px-6 py-4 font-bold">الإجراء (إسناد للمقابلة)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTable" class="divide-y divide-gray-100 text-gray-700">
+                            <!-- سيتم حقن البيانات هنا بواسطة جافاسكربت -->
+                            <tr><td colspan="4" class="px-6 py-4 text-center text-gray-400">جاري تحميل البيانات...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="supabase.js"></script>
+    <script>
+        // التحقق من صلاحية وصول المدير فقط
+        checkUserAccess('admin');
+
+        async function loadDashboardData() {
+            // جلب إحصائيات الطلاب
+            const { count: studentCount } = await supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'student');
+            document.getElementById('stat-students').textContent = studentCount || 0;
+
+            // جلب الطلبات المعلقة (المقابلات)
+            const { count: pendingCount } = await supabase.from('student_profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending_interview');
+            document.getElementById('stat-pending').textContent = pendingCount || 0;
+
+            // جلب حالة إعدادات التسجيل
+            const { data: settings } = await supabase.from('system_settings').select('is_registration_open').single();
+            const toggle = document.getElementById('reg-toggle');
+            const statusText = document.getElementById('reg-status-text');
+            
+            if(settings) {
+                toggle.checked = settings.is_registration_open;
+                statusText.textContent = settings.is_registration_open ? 'مفتوح' : 'مغلق';
+            }
+
+            // تحديث حالة التسجيل عند النقر
+            toggle.addEventListener('change', async (e) => {
+                const isOpen = e.target.checked;
+                statusText.textContent = isOpen ? 'مفتوح' : 'مغلق';
+                await supabase.from('system_settings').update({ is_registration_open: isOpen }).eq('id', 1);
+            });
+
+            // جلب أحدث الطلاب بانتظار المقابلة للجدول التحليلي
+            const { data: recentStudents } = await supabase
+                .from('users')
+                .select('id, full_name, created_at, student_profiles(status)')
+                .eq('role', 'student')
+                .limit(5);
+
+            const tbody = document.getElementById('studentsTable');
+            tbody.innerHTML = '';
+            
+            if(recentStudents && recentStudents.length > 0) {
+                recentStudents.forEach(user => {
+                    const date = new Date(user.created_at).toLocaleDateString('ar-OM');
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4 font-bold text-gray-800">${user.full_name}</td>
+                            <td class="px-6 py-4">${date}</td>
+                            <td class="px-6 py-4"><span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold">بانتظار المراجعة</span></td>
+                            <td class="px-6 py-4">
+                                <button class="bg-gray-100 text-gray-700 hover:bg-emerald-500 hover:text-white px-4 py-2 rounded transition font-medium text-xs">إسناد لمعلم</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-400">لا توجد طلبات جديدة معلقة.</td></tr>';
+            }
+        }
+
+        async function logout() {
+            await supabase.auth.signOut();
+            window.location.href = 'login.html';
+        }
+
+        // تنفيذ الدالة عند تحميل الصفحة
+        window.addEventListener('load', loadDashboardData);
+    </script>
+</body>
+</html>
