@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة تحفيظ القرآن الكريم</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style> 
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap'); 
+        body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; }
+        .hero-pattern { background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2310b981' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="antialiased text-gray-800 hero-pattern flex flex-col min-h-screen">
+    
+    <!-- شريط التصفح -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-black text-emerald-600 flex items-center">
+                <i class="fas fa-quran mr-2 ml-2"></i> اقرأ وارتقِ
+            </a>
+            <div class="hidden md:flex space-x-6 space-x-reverse font-medium text-gray-600">
+                <a href="index.html" class="text-emerald-600">الرئيسية</a>
+                <a href="packages.html" class="hover:text-emerald-600 transition">باقات الاشتراك</a>
+                <a href="faq_privacy.html" class="hover:text-emerald-600 transition">الأسئلة الشائعة</a>
+            </div>
+            <div class="flex space-x-3 space-x-reverse">
+                <a href="login.html" class="text-emerald-700 bg-emerald-50 px-5 py-2 rounded-lg font-bold hover:bg-emerald-100 transition">دخول</a>
+                <a href="register.html" id="nav-register-btn" class="bg-emerald-600 text-white px-5 py-2 rounded-lg font-bold shadow-md hover:bg-emerald-700 transition hidden md:block">سجل كطالب</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- القسم الترحيبي (Hero) -->
+    <main class="flex-grow container mx-auto px-6 pt-16 pb-24 text-center">
+        <span class="bg-emerald-100 text-emerald-700 font-bold px-4 py-1 rounded-full text-sm mb-6 inline-block shadow-sm">
+            المنصة الأولى المتخصصة في التعليم عن بُعد
+        </span>
+        <h1 class="text-4xl md:text-6xl font-black text-gray-900 mb-6 leading-tight">
+            احفظ القرآن الكريم عن بُعد <br> <span class="text-emerald-600">بإتقان ومتابعة مستمرة</span>
+        </h1>
+        <p class="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+            منصة متكاملة تتيح لك متابعة تقدمك، حضور الجلسات الافتراضية مع نخبة من المعلمين، والحصول على شهادات معتمدة بكل سهولة ويسر.
+        </p>
+        
+        <div id="registration-action-area" class="flex justify-center space-x-4 space-x-reverse">
+            <!-- سيتم حقن الزر هنا عبر جافاسكربت بناءً على حالة التسجيل -->
+            <div class="text-gray-400 font-bold"><i class="fas fa-circle-notch fa-spin"></i> جاري التحقق من حالة التسجيل...</div>
+        </div>
+    </main>
+
+    <!-- المميزات -->
+    <section class="bg-white py-16 border-t border-gray-100">
+        <div class="container mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10">
+            <div class="text-center group">
+                <div class="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-3xl group-hover:scale-110 transition duration-300 shadow-sm">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-3 text-gray-800">جلسات افتراضية مدمجة</h3>
+                <p class="text-gray-500 leading-relaxed">حلقات تسميع مباشرة عبر غرف صوتية ومرئية مدمجة بالمنصة تضمن لك التركيز وتوفر عليك الوقت.</p>
+            </div>
+            <div class="text-center group">
+                <div class="w-20 h-20 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-3xl group-hover:scale-110 transition duration-300 shadow-sm">
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-3 text-gray-800">متابعة دقيقة للتقدم</h3>
+                <p class="text-gray-500 leading-relaxed">مؤشرات بصرية دقيقة تعرض مقدار ما أتممته من حفظ مقارنة بالخطة، مع أرشيف كامل لملاحظات المعلم.</p>
+            </div>
+            <div class="text-center group">
+                <div class="w-20 h-20 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-6 text-3xl group-hover:scale-110 transition duration-300 shadow-sm">
+                    <i class="fas fa-award"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-3 text-gray-800">شهادات تقدير تلقائية</h3>
+                <p class="text-gray-500 leading-relaxed">نظام تحفيز آلي يصدر لك شهادات تقديرية فور إتمامك حفظ كل 5 أو 10 أجزاء من القرآن الكريم.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-gray-900 text-gray-400 py-8 text-center border-t border-gray-800">
+        <p>© 2026 منصة اقرأ وارتقِ. جميع الحقوق محفوظة.</p>
+    </footer>
+
+    <!-- استدعاء الإعدادات -->
+    <script src="supabase.js"></script>
+    <script>
+        // التحقق من حالة التسجيل لتعديل الواجهة
+        async function checkRegistrationStatus() {
+            const actionArea = document.getElementById('registration-action-area');
+            const navBtn = document.getElementById('nav-register-btn');
+            
+            try {
+                const { data, error } = await supabase.from('system_settings').select('is_registration_open').single();
+                
+                if (data && data.is_registration_open) {
+                    actionArea.innerHTML = `
+                        <a href="register.html" class="bg-emerald-600 text-white text-lg px-8 py-4 rounded-full shadow-lg hover:bg-emerald-700 hover:shadow-xl transition font-bold flex items-center">
+                            <i class="fas fa-user-plus mr-2 ml-2"></i> ابدأ رحلتك وسجل الآن
+                        </a>
+                        <a href="packages.html" class="bg-white text-gray-700 text-lg px-8 py-4 rounded-full shadow border border-gray-200 hover:bg-gray-50 transition font-bold">
+                            استعراض الباقات
+                        </a>`;
+                } else {
+                    actionArea.innerHTML = `
+                        <div class="bg-amber-100 text-amber-700 border border-amber-200 px-6 py-4 rounded-xl font-bold flex items-center">
+                            <i class="fas fa-exclamation-triangle ml-3 text-xl"></i>
+                            عذراً، تم إيقاف استقبال طلبات التسجيل الجديدة مؤقتاً لاكتمال العدد.
+                        </div>`;
+                    navBtn.classList.add('hidden'); // إخفاء زر التسجيل من شريط التصفح
+                }
+            } catch (err) {
+                actionArea.innerHTML = `<p class="text-red-500">حدث خطأ في الاتصال بالخادم.</p>`;
+            }
+        }
+        
+        window.addEventListener('load', checkRegistrationStatus);
+    </script>
+</body>
+</html>
