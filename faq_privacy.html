@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الأسئلة الشائعة والسياسات - المنصة</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style> 
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap'); 
+        body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; }
+        /* تصميم الـ Accordion للأسئلة */
+        details > summary { list-style: none; cursor: pointer; }
+        details > summary::-webkit-details-marker { display: none; }
+        details[open] summary ~ * { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="antialiased text-gray-800 flex flex-col min-h-screen">
+    
+    <!-- شريط التصفح -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-black text-emerald-600 flex items-center">
+                <i class="fas fa-quran mr-2 ml-2"></i> اقرأ وارتقِ
+            </a>
+            <div class="hidden md:flex space-x-6 space-x-reverse font-medium text-gray-600">
+                <a href="index.html" class="hover:text-emerald-600 transition">الرئيسية</a>
+                <a href="packages.html" class="hover:text-emerald-600 transition">باقات الاشتراك</a>
+                <a href="faq_privacy.html" class="text-emerald-600">الأسئلة الشائعة</a>
+            </div>
+            <a href="login.html" class="text-emerald-700 bg-emerald-50 px-5 py-2 rounded-lg font-bold hover:bg-emerald-100 transition">دخول</a>
+        </div>
+    </nav>
+
+    <!-- المحتوى -->
+    <main class="flex-grow container mx-auto px-6 py-12 max-w-4xl">
+        
+        <!-- قسم الأسئلة الشائعة -->
+        <section class="mb-16">
+            <h2 class="text-3xl font-black text-gray-900 mb-8 border-b-2 border-emerald-500 pb-3 inline-block">الأسئلة الشائعة</h2>
+            
+            <div class="space-y-4">
+                <details class="bg-white border border-gray-200 rounded-xl shadow-sm group">
+                    <summary class="flex justify-between items-center font-bold text-lg cursor-pointer p-5 text-gray-800">
+                        ما هي المقابلة المبدئية وكيف تتم؟
+                        <span class="text-emerald-500 group-open:rotate-180 transition-transform duration-300"><i class="fas fa-chevron-down"></i></span>
+                    </summary>
+                    <div class="p-5 pt-0 text-gray-600 leading-relaxed border-t border-gray-100 mt-2">
+                        بعد إتمام التسجيل ورفع إيصال الدفع، سيقوم مدير النظام بإسنادك لمعلم متخصص. سيتم تحديد موعد مقابلة مبدئية (عبر الاتصال المرئي في المنصة) مدتها 10 دقائق لتحديد مستوى حفظك وتلاوتك، وبناءً عليها سيتم وضع خطة الحفظ المناسبة لك.
+                    </div>
+                </details>
+
+                <details class="bg-white border border-gray-200 rounded-xl shadow-sm group">
+                    <summary class="flex justify-between items-center font-bold text-lg cursor-pointer p-5 text-gray-800">
+                        ماذا يحدث إذا تغيبت عن حلقة التسميع؟
+                        <span class="text-emerald-500 group-open:rotate-180 transition-transform duration-300"><i class="fas fa-chevron-down"></i></span>
+                    </summary>
+                    <div class="p-5 pt-0 text-gray-600 leading-relaxed border-t border-gray-100 mt-2">
+                        يتم تسجيل الغياب في لوحة الطالب. يُسمح للطالب بالاعتذار المسبق قبل الجلسة بـ 4 ساعات على الأقل ليتم تعويض الجلسة في وقت لاحق بالاتفاق مع المعلم. أما الغياب بدون عذر فلا يتم تعويضه.
+                    </div>
+                </details>
+
+                <details class="bg-white border border-gray-200 rounded-xl shadow-sm group">
+                    <summary class="flex justify-between items-center font-bold text-lg cursor-pointer p-5 text-gray-800">
+                        كيف تعمل آلية إصدار الشهادات التلقائية؟
+                        <span class="text-emerald-500 group-open:rotate-180 transition-transform duration-300"><i class="fas fa-chevron-down"></i></span>
+                    </summary>
+                    <div class="p-5 pt-0 text-gray-600 leading-relaxed border-t border-gray-100 mt-2">
+                        يقوم النظام بشكل آلي بتتبع مقدار الحفظ الذي يجتازه الطالب بناءً على تقييمات المعلم. عند إتمام الطالب لـ 5 أجزاء متصلة باختبار مجتاز، يتم إنشاء شهادة تقدير بصيغة PDF وتودع في حساب الطالب مباشرة. ويتكرر ذلك عند 10، 15، 20، 25 جزءاً، وحتى الختم.
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <!-- قسم السياسات -->
+        <section>
+            <h2 class="text-3xl font-black text-gray-900 mb-8 border-b-2 border-emerald-500 pb-3 inline-block">سياسة الخصوصية والاسترداد</h2>
+            
+            <div class="bg-white p-8 rounded-xl border border-gray-200 shadow-sm prose prose-emerald max-w-none text-gray-600 leading-relaxed">
+                <h3 class="text-xl font-bold text-gray-800 mb-3">1. سياسة الاسترداد المالي</h3>
+                <p class="mb-6">
+                    يحق للطالب طلب استرداد رسوم الاشتراك الشهري كاملة في حال انسحابه خلال أول 3 أيام من تفعيل الاشتراك (أو قبل إجراء المقابلة المبدئية). بعد مضي هذه الفترة، لا يمكن استرداد الرسوم لضمان حقوق المعلمين وحجز المقاعد.
+                </p>
+
+                <h3 class="text-xl font-bold text-gray-800 mb-3">2. خصوصية البيانات</h3>
+                <p class="mb-6">
+                    نحن نلتزم بحماية بياناتك الشخصية. جميع المعلومات المدخلة (الاسم، البريد الإلكتروني، إيصالات الدفع) مشفرة ومحفوظة في قواعد بيانات آمنة (Supabase). لا يتم مشاركة هذه البيانات مع أي جهة خارجية. إيصالات الدفع تطلع عليها الإدارة المالية فقط لأغراض المطابقة.
+                </p>
+
+                <h3 class="text-xl font-bold text-gray-800 mb-3">3. الجلسات المرئية</h3>
+                <p class="mb-6">
+                    الجلسات الافتراضية المدمجة في المنصة هي جلسات حية (Live) ولا يتم تسجيلها خادمياً احتراماً لخصوصية المعلم والطالب. يقتصر التوثيق على التقييم النصي والملاحظات التي يكتبها المعلم في لوحة التحكم.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-gray-900 text-gray-400 py-8 text-center border-t border-gray-800 mt-auto">
+        <p>© 2026 منصة اقرأ وارتقِ. جميع الحقوق محفوظة.</p>
+    </footer>
+
+</body>
+</html>
