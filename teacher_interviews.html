@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>المقابلات والتقييم</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style> @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap'); body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; } </style>
+</head>
+<body class="flex h-screen overflow-hidden text-gray-800">
+    <aside class="w-64 bg-[#1e293b] text-white flex flex-col hidden md:flex z-20">
+        <div class="p-6 text-xl font-bold border-b border-gray-700 text-emerald-400"><i class="fas fa-book-reader mr-2 ml-2"></i> بوابة المعلم</div>
+        <nav class="flex-1 p-4 space-y-2 text-sm font-medium">
+            <a href="teacher_dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300"><i class="fas fa-home ml-3"></i> الرئيسية</a>
+            <a href="teacher_students_list.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300"><i class="fas fa-users ml-3"></i> قائمة طلابي</a>
+            <a href="teacher_interviews.html" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow"><i class="fas fa-clipboard-list ml-3"></i> المقابلات والتقييم</a>
+            <a href="teacher_virtual_session.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300"><i class="fas fa-video ml-3"></i> غرفة الإقراء</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto p-8">
+        <h2 class="text-2xl font-bold text-gray-700 mb-6">نموذج التقييم والمقابلة</h2>
+        
+        <div class="bg-white p-8 rounded-xl shadow-sm border max-w-3xl">
+            <form class="space-y-6">
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <label class="block font-bold text-sm mb-2 text-gray-700">اختر الطالب لتقييمه</label>
+                        <select class="w-full border rounded-lg p-3 bg-gray-50 focus:border-emerald-500 font-bold" id="studentSelect">
+                            <option>اختر من قائمتك...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-sm mb-2 text-gray-700">نوع التقييم</label>
+                        <select class="w-full border rounded-lg p-3 bg-gray-50 focus:border-emerald-500 font-bold">
+                            <option>مقابلة تحديد مستوى (جديد)</option>
+                            <option>تقييم دوري (نهاية جزء)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-sm mb-2 text-gray-700">جودة التلاوة وأحكام التجويد (من 10)</label>
+                    <input type="range" min="1" max="10" value="7" class="w-full accent-emerald-600" oninput="document.getElementById('tajweedScore').innerText = this.value">
+                    <div class="text-center font-black text-2xl text-emerald-600 mt-2" id="tajweedScore">7</div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-sm mb-2 text-gray-700">ملاحظات المعلم والتوصيات</label>
+                    <textarea rows="4" class="w-full border rounded-lg p-3 focus:border-emerald-500" placeholder="مثال: يحتاج للتركيز على المدود وإخفاء النون الساكنة..."></textarea>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="button" class="bg-emerald-600 text-white px-8 py-3 rounded-lg font-bold shadow hover:bg-emerald-700 transition">
+                        <i class="fas fa-save ml-2"></i> حفظ التقييم في ملف الطالب
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</body>
+</html>
