@@ -6,22 +6,18 @@
     <title>مدير النظام - إدارة المعلمين</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style> 
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap'); 
-        body { font-family: 'Tajawal', sans-serif; background-color: #f4f7f6; } 
-    </style>
+    <style> @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap'); body { font-family: 'Tajawal', sans-serif; background-color: #f4f7f6; } </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="flex h-screen overflow-hidden text-gray-800 relative">
     
-    <!-- القائمة الجانبية (Sidebar) المحدثة -->
+    <!-- القائمة الجانبية -->
     <aside class="w-64 bg-[#1a2b3c] text-white flex flex-col hidden md:flex shadow-2xl z-20">
         <div class="p-6 text-xl font-bold border-b border-gray-700 flex items-center">
             <i class="fas fa-shield-alt text-emerald-400 mr-2 ml-2"></i> الإدارة العليا
         </div>
         <nav class="flex-1 p-4 space-y-2 text-sm font-medium">
             <a href="admin_dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-chart-pie ml-3"></i> لوحة المؤشرات</a>
-            <!-- الزر النشط الآن هو إدارة المعلمين -->
             <a href="admin_teachers.html" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow"><i class="fas fa-chalkboard-teacher ml-3"></i> إدارة المعلمين</a>
             <a href="admin_new_registrations.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-user-plus ml-3"></i> طلبات التسجيل الجديدة</a>
             <a href="admin_students.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-user-graduate ml-3"></i> إدارة الطلاب المنتظمين</a>
@@ -40,8 +36,7 @@
         <div class="p-8">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-gray-800">قائمة المعلمين المعتمدين</h3>
-                <!-- زر إضافة معلم (تم ربطه بدالة لفتح النافذة المنبثقة) -->
-                <button onclick="openModal()" class="bg-emerald-600 text-white px-5 py-2 rounded-lg font-bold shadow hover:bg-emerald-700 transition flex items-center">
+                <button onclick="openModal('addTeacherModal')" class="bg-emerald-600 text-white px-5 py-2 rounded-lg font-bold shadow hover:bg-emerald-700 transition flex items-center">
                     <i class="fas fa-plus ml-2"></i> إضافة معلم جديد
                 </button>
             </div>
@@ -64,47 +59,55 @@
         </div>
     </main>
 
-    <!-- النافذة المنبثقة (Modal) لإضافة معلم جديد -->
-    <div id="addTeacherModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 backdrop-blur-sm transition-opacity">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative transform transition-all">
-            <!-- زر إغلاق النافذة -->
-            <button onclick="closeModal()" class="absolute top-4 left-4 text-gray-400 hover:text-red-500 transition">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-            
-            <div class="text-center mb-6">
-                <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
-                    <i class="fas fa-chalkboard-teacher"></i>
-                </div>
-                <h3 class="text-xl font-bold text-gray-800">تسجيل معلم جديد</h3>
-            </div>
-
+    <!-- 1. نافذة إضافة معلم -->
+    <div id="addTeacherModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+            <button onclick="closeModal('addTeacherModal')" class="absolute top-4 left-4 text-gray-400 hover:text-red-500 transition"><i class="fas fa-times text-xl"></i></button>
+            <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">تسجيل معلم جديد</h3>
             <form id="addTeacherForm" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">اسم المعلم (الرباعي)</label>
-                    <input type="text" id="teacherName" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">البريد الإلكتروني</label>
-                    <input type="email" id="teacherEmail" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">كلمة المرور المبدئية</label>
-                    <input type="password" id="teacherPassword" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" required>
-                </div>
-                
-                <div id="modalMessage" class="hidden text-sm text-center font-bold p-2 rounded"></div>
+                <div><label class="block text-sm font-bold mb-1">الاسم</label><input type="text" id="teacherName" class="w-full border rounded-lg p-3" required></div>
+                <div><label class="block text-sm font-bold mb-1">الإيميل</label><input type="email" id="teacherEmail" class="w-full border rounded-lg p-3" required></div>
+                <div><label class="block text-sm font-bold mb-1">كلمة المرور</label><input type="password" id="teacherPassword" class="w-full border rounded-lg p-3" required></div>
+                <div id="addMsg" class="hidden text-sm text-center font-bold p-2 rounded"></div>
+                <button type="submit" id="addBtn" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-lg hover:bg-emerald-700">اعتماد وإضافة</button>
+            </form>
+        </div>
+    </div>
 
-                <button type="submit" id="submitTeacherBtn" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-lg shadow hover:bg-emerald-700 transition mt-2">
-                    اعتماد وإضافة المعلم
-                </button>
+    <!-- 2. نافذة تعديل بيانات معلم -->
+    <div id="editTeacherModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+            <button onclick="closeModal('editTeacherModal')" class="absolute top-4 left-4 text-gray-400 hover:text-red-500 transition"><i class="fas fa-times text-xl"></i></button>
+            <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">تعديل بيانات المعلم</h3>
+            <form id="editTeacherForm" class="space-y-4">
+                <input type="hidden" id="editTeacherId">
+                <div>
+                    <label class="block text-sm font-bold mb-1">اسم المعلم</label>
+                    <input type="text" id="editTeacherName" class="w-full border border-gray-300 rounded-lg p-3 focus:border-emerald-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">البريد الإلكتروني <span class="text-xs text-red-500">(للقراءة فقط)</span></label>
+                    <input type="email" id="editTeacherEmail" class="w-full border border-gray-200 bg-gray-50 text-gray-500 rounded-lg p-3 cursor-not-allowed" readonly>
+                </div>
+                <div id="editMsg" class="hidden text-sm text-center font-bold p-2 rounded"></div>
+                <button type="submit" id="editBtn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition">حفظ التعديلات</button>
             </form>
         </div>
     </div>
 
     <script src="supabase.js"></script>
     <script>
-        // دالة جلب المعلمين للجدول
+        // دوال النوافذ المنبثقة
+        function openModal(modalId) { 
+            document.getElementById(modalId).classList.remove('hidden'); 
+            document.getElementById(modalId).classList.add('flex'); 
+        }
+        function closeModal(modalId) { 
+            document.getElementById(modalId).classList.add('hidden'); 
+            document.getElementById(modalId).classList.remove('flex'); 
+        }
+
+        // جلب المعلمين
         async function loadTeachers() {
             const { data, error } = await window.supabase
                 .from('users')
@@ -118,96 +121,108 @@
             if(data && data.length > 0) {
                 data.forEach(teacher => {
                     const date = new Date(teacher.created_at).toLocaleDateString('ar-OM');
+                    // التحقق من حالة المعلم (افتراضياً نشط إذا لم تكن القيمة false)
+                    const isActive = teacher.is_active !== false; 
+                    const statusBadge = isActive 
+                        ? `<span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full mr-2">نشط</span>` 
+                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full mr-2">موقوف</span>`;
+                    
+                    const actionButton = isActive 
+                        ? `<button onclick="toggleStatus('${teacher.id}', false)" class="text-red-600 hover:bg-red-50 px-3 py-1 rounded font-medium transition"><i class="fas fa-ban mr-1"></i> إيقاف</button>`
+                        : `<button onclick="toggleStatus('${teacher.id}', true)" class="text-green-600 hover:bg-green-50 px-3 py-1 rounded font-medium transition"><i class="fas fa-check mr-1"></i> تفعيل</button>`;
+
                     tbody.innerHTML += `
                         <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 font-bold text-gray-800">${teacher.full_name}</td>
+                            <td class="px-6 py-4 font-bold text-gray-800 flex items-center">${teacher.full_name} ${statusBadge}</td>
                             <td class="px-6 py-4 text-gray-600">${teacher.email}</td>
                             <td class="px-6 py-4 text-gray-500">${date}</td>
                             <td class="px-6 py-4">
-                                <button class="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded ml-2 font-medium transition"><i class="fas fa-edit mr-1"></i> تعديل</button>
-                                <button class="text-red-600 hover:bg-red-50 px-3 py-1 rounded font-medium transition"><i class="fas fa-ban mr-1"></i> إيقاف</button>
+                                <button onclick="openEditModal('${teacher.id}', '${teacher.full_name}', '${teacher.email}')" class="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded ml-2 font-medium transition"><i class="fas fa-edit mr-1"></i> تعديل</button>
+                                ${actionButton}
                             </td>
                         </tr>
                     `;
                 });
             } else {
-                tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-400 font-medium">لا يوجد معلمين معتمدين حالياً في المنصة.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-400 font-medium">لا يوجد معلمين حالياً.</td></tr>';
             }
         }
 
-        // دوال التحكم بالنافذة المنبثقة (Modal)
-        const modal = document.getElementById('addTeacherModal');
-        const form = document.getElementById('addTeacherForm');
-        const msgDiv = document.getElementById('modalMessage');
-        const submitBtn = document.getElementById('submitTeacherBtn');
-
-        function openModal() {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            form.reset();
-            msgDiv.classList.add('hidden');
+        // فتح نافذة التعديل وتعبئة البيانات
+        function openEditModal(id, name, email) {
+            document.getElementById('editTeacherId').value = id;
+            document.getElementById('editTeacherName').value = name;
+            document.getElementById('editTeacherEmail').value = email;
+            document.getElementById('editMsg').classList.add('hidden');
+            openModal('editTeacherModal');
         }
 
-        function closeModal() {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
+        // إرسال التعديل لقاعدة البيانات
+        document.getElementById('editTeacherForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('editBtn');
+            const msg = document.getElementById('editMsg');
+            btn.disabled = true; btn.textContent = 'جاري الحفظ...';
 
-        // إغلاق النافذة عند الضغط خارجها
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) closeModal();
+            const id = document.getElementById('editTeacherId').value;
+            const newName = document.getElementById('editTeacherName').value;
+
+            const { error } = await window.supabase
+                .from('users')
+                .update({ full_name: newName })
+                .eq('id', id);
+
+            if (error) {
+                msg.textContent = 'حدث خطأ أثناء التعديل!';
+                msg.className = 'text-sm text-center font-bold p-2 rounded bg-red-50 text-red-600 mt-2 block';
+            } else {
+                msg.textContent = 'تم حفظ التعديلات بنجاح!';
+                msg.className = 'text-sm text-center font-bold p-2 rounded bg-green-50 text-green-600 mt-2 block';
+                loadTeachers(); // تحديث الجدول
+                setTimeout(() => closeModal('editTeacherModal'), 1000);
+            }
+            btn.disabled = false; btn.textContent = 'حفظ التعديلات';
         });
 
-        // برمجة زر إضافة المعلم (معالجة النموذج)
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            submitBtn.textContent = 'جاري الإضافة...';
-            submitBtn.disabled = true;
-            msgDiv.classList.add('hidden');
+        // دالة تغيير حالة المعلم (إيقاف / تفعيل)
+        async function toggleStatus(id, newStatus) {
+            const confirmMsg = newStatus ? 'هل أنت متأكد من تفعيل حساب هذا المعلم؟' : 'هل أنت متأكد من إيقاف هذا المعلم؟ (لن يتمكن من الدخول للمنصة)';
+            if(!confirm(confirmMsg)) return;
 
+            const { error } = await window.supabase
+                .from('users')
+                .update({ is_active: newStatus })
+                .eq('id', id);
+
+            if (error) alert('حدث خطأ أثناء تغيير الحالة');
+            else loadTeachers(); // تحديث الجدول فوراً
+        }
+
+        // إضافة معلم جديد
+        document.getElementById('addTeacherForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('addBtn');
+            btn.disabled = true; btn.textContent = 'جاري الإضافة...';
+            
             const name = document.getElementById('teacherName').value;
             const email = document.getElementById('teacherEmail').value;
             const password = document.getElementById('teacherPassword').value;
 
             try {
-                // إنشاء المعلم في نظام المصادقة مع تمرير صلاحية "teacher"
-                const { data, error } = await window.supabase.auth.signUp({
-                    email: email,
-                    password: password,
-                    options: {
-                        data: {
-                            full_name: name,
-                            role: 'teacher'
-                        }
-                    }
+                const { error } = await window.supabase.auth.signUp({
+                    email: email, password: password,
+                    options: { data: { full_name: name, role: 'teacher' } }
                 });
-
                 if (error) throw error;
-
-                // إظهار رسالة النجاح
-                msgDiv.textContent = 'تم إضافة المعلم بنجاح!';
-                msgDiv.className = 'text-sm text-center font-bold p-2 rounded bg-emerald-50 text-emerald-600 mt-2 block';
                 
-                // تحديث الجدول لظهور المعلم الجديد
                 loadTeachers();
-                
-                // إغلاق النافذة بعد ثانية واحدة
-                setTimeout(() => {
-                    closeModal();
-                    submitBtn.textContent = 'اعتماد وإضافة المعلم';
-                    submitBtn.disabled = false;
-                }, 1500);
-
+                setTimeout(() => closeModal('addTeacherModal'), 1000);
             } catch (err) {
-                // إظهار رسالة الخطأ
-                msgDiv.textContent = 'حدث خطأ: ' + err.message;
-                msgDiv.className = 'text-sm text-center font-bold p-2 rounded bg-red-50 text-red-600 mt-2 block';
-                submitBtn.textContent = 'اعتماد وإضافة المعلم';
-                submitBtn.disabled = false;
+                alert('حدث خطأ: ' + err.message);
             }
+            btn.disabled = false; btn.textContent = 'اعتماد وإضافة';
         });
 
-        // تشغيل الدالة عند تحميل الصفحة
         window.addEventListener('load', loadTeachers);
     </script>
 </body>
