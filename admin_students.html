@@ -55,39 +55,37 @@
     <script>
         let teachersList = [];
 
-        async function loadStudents() {
+async function loadStudents() {
             // جلب المعلمين للقائمة المنسدلة
             const { data: teachers } = await window.supabase.from('users').select('id, full_name').eq('role', 'teacher');
             teachersList = teachers || [];
 
-            // جلب ملفات الطلاب
-            const { data: profiles } = await window.supabase.from('student_profiles')
-                .select(`user_id, teacher_id, users!student_profiles_user_id_fkey(full_name, email), curriculums(name)`);
+            // 🔥 جلب الطلاب المعتمدين مالياً فقط باستخدام الدالة الخلفية
+            const { data: profiles, error } = await window.supabase.rpc('get_enrolled_students');
             
             const tbody = document.getElementById('studentsTable');
             tbody.innerHTML = '';
             
             if(profiles && profiles.length > 0) {
                 profiles.forEach(p => {
-                    if(!p.users) return; // تجاهل لو لم يكن له سجل مستخدم
-                    const currName = p.curriculums ? p.curriculums.name : '<span class="text-red-500">غير محدد</span>';
+                    const currName = p.curriculum_name ? p.curriculum_name : '<span class="text-red-500">غير محدد</span>';
                     const teacher = teachersList.find(t => t.id === p.teacher_id);
                     const teacherName = teacher ? teacher.full_name : '<span class="text-orange-500">بانتظار التعيين</span>';
 
                     tbody.innerHTML += `
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 font-bold">${p.users.full_name}<br><span class="text-xs text-gray-400">${p.users.email}</span></td>
+                        <tr class="hover:bg-gray-50 border-b transition">
+                            <td class="px-6 py-4 font-bold">${p.full_name}<br><span class="text-xs text-gray-400 font-normal">${p.email}</span></td>
                             <td class="px-6 py-4 font-bold text-emerald-600">${currName}</td>
                             <td class="px-6 py-4 font-bold">${teacherName}</td>
                             <td class="px-6 py-4">
-                                <button onclick="openAssignModal('${p.user_id}', '${p.teacher_id || ''}')" class="bg-blue-50 text-blue-600 px-3 py-1 rounded font-bold hover:bg-blue-100">
-                                    <i class="fas fa-user-edit ml-1"></i> تعيين معلم
+                                <button onclick="openAssignModal('${p.student_id}', '${p.teacher_id || ''}')" class="bg-blue-50 text-blue-600 px-3 py-1 rounded font-bold hover:bg-blue-100 transition">
+                                    <i class="fas fa-user-edit ml-1"></i> تعيين/تغيير المعلم
                                 </button>
                             </td>
                         </tr>
                     `;
                 });
-            } else { tbody.innerHTML = '<tr><td colspan="4" class="text-center p-8">لا يوجد طلاب منتظمين.</td></tr>'; }
+            } else { tbody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-gray-500 font-bold">لا يوجد طلاب منتظمين حالياً. قم باعتماد طلبات التسجيل أولاً.</td></tr>'; }
         }
 
         function openAssignModal(studentId, currentTeacherId) {
