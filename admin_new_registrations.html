@@ -121,30 +121,31 @@
         }
 
         // دالة اعتماد الطلب
+// دالة اعتماد الطلب (باستخدام RPC لتجاوز حظر المتصفح)
         async function approveRequest(subId) {
             if(!confirm('هل أنت متأكد من صحة الإيصال المالي واعتماد هذا الطالب؟ (سيتم نقله لقائمة الطلاب المنتظمين)')) return;
 
-            const { error } = await window.supabase
-                .from('subscriptions')
-                .update({ status: 'approved' })
-                .eq('id', subId);
+            const { error } = await window.supabase.rpc('update_subscription_status', {
+                p_sub_id: subId,
+                p_status: 'approved'
+            });
 
             if (error) {
                 alert('حدث خطأ أثناء الاعتماد: ' + error.message);
             } else {
-                // إعادة تحميل الجدول بعد الاعتماد
+                // إعادة تحميل الجدول لاختفاء الطلب من قائمة الانتظار
                 loadPendingRequests();
             }
         }
 
-        // دالة رفض الطلب
+        // دالة رفض الطلب (باستخدام RPC لتجاوز حظر المتصفح)
         async function rejectRequest(subId) {
             if(!confirm('هل أنت متأكد من رفض هذا الطلب؟ (هذا الإجراء سيقوم بحذف الطلب من قائمة الانتظار)')) return;
 
-            const { error } = await window.supabase
-                .from('subscriptions')
-                .update({ status: 'rejected' })
-                .eq('id', subId);
+            const { error } = await window.supabase.rpc('update_subscription_status', {
+                p_sub_id: subId,
+                p_status: 'rejected'
+            });
 
             if (error) {
                 alert('حدث خطأ أثناء الرفض: ' + error.message);
