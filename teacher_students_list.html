@@ -48,13 +48,14 @@
 
     <script src="supabase.js"></script>
     <script>
+
         window.addEventListener('load', async () => {
             const { data: { user } } = await window.supabase.auth.getUser();
             if(!user) return window.location.href = 'login.html';
 
-            // جلب طلاب المعلم الحالي فقط (بفضل RLS)
+            // جلب طلاب المعلم وقراءة بيانات الخطة المخصصة
             const { data, error } = await window.supabase.from('student_profiles')
-                .select(`user_id, users!student_profiles_user_id_fkey(full_name, email), curriculums(name)`)
+                .select(`user_id, evaluation_status, custom_plan_type, target_parts, target_surahs, users!student_profiles_user_id_fkey(full_name, email)`)
                 .eq('teacher_id', user.id);
 
             const tbody = document.getElementById('myStudentsTable');
@@ -62,30 +63,36 @@
 
             if (data && data.length > 0) {
                 data.forEach(s => {
-                    const cName = s.curriculums ? s.curriculums.name : 'غير محدد';
+                    // تحديد شكل الخطة للعرض
+                    let planText = '<span class="text-red-500 text-xs">بانتظار التقييم</span>';
+                    if (s.evaluation_status === 'completed') {
+                        if (s.custom_plan_type === 'parts') planText = `حفظ ${s.target_parts} أجزاء`;
+                        else if (s.custom_plan_type === 'surahs') planText = `حفظ سور: ${s.target_surahs}`;
+                    }
+
                     tbody.innerHTML += `
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4">
                                 <div class="font-bold text-gray-800">${s.users.full_name}</div>
                                 <div class="text-xs text-gray-500 mt-1">${s.users.email}</div>
                             </td>
-                            <td class="px-6 py-4 font-bold text-emerald-600">${cName}</td>
+                            <td class="px-6 py-4 font-bold text-emerald-600">${planText}</td>
                             <td class="px-6 py-4">
                                 <div class="w-full bg-gray-200 rounded-full h-2.5">
                                     <div class="bg-emerald-600 h-2.5 rounded-full" style="width: 0%"></div>
                                 </div>
                                 <span class="text-xs text-gray-500 mt-1 block text-center">بداية الخطة</span>
                             </td>
-                            <td class="px-6 py-4 space-x-2 space-x-reverse flex">
-                                <a href="teacher_interviews.html?student=${s.user_id}" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded font-bold transition flex items-center">
-                                    <i class="fas fa-star-half-alt ml-1"></i> تقييم
+                            <td class="px-6 py-4">
+                                <a href="teacher_interviews.html?student=${s.user_id}" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded font-bold transition inline-flex items-center">
+                                    <i class="fas fa-star-half-alt ml-1"></i> تقييم دوري
                                 </a>
                             </td>
                         </tr>
                     `;
                 });
             } else {
-                tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-12 text-center text-gray-400 font-bold"><i class="fas fa-users-slash text-3xl mb-3 block"></i>لا يوجد لديك طلاب موكلين حالياً.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-12 text-center text-gray-400 font-bold">لا يوجد لديك طلاب موكلين حالياً.</td></tr>';
             }
         });
     </script>
