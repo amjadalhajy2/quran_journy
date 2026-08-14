@@ -23,11 +23,13 @@
         <h2 class="text-2xl font-bold text-gray-700 mb-6">إجراء تقييم وتحديد مستوى</h2>
         
         <div class="bg-white p-8 rounded-xl shadow-sm border max-w-4xl">
-            <form id="evaluationForm" class="space-y-6">
+            <form id="evaluationForm" class="space-y-8">
                 
-                <div class="bg-orange-50 border border-orange-200 p-4 rounded-lg mb-6 flex items-start">
-                    <i class="fas fa-info-circle text-orange-500 mt-1 ml-2 text-xl"></i>
-                    <p class="text-sm font-bold text-orange-800">الطلاب المدرجين في هذه القائمة هم الطلاب الجدد الذين ينتظرون التقييم المبدئي لتحديد مستواهم وتسكينهم في الخطة المناسبة لكي يتمكنوا من بدء الحصص.</p>
+                <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg flex items-start">
+                    <i class="fas fa-info-circle text-blue-500 mt-1 ml-2 text-xl"></i>
+                    <p class="text-sm font-bold text-blue-800 leading-relaxed">
+                        قم بتقييم الطالب مبدئياً لتحديد مستواه، ثم قم ببناء **خطة الحفظ المخصصة** له سواء بتحديد عدد الأجزاء أو بتحديد سور معينة من القرآن الكريم ليتم اعتمادها كمسار له.
+                    </p>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-b pb-6">
@@ -47,30 +49,48 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block font-bold text-sm mb-2 text-gray-700">تسكين الطالب في الخطة/المقرر المناسب</label>
-                        <select id="curriculumSelect" class="w-full border rounded-lg p-3 bg-white focus:border-emerald-500 font-bold" required>
-                            <option value="">جاري تحميل الخطط...</option>
-                        </select>
+                <!-- بناء الخطة المخصصة -->
+                <div class="border-b pb-6">
+                    <h3 class="font-bold text-emerald-700 mb-4"><i class="fas fa-route ml-2"></i> بناء خطة الحفظ</h3>
+                    <div class="flex space-x-6 space-x-reverse mb-4">
+                        <label class="flex items-center font-bold cursor-pointer">
+                            <input type="radio" name="planType" value="parts" checked class="w-4 h-4 text-emerald-600 focus:ring-emerald-500 ml-2" onchange="togglePlanInputs()"> 
+                            تحديد بعدد الأجزاء
+                        </label>
+                        <label class="flex items-center font-bold cursor-pointer">
+                            <input type="radio" name="planType" value="surahs" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500 ml-2" onchange="togglePlanInputs()"> 
+                            تحديد بسور معينة
+                        </label>
                     </div>
+
+                    <div id="partsInputGroup" class="bg-gray-50 p-4 rounded-lg border">
+                        <label class="block font-bold text-sm mb-2 text-gray-700">عدد الأجزاء المراد حفظها (المستهدف)</label>
+                        <input type="number" id="targetParts" class="w-full md:w-1/2 border rounded-lg p-3 focus:border-emerald-500" placeholder="مثال: 3" min="1" max="30">
+                    </div>
+
+                    <div id="surahsInputGroup" class="bg-gray-50 p-4 rounded-lg border hidden">
+                        <label class="block font-bold text-sm mb-2 text-gray-700">السور المراد حفظها (اكتب الأسماء مفصولة بفاصلة)</label>
+                        <input type="text" id="targetSurahs" class="w-full border rounded-lg p-3 focus:border-emerald-500" placeholder="مثال: البقرة، آل عمران، الكهف">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-b pb-6">
                     <div>
                         <label class="block font-bold text-sm mb-2 text-gray-700">جودة التلاوة المبدئية (من 10)</label>
                         <input type="range" min="1" max="10" value="5" class="w-full accent-emerald-600" oninput="document.getElementById('tajweedScore').innerText = this.value">
                         <div class="text-center font-black text-2xl text-emerald-600 mt-2" id="tajweedScore">5</div>
                     </div>
-                </div>
-
-                <div>
-                    <label class="block font-bold text-sm mb-2 text-gray-700">ملاحظات المعلم وتوصياته للطالب</label>
-                    <textarea id="evalNotes" rows="3" class="w-full border rounded-lg p-3 focus:border-emerald-500" placeholder="مثال: الطالب يحتاج للبدء بجزء عم لضبط الأحكام الأساسية..." required></textarea>
+                    <div>
+                        <label class="block font-bold text-sm mb-2 text-gray-700">ملاحظات المعلم وتوصياته للطالب</label>
+                        <textarea id="evalNotes" rows="3" class="w-full border rounded-lg p-3 focus:border-emerald-500" placeholder="مثال: يحتاج للتركيز على مخارج الحروف..." required></textarea>
+                    </div>
                 </div>
                 
                 <div id="evalMsg" class="hidden text-center p-3 rounded font-bold mt-4"></div>
 
                 <div class="flex justify-end pt-4">
                     <button type="submit" id="saveEvalBtn" class="bg-emerald-600 text-white px-8 py-3 rounded-lg font-bold shadow hover:bg-emerald-700 transition">
-                        <i class="fas fa-save ml-2"></i> اعتماد التقييم وتسكين الطالب
+                        <i class="fas fa-save ml-2"></i> اعتماد التقييم والخطة
                     </button>
                 </div>
             </form>
@@ -81,12 +101,24 @@
     <script>
         let currentUserId = null;
 
+        // التبديل بين إدخال الأجزاء والسور
+        function togglePlanInputs() {
+            const planType = document.querySelector('input[name="planType"]:checked').value;
+            if(planType === 'parts') {
+                document.getElementById('partsInputGroup').classList.remove('hidden');
+                document.getElementById('surahsInputGroup').classList.add('hidden');
+            } else {
+                document.getElementById('partsInputGroup').classList.add('hidden');
+                document.getElementById('surahsInputGroup').classList.remove('hidden');
+            }
+        }
+
         window.addEventListener('load', async () => {
             const { data: { user } } = await window.supabase.auth.getUser();
             if(!user) return window.location.href = 'login.html';
             currentUserId = user.id;
             
-            // 1. جلب الطلاب الذين ينتظرون التقييم فقط
+            // جلب الطلاب بانتظار التقييم
             const { data: students } = await window.supabase.from('student_profiles')
                 .select('user_id, users!student_profiles_user_id_fkey(full_name)')
                 .eq('teacher_id', currentUserId)
@@ -99,15 +131,9 @@
             } else {
                 sSelect.innerHTML = '<option value="">لا يوجد طلاب بانتظار التقييم حالياً</option>';
             }
-
-            // 2. جلب جميع المقررات المتاحة لكي يختار المعلم منها
-            const { data: curriculums } = await window.supabase.from('curriculums').select('id, name').eq('is_active', true);
-            const cSelect = document.getElementById('curriculumSelect');
-            cSelect.innerHTML = '<option value="">-- اختر الخطة --</option>';
-            if(curriculums) curriculums.forEach(c => cSelect.innerHTML += `<option value="${c.id}">${c.name}</option>`);
         });
 
-        // حفظ التقييم والتسكين
+        // حفظ التقييم والخطة
         document.getElementById('evaluationForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('saveEvalBtn');
@@ -115,28 +141,39 @@
             
             const studentId = document.getElementById('studentSelect').value;
             const level = document.getElementById('levelSelect').value;
-            const curriculumId = document.getElementById('curriculumSelect').value;
+            const planType = document.querySelector('input[name="planType"]:checked').value;
             
-            if(!studentId || !curriculumId) return alert('الرجاء التأكد من اختيار الطالب والخطة!');
+            let parts = null, surahs = null;
+            if (planType === 'parts') {
+                parts = document.getElementById('targetParts').value;
+                if(!parts) return alert('الرجاء إدخال عدد الأجزاء!');
+            } else {
+                surahs = document.getElementById('targetSurahs').value;
+                if(!surahs) return alert('الرجاء كتابة أسماء السور!');
+            }
+            
+            if(!studentId) return alert('الرجاء التأكد من اختيار الطالب!');
             
             btn.disabled = true; btn.textContent = 'جاري الاعتماد...';
             msg.classList.add('hidden');
 
-            // تحديث ملف الطالب بحالة التقييم، مستواه، وخطته النهائية التي اختارها المعلم
+            // تحديث ملف الطالب بحالة التقييم، مستواه، وخطته المخصصة
             const { error } = await window.supabase.from('student_profiles')
                 .update({ 
                     evaluation_status: 'completed', 
                     student_level: level,
-                    curriculum_id: curriculumId 
+                    custom_plan_type: planType,
+                    target_parts: parts ? parseInt(parts) : null,
+                    target_surahs: surahs
                 })
                 .eq('user_id', studentId);
 
             if(error) {
                 msg.textContent = 'خطأ: ' + error.message;
                 msg.className = 'text-center p-3 rounded font-bold mt-4 bg-red-100 text-red-700 block';
-                btn.disabled = false; btn.textContent = 'اعتماد التقييم وتسكين الطالب';
+                btn.disabled = false; btn.textContent = 'اعتماد التقييم والخطة';
             } else {
-                msg.textContent = 'تم إنجاز التقييم بنجاح وتسكين الطالب في الخطة!';
+                msg.textContent = 'تم إنجاز التقييم بنجاح وتحديد خطة الطالب!';
                 msg.className = 'text-center p-3 rounded font-bold mt-4 bg-emerald-100 text-emerald-700 block';
                 setTimeout(() => window.location.href = 'teacher_dashboard.html', 2000);
             }
