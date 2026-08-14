@@ -56,17 +56,18 @@
     <script src="supabase.js"></script>
     <script>
         // دالة جلب الطلبات المعلقة من جدول الاشتراكات
+// دالة جلب الطلبات المعلقة من جدول الاشتراكات
         async function loadPendingRequests() {
             const tbody = document.getElementById('requestsTable');
             
-            // جلب البيانات مع ربطها بجدول المستخدمين والباقات
+            // جلب البيانات مع التوجيه الإجباري للرابط الصحيح (لحل مشكلة صراع الارتباطات)
             const { data, error } = await window.supabase
                 .from('subscriptions')
                 .select(`
                     id,
                     created_at,
                     receipt_url,
-                    users ( full_name, email ),
+                    users!subscriptions_user_id_fkey ( full_name, email ),
                     packages ( name, price )
                 `)
                 .eq('status', 'pending')
