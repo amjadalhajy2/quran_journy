@@ -108,43 +108,41 @@
         }
 
         // جلب المعلمين
-        async function loadTeachers() {
-            const { data, error } = await window.supabase
-                .from('users')
-                .select('*')
-                .eq('role', 'teacher')
-                .order('created_at', { ascending: false });
+async function loadTeachers() {
+            // نستخدم الدالة الخلفية الذكية بدلاً من الاستعلام العادي
+            const { data, error } = await window.supabase.rpc('get_teachers_stats');
                 
             const tbody = document.getElementById('teachersTable');
             tbody.innerHTML = '';
             
             if(data && data.length > 0) {
                 data.forEach(teacher => {
-                    const date = new Date(teacher.created_at).toLocaleDateString('ar-OM');
-                    // التحقق من حالة المعلم (افتراضياً نشط إذا لم تكن القيمة false)
                     const isActive = teacher.is_active !== false; 
-                    const statusBadge = isActive 
-                        ? `<span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full mr-2">نشط</span>` 
-                        : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full mr-2">موقوف</span>`;
+                    const statusBadge = isActive ? `<span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">نشط</span>` : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">موقوف</span>`;
                     
                     const actionButton = isActive 
-                        ? `<button onclick="toggleStatus('${teacher.id}', false)" class="text-red-600 hover:bg-red-50 px-3 py-1 rounded font-medium transition"><i class="fas fa-ban mr-1"></i> إيقاف</button>`
-                        : `<button onclick="toggleStatus('${teacher.id}', true)" class="text-green-600 hover:bg-green-50 px-3 py-1 rounded font-medium transition"><i class="fas fa-check mr-1"></i> تفعيل</button>`;
+                        ? `<button onclick="toggleStatus('${teacher.id}', false)" class="text-red-600 hover:bg-red-50 px-3 py-1 rounded font-medium transition">إيقاف</button>`
+                        : `<button onclick="toggleStatus('${teacher.id}', true)" class="text-green-600 hover:bg-green-50 px-3 py-1 rounded font-medium transition">تفعيل</button>`;
 
+                    // أضفنا الأعمدة الجديدة، وجعلنا اسم المعلم رابطاً للصفحة الجديدة
                     tbody.innerHTML += `
-                        <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 font-bold text-gray-800 flex items-center">${teacher.full_name} ${statusBadge}</td>
-                            <td class="px-6 py-4 text-gray-600">${teacher.email}</td>
-                            <td class="px-6 py-4 text-gray-500">${date}</td>
+                        <tr class="hover:bg-gray-50 transition border-b">
                             <td class="px-6 py-4">
-                                <button onclick="openEditModal('${teacher.id}', '${teacher.full_name}', '${teacher.email}')" class="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded ml-2 font-medium transition"><i class="fas fa-edit mr-1"></i> تعديل</button>
+                                <a href="admin_teacher_details.html?id=${teacher.id}" class="font-bold text-emerald-700 hover:underline hover:text-emerald-900 block">${teacher.full_name} <i class="fas fa-external-link-alt text-xs ml-1"></i></a>
+                                <span class="text-xs text-gray-400">${teacher.email}</span>
+                            </td>
+                            <td class="px-6 py-4 font-bold text-blue-600 bg-blue-50 text-center rounded">${teacher.students_count} طلاب</td>
+                            <td class="px-6 py-4 font-bold text-purple-600 bg-purple-50 text-center rounded">${teacher.weekly_sessions} حلقات</td>
+                            <td class="px-6 py-4">${statusBadge}</td>
+                            <td class="px-6 py-4">
+                                <button onclick="openEditModal('${teacher.id}', '${teacher.full_name}', '${teacher.email}')" class="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded ml-2">تعديل</button>
                                 ${actionButton}
                             </td>
                         </tr>
                     `;
                 });
             } else {
-                tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-400 font-medium">لا يوجد معلمين حالياً.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-400 font-medium">لا يوجد معلمين حالياً.</td></tr>';
             }
         }
 
