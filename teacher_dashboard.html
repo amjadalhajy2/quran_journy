@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>بوابة المعلم - الرئيسية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style> @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap'); body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; } </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="flex h-screen overflow-hidden text-gray-800">
+    
+    <!-- القائمة الجانبية للمعلم -->
+    <aside class="w-64 bg-[#1e293b] text-white flex flex-col hidden md:flex shadow-2xl z-20">
+        <div class="p-6 text-xl font-bold border-b border-gray-700 flex items-center text-emerald-400">
+            <i class="fas fa-book-reader mr-2 ml-2"></i> بوابة المعلم
+        </div>
+        <nav class="flex-1 p-4 space-y-2 text-sm font-medium">
+            <a href="teacher_dashboard.html" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow"><i class="fas fa-home ml-3"></i> الرئيسية</a>
+            <a href="teacher_students_list.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-users ml-3"></i> قائمة طلابي</a>
+            <a href="teacher_interviews.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-clipboard-list ml-3"></i> المقابلات والتقييم</a>
+            <a href="teacher_virtual_session.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-video ml-3"></i> غرفة الإقراء الافتراضية</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto">
+        <header class="bg-white shadow-sm p-4 flex justify-between items-center z-10 sticky top-0 border-b">
+            <h2 class="text-xl font-bold text-gray-700">مرحباً بك، <span id="teacherName" class="text-emerald-600">...</span></h2>
+            <button onclick="logout()" class="text-red-500 hover:bg-red-50 px-4 py-2 rounded-lg font-bold transition"><i class="fas fa-sign-out-alt ml-2"></i>خروج</button>
+        </header>
+
+        <div class="p-8 space-y-8">
+            <!-- البطاقات الإحصائية -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-emerald-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-bold mb-1">الطلاب الموكلين إليك</p>
+                        <h3 class="text-3xl font-black text-emerald-600" id="statStudents">0</h3>
+                    </div>
+                    <div class="bg-emerald-50 p-4 rounded-full text-emerald-500 text-2xl"><i class="fas fa-user-graduate"></i></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-blue-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-bold mb-1">حلقاتك اليوم</p>
+                        <h3 class="text-3xl font-black text-blue-600" id="statSessionsToday">0</h3>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-full text-blue-500 text-2xl"><i class="fas fa-calendar-day"></i></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-orange-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-bold mb-1">مقابلات قادمة</p>
+                        <h3 class="text-3xl font-black text-orange-600" id="statInterviews">0</h3>
+                    </div>
+                    <div class="bg-orange-50 p-4 rounded-full text-orange-500 text-2xl"><i class="fas fa-clock"></i></div>
+                </div>
+            </div>
+
+            <!-- جدول حلقات اليوم -->
+            <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+                <div class="p-6 border-b bg-gray-50 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-800"><i class="fas fa-list-ul text-emerald-600 ml-2"></i> جدول حلقاتك لهذا اليوم</h3>
+                    <span class="text-sm bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-bold" id="todayDate"></span>
+                </div>
+                <div class="p-6 text-center text-gray-500 font-bold" id="todaySessions">
+                    <!-- سيتم تعبئته لاحقاً من قاعدة البيانات -->
+                    لا توجد حلقات مجدولة لك هذا اليوم.
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="supabase.js"></script>
+    <script>
+        document.getElementById('todayDate').textContent = new Date().toLocaleDateString('ar-OM', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+        window.addEventListener('load', async () => {
+            const { data: { user } } = await window.supabase.auth.getUser();
+            if(!user) return window.location.href = 'login.html';
+            
+            document.getElementById('teacherName').textContent = user.user_metadata?.full_name || 'أستاذي الفاضل';
+
+            // جلب عدد الطلاب
+            const { count } = await window.supabase.from('student_profiles').select('*', { count: 'exact', head: true }).eq('teacher_id', user.id);
+            document.getElementById('statStudents').textContent = count || 0;
+        });
+
+        async function logout() {
+            await window.supabase.auth.signOut();
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>
