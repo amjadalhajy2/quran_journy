@@ -28,7 +28,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-b pb-6">
                     <div>
                         <label class="block font-bold text-sm mb-2 text-gray-700">اختر الطالب (بانتظار التقييم)</label>
-                        <select id="studentSelect" class="w-full border rounded-lg p-3 bg-gray-50 focus:border-emerald-500 font-bold" required>
+                        <select id="studentSelect" onchange="handleStudentSelection()" class="w-full border rounded-lg p-3 bg-gray-50 focus:border-emerald-500 font-bold" required>
                             <option value="">جاري تحميل الطلاب...</option>
                         </select>
                     </div>
@@ -40,6 +40,20 @@
                             <option value="متقدم">متقدم (حفظ وإتقان)</option>
                         </select>
                     </div>
+                </div>
+
+                <!-- قسم جدولة الحصص الديناميكي -->
+                <div id="scheduleSection" class="border-b pb-6 hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-emerald-700"><i class="far fa-calendar-alt ml-2"></i> جدولة الحصص الأسبوعية</h3>
+                        <span id="packageInfoBadge" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold"></span>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg text-sm text-blue-800 font-bold mb-4">
+                        <i class="fas fa-info-circle ml-1"></i> بناءً على باقة الطالب، قم بتحديد أيام وأوقات الحصص. سيقوم النظام بجدولتها لمدة شهر كامل للأمام تلقائياً.
+                    </div>
+                    
+                    <!-- سيتم توليد حقول الأيام والأوقات هنا -->
+                    <div id="scheduleInputsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                 </div>
 
                 <!-- بناء الخطة المخصصة الذكية -->
@@ -56,20 +70,14 @@
                         </label>
                     </div>
 
-                    <!-- صندوق تحديد الأجزاء (شبكة اختيار) -->
                     <div id="partsInputGroup" class="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
-                        <label class="block font-bold text-sm mb-3 text-emerald-800"><i class="fas fa-check-square ml-1"></i> حدد الأجزاء المراد حفظها (يمكنك تحديد أكثر من جزء):</label>
-                        <div id="juzContainer" class="h-48 overflow-y-auto border border-emerald-100 rounded-lg p-3 bg-white grid grid-cols-2 md:grid-cols-4 gap-3 shadow-inner">
-                            <!-- سيتم توليد الـ 30 جزء هنا بالجافاسكربت -->
-                        </div>
+                        <label class="block font-bold text-sm mb-3 text-emerald-800"><i class="fas fa-check-square ml-1"></i> حدد الأجزاء المراد حفظها:</label>
+                        <div id="juzContainer" class="h-48 overflow-y-auto border border-emerald-100 rounded-lg p-3 bg-white grid grid-cols-2 md:grid-cols-4 gap-3 shadow-inner"></div>
                     </div>
 
-                    <!-- صندوق تحديد السور (شبكة اختيار) -->
                     <div id="surahsInputGroup" class="bg-emerald-50 p-4 rounded-lg border border-emerald-200 hidden">
-                        <label class="block font-bold text-sm mb-3 text-emerald-800"><i class="fas fa-check-square ml-1"></i> حدد السور المراد حفظها (يمكنك تحديد أكثر من سورة):</label>
-                        <div id="surahsContainer" class="h-56 overflow-y-auto border border-emerald-100 rounded-lg p-3 bg-white grid grid-cols-2 md:grid-cols-4 gap-3 shadow-inner">
-                            <!-- سيتم توليد الـ 114 سورة هنا بالجافاسكربت -->
-                        </div>
+                        <label class="block font-bold text-sm mb-3 text-emerald-800"><i class="fas fa-check-square ml-1"></i> حدد السور المراد حفظها:</label>
+                        <div id="surahsContainer" class="h-56 overflow-y-auto border border-emerald-100 rounded-lg p-3 bg-white grid grid-cols-2 md:grid-cols-4 gap-3 shadow-inner"></div>
                     </div>
                 </div>
 
@@ -81,7 +89,7 @@
                     </div>
                     <div>
                         <label class="block font-bold text-sm mb-2 text-gray-700">ملاحظات المعلم وتوصياته للطالب</label>
-                        <textarea id="evalNotes" rows="3" class="w-full border rounded-lg p-3 focus:border-emerald-500" placeholder="مثال: يحتاج للتركيز على مخارج الحروف..." required></textarea>
+                        <textarea id="evalNotes" rows="3" class="w-full border rounded-lg p-3 focus:border-emerald-500" required></textarea>
                     </div>
                 </div>
                 
@@ -89,7 +97,7 @@
 
                 <div class="flex justify-end pt-4">
                     <button type="submit" id="saveEvalBtn" class="bg-emerald-600 text-white px-8 py-3 rounded-lg font-bold shadow hover:bg-emerald-700 transition">
-                        <i class="fas fa-save ml-2"></i> اعتماد التقييم والخطة
+                        <i class="fas fa-save ml-2"></i> اعتماد التقييم والجدول
                     </button>
                 </div>
             </form>
@@ -99,33 +107,19 @@
     <script src="supabase.js"></script>
     <script>
         let currentUserId = null;
+        let pendingStudentsData = []; // لحفظ تفاصيل الباقات للطلاب
 
-        // توليد قائمة الأجزاء (30 جزء)
+        // توليد قوائم الأجزاء والسور
         const juzContainer = document.getElementById('juzContainer');
         for(let i=1; i<=30; i++) {
-            juzContainer.innerHTML += `
-                <label class="flex items-center space-x-2 space-x-reverse cursor-pointer hover:bg-emerald-50 p-2 rounded transition border border-transparent hover:border-emerald-200">
-                    <input type="checkbox" name="juz_check" value="الجزء ${i}" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
-                    <span class="text-sm font-bold text-gray-700">الجزء ${i}</span>
-                </label>
-            `;
+            juzContainer.innerHTML += `<label class="flex items-center space-x-2 space-x-reverse cursor-pointer hover:bg-emerald-50 p-2 rounded transition border border-transparent hover:border-emerald-200"><input type="checkbox" name="juz_check" value="الجزء ${i}" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"><span class="text-sm font-bold text-gray-700">الجزء ${i}</span></label>`;
         }
-
-        // توليد قائمة سور القرآن (114 سورة)
-        const surahsList = [
-            'الفاتحة', 'البقرة', 'آل عمران', 'النساء', 'المائدة', 'الأنعام', 'الأعراف', 'الأنفال', 'التوبة', 'يونس', 'هود', 'يوسف', 'الرعد', 'إبراهيم', 'الحجر', 'النحل', 'الإسراء', 'الكهف', 'مريم', 'طه', 'الأنبياء', 'الحج', 'المؤمنون', 'النور', 'الفرقان', 'الشعراء', 'النمل', 'القصص', 'العنكبوت', 'الروم', 'لقمان', 'السجدة', 'الأحزاب', 'سبأ', 'فاطر', 'يس', 'الصافات', 'ص', 'الزمر', 'غافر', 'فصلت', 'الشورى', 'الزخرف', 'الدخان', 'الجاثية', 'الأحقاف', 'محمد', 'الفتح', 'الحجرات', 'ق', 'الذاريات', 'الطور', 'النجم', 'القمر', 'الرحمن', 'الواقعة', 'الحديد', 'المجادلة', 'الحشر', 'الممتحنة', 'الصف', 'الجمعة', 'المنافقون', 'التغابن', 'الطلاق', 'التحريم', 'الملك', 'القلم', 'الحاقة', 'المعارج', 'نوح', 'الجن', 'المزمل', 'المدثر', 'القيامة', 'الإنسان', 'المرسلات', 'النبأ', 'النازعات', 'عبس', 'التكوير', 'الانفطار', 'المطففين', 'الانشقاق', 'البروج', 'الطارق', 'الأعلى', 'الغاشية', 'الفجر', 'البلد', 'الشمس', 'الليل', 'الضحى', 'الشرح', 'التين', 'العلق', 'القدر', 'البينة', 'الزلزلة', 'العاديات', 'القارعة', 'التكاثر', 'العصر', 'الهمزة', 'الفيل', 'قريش', 'الماعون', 'الكوثر', 'الكافرون', 'النصر', 'المسد', 'الإخلاص', 'الفلق', 'الناس'
-        ];
+        const surahsList = ['الفاتحة', 'البقرة', 'آل عمران', 'النساء', 'المائدة', 'الأنعام', 'الأعراف', 'الأنفال', 'التوبة', 'يونس', 'هود', 'يوسف', 'الرعد', 'إبراهيم', 'الحجر', 'النحل', 'الإسراء', 'الكهف', 'مريم', 'طه', 'الأنبياء', 'الحج', 'المؤمنون', 'النور', 'الفرقان', 'الشعراء', 'النمل', 'القصص', 'العنكبوت', 'الروم', 'لقمان', 'السجدة', 'الأحزاب', 'سبأ', 'فاطر', 'يس', 'الصافات', 'ص', 'الزمر', 'غافر', 'فصلت', 'الشورى', 'الزخرف', 'الدخان', 'الجاثية', 'الأحقاف', 'محمد', 'الفتح', 'الحجرات', 'ق', 'الذاريات', 'الطور', 'النجم', 'القمر', 'الرحمن', 'الواقعة', 'الحديد', 'المجادلة', 'الحشر', 'الممتحنة', 'الصف', 'الجمعة', 'المنافقون', 'التغابن', 'الطلاق', 'التحريم', 'الملك', 'القلم', 'الحاقة', 'المعارج', 'نوح', 'الجن', 'المزمل', 'المدثر', 'القيامة', 'الإنسان', 'المرسلات', 'النبأ', 'النازعات', 'عبس', 'التكوير', 'الانفطار', 'المطففين', 'الانشقاق', 'البروج', 'الطارق', 'الأعلى', 'الغاشية', 'الفجر', 'البلد', 'الشمس', 'الليل', 'الضحى', 'الشرح', 'التين', 'العلق', 'القدر', 'البينة', 'الزلزلة', 'العاديات', 'القارعة', 'التكاثر', 'العصر', 'الهمزة', 'الفيل', 'قريش', 'الماعون', 'الكوثر', 'الكافرون', 'النصر', 'المسد', 'الإخلاص', 'الفلق', 'الناس'];
         const surahsContainer = document.getElementById('surahsContainer');
         surahsList.forEach((surah, index) => {
-            surahsContainer.innerHTML += `
-                <label class="flex items-center space-x-2 space-x-reverse cursor-pointer hover:bg-emerald-50 p-2 rounded transition border border-transparent hover:border-emerald-200">
-                    <input type="checkbox" name="surah_check" value="${surah}" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
-                    <span class="text-sm font-bold text-gray-700">${index + 1}. ${surah}</span>
-                </label>
-            `;
+            surahsContainer.innerHTML += `<label class="flex items-center space-x-2 space-x-reverse cursor-pointer hover:bg-emerald-50 p-2 rounded transition border border-transparent hover:border-emerald-200"><input type="checkbox" name="surah_check" value="${surah}" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"><span class="text-sm font-bold text-gray-700">${index + 1}. ${surah}</span></label>`;
         });
 
-        // التبديل بين إدخال الأجزاء والسور
         function togglePlanInputs() {
             const planType = document.querySelector('input[name="planType"]:checked').value;
             if(planType === 'parts') {
@@ -142,67 +136,156 @@
             if(!user) return window.location.href = 'login.html';
             currentUserId = user.id;
             
-            const { data: students } = await window.supabase.from('student_profiles')
-                .select('user_id, users!student_profiles_user_id_fkey(full_name)')
-                .eq('teacher_id', currentUserId)
-                .eq('evaluation_status', 'pending');
-                
+            // جلب الطلاب بانتظار التقييم مع تفاصيل باقاتهم باستخدام الدالة الذكية
+            const { data: students, error } = await window.supabase.rpc('get_pending_eval_students', { p_teacher_id: currentUserId });
+            
             const sSelect = document.getElementById('studentSelect');
             sSelect.innerHTML = '<option value="">-- اختر طالباً --</option>';
+            
             if(students && students.length > 0) {
-                students.forEach(s => sSelect.innerHTML += `<option value="${s.user_id}">${s.users.full_name}</option>`);
+                pendingStudentsData = students;
+                students.forEach(s => sSelect.innerHTML += `<option value="${s.user_id}">${s.full_name}</option>`);
             } else {
                 sSelect.innerHTML = '<option value="">لا يوجد طلاب بانتظار التقييم حالياً</option>';
             }
         });
 
-        // حفظ التقييم والخطة
+        // دالة توليد حقول الأوقات عند اختيار الطالب
+        function handleStudentSelection() {
+            const studentId = document.getElementById('studentSelect').value;
+            const scheduleSection = document.getElementById('scheduleSection');
+            const container = document.getElementById('scheduleInputsContainer');
+            
+            if(!studentId) {
+                scheduleSection.classList.add('hidden');
+                return;
+            }
+
+            const studentData = pendingStudentsData.find(s => s.user_id === studentId);
+            document.getElementById('packageInfoBadge').textContent = `الاستحقاق: ${studentData.sessions_per_week} حصص | مدة الحصة: ${studentData.session_duration} دقيقة`;
+            
+            container.innerHTML = '';
+            // توليد الحقول بناءً على عدد الحصص المستحقة
+            for(let i=0; i<studentData.sessions_per_week; i++) {
+                container.innerHTML += `
+                    <div class="bg-white border p-4 rounded-lg flex space-x-4 space-x-reverse">
+                        <div class="w-1/2">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">الحصة ${i+1}: اليوم</label>
+                            <select class="schedule-day w-full border rounded p-2 text-sm font-bold bg-gray-50 outline-none focus:border-emerald-500" required>
+                                <option value="">اختر اليوم...</option>
+                                <option value="0">الأحد</option><option value="1">الإثنين</option><option value="2">الثلاثاء</option>
+                                <option value="3">الأربعاء</option><option value="4">الخميس</option><option value="5">الجمعة</option><option value="6">السبت</option>
+                            </select>
+                        </div>
+                        <div class="w-1/2">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">وقت البدء</label>
+                            <input type="time" class="schedule-time w-full border rounded p-2 text-sm font-bold bg-gray-50 outline-none focus:border-emerald-500" required>
+                        </div>
+                    </div>
+                `;
+            }
+            scheduleSection.classList.remove('hidden');
+        }
+
+        // دالة تحويل أوقات البدء إلى تواريخ وجلسات فعلية لمدة 4 أسابيع
+        function generateSessionsArray(studentId, durationMins) {
+            const daysSelects = document.querySelectorAll('.schedule-day');
+            const timesInputs = document.querySelectorAll('.schedule-time');
+            let weeklySchedule = [];
+            
+            // جمع اختيارات المعلم
+            for(let i=0; i<daysSelects.length; i++) {
+                weeklySchedule.push({ day: parseInt(daysSelects[i].value), time: timesInputs[i].value });
+            }
+
+            let sessionsToInsert = [];
+            let today = new Date();
+            
+            // توليد التواريخ لـ 28 يوم قادم (4 أسابيع)
+            for(let i=0; i<28; i++) {
+                let currentDate = new Date(today);
+                currentDate.setDate(today.getDate() + i);
+                let currentDayNum = currentDate.getDay(); // 0-6
+
+                // هل هذا اليوم ضمن جدول الطالب؟
+                let matchedSchedule = weeklySchedule.find(s => s.day === currentDayNum);
+                if(matchedSchedule) {
+                    const dateStr = currentDate.toISOString().split('T')[0];
+                    const startTimeStr = matchedSchedule.time;
+                    
+                    // حساب وقت الانتهاء بزيادة دقائق الباقة
+                    let [hours, mins] = startTimeStr.split(':').map(Number);
+                    let endDate = new Date(currentDate);
+                    endDate.setHours(hours, mins + durationMins, 0, 0);
+                    const endTimeStr = endDate.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
+
+                    sessionsToInsert.push({
+                        teacher_id: currentUserId,
+                        student_id: studentId,
+                        session_date: dateStr,
+                        start_time: startTimeStr + ':00',
+                        end_time: endTimeStr + ':00',
+                        status: 'scheduled'
+                    });
+                }
+            }
+            return sessionsToInsert;
+        }
+
+        // حفظ التقييم والخطة والحصص
         document.getElementById('evaluationForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('saveEvalBtn');
             const msg = document.getElementById('evalMsg');
-            
             const studentId = document.getElementById('studentSelect').value;
             const level = document.getElementById('levelSelect').value;
             const planType = document.querySelector('input[name="planType"]:checked').value;
             
             let partsStr = null, surahsStr = null;
-            
             if (planType === 'parts') {
-                // تجميع الأجزاء المحددة
                 const checkedParts = Array.from(document.querySelectorAll('input[name="juz_check"]:checked')).map(cb => cb.value);
                 if(checkedParts.length === 0) return alert('الرجاء تحديد جزء واحد على الأقل!');
-                partsStr = checkedParts.join('، '); // دمجها في نص واحد
+                partsStr = checkedParts.join('، ');
             } else {
-                // تجميع السور المحددة
                 const checkedSurahs = Array.from(document.querySelectorAll('input[name="surah_check"]:checked')).map(cb => cb.value);
                 if(checkedSurahs.length === 0) return alert('الرجاء تحديد سورة واحدة على الأقل!');
-                surahsStr = checkedSurahs.join('، '); // دمجها في نص واحد
+                surahsStr = checkedSurahs.join('، ');
             }
-            
-            if(!studentId) return alert('الرجاء التأكد من اختيار الطالب!');
             
             btn.disabled = true; btn.textContent = 'جاري الاعتماد...';
             msg.classList.add('hidden');
 
+            // 1. استخراج الحصص المجدولة
+            const studentData = pendingStudentsData.find(s => s.user_id === studentId);
+            const generatedSessions = generateSessionsArray(studentId, studentData.session_duration);
+
+            // 2. إدخال الحصص في جدول الحصص دفعة واحدة
+            const { error: sessionError } = await window.supabase.from('sessions').insert(generatedSessions);
+            if(sessionError) {
+                alert('حدث خطأ أثناء جدولة الحصص: ' + sessionError.message);
+                btn.disabled = false; btn.textContent = 'اعتماد التقييم والجدول';
+                return;
+            }
+
+            // 3. تحديث ملف الطالب لإنهاء حالة التقييم
             const { error } = await window.supabase.from('student_profiles')
                 .update({ 
                     evaluation_status: 'completed', 
                     student_level: level,
                     custom_plan_type: planType,
-                    target_parts: partsStr,    // تخزين النص المدمج (مثل: الجزء 1، الجزء 2)
-                    target_surahs: surahsStr   // تخزين النص المدمج (مثل: البقرة، آل عمران)
+                    target_parts: partsStr,    
+                    target_surahs: surahsStr   
                 })
                 .eq('user_id', studentId);
 
             if(error) {
-                msg.textContent = 'خطأ: ' + error.message;
-                msg.className = 'text-center p-3 rounded font-bold mt-4 bg-red-100 text-red-700 block';
-                btn.disabled = false; btn.textContent = 'اعتماد التقييم والخطة';
+                msg.textContent = 'تم جدولة الحصص ولكن حدث خطأ بملف الطالب: ' + error.message;
+                msg.className = 'text-center p-3 rounded font-bold mt-4 bg-orange-100 text-orange-700 block';
+                btn.disabled = false; btn.textContent = 'اعتماد التقييم والجدول';
             } else {
-                msg.textContent = 'تم إنجاز التقييم بنجاح وتحديد خطة الطالب بدقة!';
+                msg.textContent = 'تم إنجاز التقييم، وتحديد الخطة، وجدولة حصص الشهر كاملة بنجاح!';
                 msg.className = 'text-center p-3 rounded font-bold mt-4 bg-emerald-100 text-emerald-700 block';
-                setTimeout(() => window.location.href = 'teacher_dashboard.html', 2000);
+                setTimeout(() => window.location.href = 'teacher_dashboard.html', 3000);
             }
         });
     </script>
