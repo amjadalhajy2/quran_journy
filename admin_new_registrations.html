@@ -51,6 +51,21 @@
                 </table>
             </div>
         </div>
+
+        <!-- نافذة الاعتماد وتعيين المعلم -->
+    <div id="approveModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md">
+            <h3 class="text-xl font-bold mb-4 text-emerald-700">اعتماد الطالب وتعيين المعلم</h3>
+            <p class="text-sm text-gray-500 mb-4">يجب تعيين معلم للطالب قبل إتمام عملية الاعتماد ليتمكن من بدء خطته.</p>
+            <input type="hidden" id="pendingSubId">
+            <label class="block font-bold mb-2">اختر المعلم المشرف:</label>
+            <select id="teacherSelect" class="w-full border p-3 rounded-lg mb-6 font-bold"></select>
+            <div class="flex space-x-2 space-x-reverse">
+                <button onclick="confirmApprove()" class="w-full bg-emerald-600 text-white p-3 rounded-lg font-bold hover:bg-emerald-700">اعتماد وتعيين</button>
+                <button onclick="document.getElementById('approveModal').classList.add('hidden')" class="w-full bg-gray-200 p-3 rounded-lg font-bold hover:bg-gray-300">إلغاء</button>
+            </div>
+        </div>
+    </div>
     </main>
 
     <script src="supabase.js"></script>
@@ -122,20 +137,45 @@
 
         // دالة اعتماد الطلب
 // دالة اعتماد الطلب (باستخدام RPC لتجاوز حظر المتصفح)
-        async function approveRequest(subId) {
-            if(!confirm('هل أنت متأكد من صحة الإيصال المالي واعتماد هذا الطالب؟ (سيتم نقله لقائمة الطلاب المنتظمين)')) return;
+let availableTeachers = [];
+        // جلب المعلمين مرة واحدة عند التحميل
+        window.addEventListener('load', async () => {
+            const { data } = await window.supabase.from('users').select('id, full_name').eq('role', 'teacher');
+            availableTeachers = data || [];
+            loadPendingRequests();
+        });
 
-            const { error } = await window.supabase.rpc('update_subscription_status', {
+        // فتح نافذة اختيار المعلم
+        function approveRequest(subId) {
+            document.getElementById('pendingSubId').value = subId;
+            const select = document.getElementById('teacherSelect');
+            select.innerHTML = '<option value="">-- اختر المعلم --</option>';
+            availableTeachers.forEach(t => { select.innerHTML += `<option value="${t.id}">${t.full_name}</option>`; });
+            
+            document.getElementById('approveModal').classList.remove('hidden');
+            document.getElementById('approveModal').classList.add('flex');
+        }
+
+        // تنفيذ الاعتماد والربط
+        async function confirmApprove() {
+            const subId = document.getElementById('pendingSubId').value;
+            const tId = document.getElementById('teacherSelect').value;
+            if(!tId) return alert('الرجاء اختيار معلم!');
+
+            const btn = document.querySelector('#approveModal button');
+            btn.disabled = true; btn.textContent = 'جاري الاعتماد...';
+
+            const { error } = await window.supabase.rpc('approve_student_with_teacher', {
                 p_sub_id: subId,
-                p_status: 'approved'
+                p_teacher_id: tId
             });
 
-            if (error) {
-                alert('حدث خطأ أثناء الاعتماد: ' + error.message);
-            } else {
-                // إعادة تحميل الجدول لاختفاء الطلب من قائمة الانتظار
+            if (error) alert('خطأ: ' + error.message);
+            else {
+                document.getElementById('approveModal').classList.add('hidden');
                 loadPendingRequests();
             }
+            btn.disabled = false; btn.textContent = 'اعتماد وتعيين';
         }
 
         // دالة رفض الطلب (باستخدام RPC لتجاوز حظر المتصفح)
