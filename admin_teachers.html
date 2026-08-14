@@ -194,7 +194,7 @@
                 .update({ is_active: newStatus })
                 .eq('id', id);
 
-            if (error) alert('حدث خطأ أثناء تغيير الحالة');
+            if (error) alert('رسالة الخطأ من السيرفر: ' + error.message);
             else loadTeachers(); // تحديث الجدول فوراً
         }
 
