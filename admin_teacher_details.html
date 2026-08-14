@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تفاصيل المعلم والجدول الزمني</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style> @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap'); body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; } </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="flex flex-col h-screen overflow-hidden text-gray-800">
+    <!-- شريط علوي بسيط للرجوع -->
+    <header class="bg-white shadow p-4 flex justify-between items-center z-10 relative">
+        <div class="flex items-center">
+            <a href="admin_teachers.html" class="text-gray-500 hover:text-emerald-600 bg-gray-100 p-2 rounded-lg ml-4"><i class="fas fa-arrow-right"></i> رجوع للمعلمين</a>
+            <h2 class="text-xl font-bold text-gray-700">ملف المعلم: <span id="teacherNameHeader" class="text-emerald-600">جاري التحميل...</span></h2>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-6 space-y-6">
+        
+        <!-- قسم الطلاب المسجلين -->
+        <div class="bg-white rounded-xl shadow-sm border p-6">
+            <h3 class="font-bold text-lg mb-4 text-emerald-700 border-b pb-2"><i class="fas fa-users ml-2"></i> الطلاب الموكلين للمعلم</h3>
+            <div id="studentsList" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <p class="text-gray-500 text-sm">جاري تحميل الطلاب...</p>
+            </div>
+        </div>
+
+        <!-- قسم الجدول الزمني الأسبوعي -->
+        <div class="bg-white rounded-xl shadow-sm border p-6">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h3 class="font-bold text-lg text-emerald-700"><i class="fas fa-calendar-week ml-2"></i> الجدول الأسبوعي للحلقات</h3>
+                <div class="flex items-center bg-gray-100 rounded-lg p-1">
+                    <button onclick="changeWeek(1)" class="px-4 py-1 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition"><i class="fas fa-chevron-right"></i> الأسبوع القادم</button>
+                    <span id="weekDisplay" class="px-4 font-bold text-emerald-700 text-sm">الأسبوع الحالي</span>
+                    <button onclick="changeWeek(-1)" class="px-4 py-1 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition">الأسبوع السابق <i class="fas fa-chevron-left"></i></button>
+                </div>
+            </div>
+
+            <!-- شبكة الأيام (أعمدة مرنة) -->
+            <div class="grid grid-cols-7 gap-3 min-w-[800px] overflow-x-auto" id="calendarGrid">
+                <!-- سيتم توليد الأيام والحلقات هنا عبر الجافاسكربت -->
+            </div>
+        </div>
+    </main>
+
+    <script src="supabase.js"></script>
+    <script>
+        // استخراج معرف المعلم من الرابط
+        const urlParams = new URLSearchParams(window.location.search);
+        const teacherId = urlParams.get('id');
+        let currentWeekOffset = 0; // 0 = هذا الأسبوع، 1 = الأسبوع القادم
+
+        if(!teacherId) window.location.href = 'admin_teachers.html';
+
+        async function initPage() {
+            // جلب اسم المعلم
+            const { data: teacher } = await window.supabase.from('users').select('full_name').eq('id', teacherId).single();
+            if(teacher) document.getElementById('teacherNameHeader').textContent = teacher.full_name;
+
+            // جلب طلاب المعلم
+            const { data: students } = await window.supabase.from('student_profiles')
+                .select(`user_id, users!student_profiles_user_id_fkey(full_name), curriculums(name)`)
+                .eq('teacher_id', teacherId);
+            
+            const sList = document.getElementById('studentsList');
+            sList.innerHTML = '';
+            if(students && students.length > 0) {
+                students.forEach(s => {
+                    const cName = s.curriculums ? s.curriculums.name : 'بدون مقرر';
+                    sList.innerHTML += `<div class="bg-blue-50 border border-blue-100 p-4 rounded-lg"><h4 class="font-bold text-gray-800">${s.users.full_name}</h4><p class="text-xs font-bold text-blue-600 mt-1">${cName}</p></div>`;
+                });
+            } else {
+                sList.innerHTML = '<p class="text-gray-400 font-bold">لا يوجد طلاب موكلين لهذا المعلم بعد.</p>';
+            }
+
+            loadCalendar();
+        }
+
+        // نظام الجدولة الأسبوعية
+        async function loadCalendar() {
+            // حساب تواريخ الأسبوع المطلوبة بناءً على currentWeekOffset
+            const today = new Date();
+            const currentDay = today.getDay(); // 0 = الأحد
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - currentDay + (currentWeekOffset * 7));
+            startOfWeek.setHours(0,0,0,0);
+            
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setHours(23,59,59,999);
+
+            // عرض تاريخ الأسبوع
+            document.getElementById('weekDisplay').textContent = `${startOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})} - ${endOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})}`;
+
+            // جلب الحلقات من قاعدة البيانات لهذا الأسبوع
+            const { data: sessions } = await window.supabase.from('sessions')
+                .select('session_date, start_time, end_time, status, users!sessions_student_id_fkey(full_name)')
+                .eq('teacher_id', teacherId)
+                .gte('session_date', startOfWeek.toISOString().split('T')[0])
+                .lte('session_date', endOfWeek.toISOString().split('T')[0]);
+
+            // بناء الشبكة
+            const daysNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            for(let i=0; i<7; i++) {
+                const dayDate = new Date(startOfWeek);
+                dayDate.setDate(startOfWeek.getDate() + i);
+                const dateString = dayDate.toISOString().split('T')[0];
+                
+                // تصفية حلقات هذا اليوم
+                const daySessions = (sessions || []).filter(s => s.session_date === dateString);
+                
+                // بناء العمود
+                let colHtml = `<div class="bg-gray-50 border rounded-xl overflow-hidden min-h-[300px] flex flex-col">
+                                <div class="bg-gray-200 text-center py-2 border-b">
+                                    <h4 class="font-bold text-gray-700">${daysNames[i]}</h4>
+                                    <span class="text-xs text-gray-500">${dayDate.toLocaleDateString('ar-OM', {month:'numeric', day:'numeric'})}</span>
+                                </div>
+                                <div class="p-2 space-y-2 flex-1">`;
+                
+                if(daySessions.length > 0) {
+                    daySessions.sort((a,b) => a.start_time.localeCompare(b.start_time)).forEach(sess => {
+                        const sTime = sess.start_time.substring(0,5); // اختصار الثواني
+                        const eTime = sess.end_time.substring(0,5);
+                        colHtml += `<div class="bg-emerald-100 border border-emerald-300 p-2 rounded text-sm relative">
+                            <div class="font-bold text-emerald-800 text-xs mb-1"><i class="far fa-clock"></i> ${sTime} - ${eTime}</div>
+                            <div class="font-bold text-gray-800">${sess.users.full_name}</div>
+                        </div>`;
+                    });
+                } else {
+                    colHtml += `<div class="text-center text-gray-400 text-xs mt-4">لا توجد حلقات</div>`;
+                }
+
+                colHtml += `</div></div>`;
+                grid.innerHTML += colHtml;
+            }
+        }
+
+        function changeWeek(direction) {
+            currentWeekOffset += direction;
+            loadCalendar();
+        }
+
+        window.addEventListener('load', initPage);
+    </script>
+</body>
+</html>
