@@ -10,7 +10,6 @@
 </head>
 <body class="flex h-screen overflow-hidden text-gray-800">
     
-    <!-- القائمة الجانبية للمعلم -->
     <aside class="w-64 bg-[#1e293b] text-white flex flex-col hidden md:flex shadow-2xl z-20">
         <div class="p-6 text-xl font-bold border-b border-gray-700 flex items-center text-emerald-400">
             <i class="fas fa-book-reader mr-2 ml-2"></i> بوابة المعلم
@@ -18,7 +17,7 @@
         <nav class="flex-1 p-4 space-y-2 text-sm font-medium">
             <a href="teacher_dashboard.html" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow"><i class="fas fa-home ml-3"></i> الرئيسية</a>
             <a href="teacher_students_list.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-users ml-3"></i> قائمة طلابي</a>
-            <a href="teacher_interviews.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-clipboard-list ml-3"></i> المقابلات والتقييم</a>
+            <a href="teacher_interviews.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-clipboard-list ml-3"></i> التقييم المبدئي والدوري</a>
             <a href="teacher_virtual_session.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-video ml-3"></i> غرفة الإقراء الافتراضية</a>
         </nav>
     </aside>
@@ -34,36 +33,48 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-emerald-100 flex items-center justify-between">
                     <div>
-                        <p class="text-gray-500 text-sm font-bold mb-1">الطلاب الموكلين إليك</p>
+                        <p class="text-gray-500 text-sm font-bold mb-1">إجمالي طلابك</p>
                         <h3 class="text-3xl font-black text-emerald-600" id="statStudents">0</h3>
                     </div>
                     <div class="bg-emerald-50 p-4 rounded-full text-emerald-500 text-2xl"><i class="fas fa-user-graduate"></i></div>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-blue-100 flex items-center justify-between">
                     <div>
-                        <p class="text-gray-500 text-sm font-bold mb-1">حلقاتك اليوم</p>
+                        <p class="text-gray-500 text-sm font-bold mb-1">حصصك لليوم المحدد</p>
                         <h3 class="text-3xl font-black text-blue-600" id="statSessionsToday">0</h3>
                     </div>
                     <div class="bg-blue-50 p-4 rounded-full text-blue-500 text-2xl"><i class="fas fa-calendar-day"></i></div>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-orange-100 flex items-center justify-between">
                     <div>
-                        <p class="text-gray-500 text-sm font-bold mb-1">مقابلات قادمة</p>
-                        <h3 class="text-3xl font-black text-orange-600" id="statInterviews">0</h3>
+                        <p class="text-gray-500 text-sm font-bold mb-1">طلاب بانتظار التقييم</p>
+                        <h3 class="text-3xl font-black text-orange-600" id="statPendingEval">0</h3>
                     </div>
-                    <div class="bg-orange-50 p-4 rounded-full text-orange-500 text-2xl"><i class="fas fa-clock"></i></div>
+                    <div class="bg-orange-50 p-4 rounded-full text-orange-500 text-2xl"><i class="fas fa-user-clock"></i></div>
                 </div>
             </div>
 
-            <!-- جدول حلقات اليوم -->
+            <!-- جدول الحصص اليومي الديناميكي -->
             <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-                <div class="p-6 border-b bg-gray-50 flex justify-between items-center">
-                    <h3 class="font-bold text-gray-800"><i class="fas fa-list-ul text-emerald-600 ml-2"></i> جدول حلقاتك لهذا اليوم</h3>
-                    <span class="text-sm bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-bold" id="todayDate"></span>
+                <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-800"><i class="fas fa-list-ul text-emerald-600 ml-2"></i> جدول الحصص</h3>
+                    <div class="flex items-center space-x-2 space-x-reverse bg-white border rounded-lg p-1">
+                        <button onclick="changeDay(1)" class="px-3 py-1 hover:bg-gray-100 rounded text-gray-600 font-bold transition">التالي <i class="fas fa-chevron-left ml-1"></i></button>
+                        <span class="px-4 font-bold text-emerald-700 text-sm min-w-[150px] text-center" id="displayDate">اليوم</span>
+                        <button onclick="changeDay(-1)" class="px-3 py-1 hover:bg-gray-100 rounded text-gray-600 font-bold transition"><i class="fas fa-chevron-right mr-1"></i> السابق</button>
+                        <button onclick="resetToToday()" class="px-3 py-1 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded font-bold transition mr-2 border-r">اليوم</button>
+                    </div>
                 </div>
-                <div class="p-6 text-center text-gray-500 font-bold" id="todaySessions">
-                    <!-- سيتم تعبئته لاحقاً من قاعدة البيانات -->
-                    لا توجد حلقات مجدولة لك هذا اليوم.
+                
+                <div class="p-0">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-white border-b">
+                            <tr><th class="px-6 py-4 text-gray-500">الوقت</th><th class="px-6 py-4 text-gray-500">الطالب</th><th class="px-6 py-4 text-gray-500">حالة الحصة</th></tr>
+                        </thead>
+                        <tbody id="dailySessionsTable" class="divide-y divide-gray-50">
+                            <tr><td colspan="3" class="p-8 text-center text-gray-400 font-bold">جاري تحميل الحصص...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -71,18 +82,72 @@
 
     <script src="supabase.js"></script>
     <script>
-        document.getElementById('todayDate').textContent = new Date().toLocaleDateString('ar-OM', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        let currentUserId = null;
+        let viewedDate = new Date(); // التاريخ المعروض حالياً
 
         window.addEventListener('load', async () => {
             const { data: { user } } = await window.supabase.auth.getUser();
             if(!user) return window.location.href = 'login.html';
+            currentUserId = user.id;
             
-            document.getElementById('teacherName').textContent = user.user_metadata?.full_name || 'أستاذي الفاضل';
+            document.getElementById('teacherName').textContent = user.user_metadata?.full_name || 'أستاذي';
 
-            // جلب عدد الطلاب
-            const { count } = await window.supabase.from('student_profiles').select('*', { count: 'exact', head: true }).eq('teacher_id', user.id);
-            document.getElementById('statStudents').textContent = count || 0;
+            // جلب عدد إجمالي الطلاب
+            const { count: totalStudents } = await window.supabase.from('student_profiles').select('*', { count: 'exact', head: true }).eq('teacher_id', currentUserId);
+            document.getElementById('statStudents').textContent = totalStudents || 0;
+
+            // جلب عدد الطلاب بانتظار التقييم
+            const { count: pendingEval } = await window.supabase.from('student_profiles').select('*', { count: 'exact', head: true }).eq('teacher_id', currentUserId).eq('evaluation_status', 'pending');
+            document.getElementById('statPendingEval').textContent = pendingEval || 0;
+
+            loadSchedule();
         });
+
+        async function loadSchedule() {
+            // تنسيق التاريخ للعرض
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('displayDate').textContent = viewedDate.toLocaleDateString('ar-OM', options);
+            
+            // تنسيق التاريخ للبحث في قاعدة البيانات (YYYY-MM-DD)
+            const dateStr = viewedDate.toISOString().split('T')[0];
+
+            // جلب الحصص لهذا اليوم
+            const { data, error } = await window.supabase.from('sessions')
+                .select(`id, start_time, end_time, status, users!sessions_student_id_fkey(full_name)`)
+                .eq('teacher_id', currentUserId)
+                .eq('session_date', dateStr)
+                .order('start_time', { ascending: true });
+
+            const tbody = document.getElementById('dailySessionsTable');
+            tbody.innerHTML = '';
+            
+            document.getElementById('statSessionsToday').textContent = data ? data.length : 0;
+
+            if(data && data.length > 0) {
+                data.forEach(s => {
+                    const time = `${s.start_time.substring(0,5)} - ${s.end_time.substring(0,5)}`;
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4 font-bold text-emerald-700" dir="ltr"><i class="far fa-clock mr-2"></i>${time}</td>
+                            <td class="px-6 py-4 font-bold">${s.users.full_name}</td>
+                            <td class="px-6 py-4"><span class="bg-yellow-50 text-yellow-600 px-3 py-1 rounded-full text-xs font-bold">مجدولة</span></td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="3" class="p-8 text-center text-gray-400 font-bold"><i class="far fa-calendar-times text-3xl mb-3 block"></i>لا توجد حصص مجدولة في هذا اليوم.</td></tr>';
+            }
+        }
+
+        function changeDay(offset) {
+            viewedDate.setDate(viewedDate.getDate() + offset);
+            loadSchedule();
+        }
+
+        function resetToToday() {
+            viewedDate = new Date();
+            loadSchedule();
+        }
 
         async function logout() {
             await window.supabase.auth.signOut();
