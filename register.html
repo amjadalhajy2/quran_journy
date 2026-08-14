@@ -289,9 +289,11 @@ async function submitRegistration() {
         if(uploadError) throw new Error("حدث خطأ أثناء رفع الإيصال: " + uploadError.message);
 
         // 3. ربط الطالب بالمقرر المختار
-        await window.supabase.from('student_profiles')
-            .update({ curriculum_id: selectedCurriculum })
-            .eq('user_id', userId);
+// 3. إنشاء ملف الطالب وربطه بالمقرر المختار
+        const { error: profileError } = await window.supabase.from('student_profiles')
+            .insert({ user_id: userId, curriculum_id: selectedCurriculum });
+            
+        if(profileError) throw new Error("حدث خطأ أثناء حفظ المقرر: " + profileError.message);
 
         // 4. إنشاء سجل الفاتورة والاشتراك
         const { error: subError } = await window.supabase.from('subscriptions')
