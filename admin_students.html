@@ -62,12 +62,11 @@
     <script>
         let teachersList = [];
 
-        async function loadStudents() {
-            // جلب المعلمين للقائمة
+async function loadStudents() {
             const { data: teachers } = await window.supabase.from('users').select('id, full_name').eq('role', 'teacher');
             teachersList = teachers || [];
 
-            // استخدام الدالة المحدثة التي تجلب (الباقة والحالة)
+            // استخدام الدالة الخلفية المحدثة
             const { data: profiles, error } = await window.supabase.rpc('get_enrolled_students');
             
             const tbody = document.getElementById('studentsTable');
@@ -75,10 +74,12 @@
             
             if(profiles && profiles.length > 0) {
                 profiles.forEach(p => {
-                    const currName = p.curriculum_name ? p.curriculum_name : '<span class="text-red-500">غير محدد</span>';
+                    // تحديد شكل الخطة للعرض للمدير
+                    let planText = '<span class="text-orange-500 text-xs">بانتظار تقييم المعلم</span>';
+                    if (p.custom_plan_type === 'parts') planText = `حفظ ${p.target_parts} أجزاء`;
+                    else if (p.custom_plan_type === 'surahs') planText = `سور: ${p.target_surahs}`;
+
                     const pkgName = p.package_name || 'غير معروف';
-                    
-                    // حالة الاشتراك (بما أنهم في هذه الصفحة فهم معتمدون، ولكن نعرضها للشفافية)
                     const statusBadge = p.sub_status === 'approved' 
                         ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">نشط</span>' 
                         : `<span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold">${p.sub_status}</span>`;
@@ -89,7 +90,7 @@
                     tbody.innerHTML += `
                         <tr class="hover:bg-gray-50 border-b transition">
                             <td class="px-6 py-4 font-bold">${p.full_name}<br><span class="text-xs text-gray-400 font-normal">${p.email}</span></td>
-                            <td class="px-6 py-4 font-bold text-emerald-600">${currName}</td>
+                            <td class="px-6 py-4 font-bold text-emerald-600">${planText}</td>
                             <td class="px-6 py-4"><span class="bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold text-xs">${pkgName}</span></td>
                             <td class="px-6 py-4 text-center">${statusBadge}</td>
                             <td class="px-6 py-4 font-bold">${teacherName}</td>
