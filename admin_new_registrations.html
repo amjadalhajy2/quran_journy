@@ -2,18 +2,35 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مدير النظام - طلبات التسجيل</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style> body { font-family: 'Tajawal', sans-serif; background-color: #f4f7f6; } </style>
+    <style> @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap'); body { font-family: 'Tajawal', sans-serif; background-color: #f4f7f6; } </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="flex h-screen overflow-hidden text-gray-800">
-    <!-- انسخ نفس القائمة الجانبية هنا -->
+<body class="flex h-screen overflow-hidden text-gray-800 relative">
     
+    <!-- القائمة الجانبية -->
+    <aside class="w-64 bg-[#1a2b3c] text-white flex flex-col hidden md:flex shadow-2xl z-20">
+        <div class="p-6 text-xl font-bold border-b border-gray-700 flex items-center">
+            <i class="fas fa-shield-alt text-emerald-400 mr-2 ml-2"></i> الإدارة العليا
+        </div>
+        <nav class="flex-1 p-4 space-y-2 text-sm font-medium">
+            <a href="admin_dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-chart-pie ml-3"></i> لوحة المؤشرات</a>
+            <a href="admin_teachers.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-chalkboard-teacher ml-3"></i> إدارة المعلمين</a>
+            <a href="admin_new_registrations.html" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow"><i class="fas fa-user-plus ml-3"></i> طلبات التسجيل الجديدة</a>
+            <a href="admin_students.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-user-graduate ml-3"></i> إدارة الطلاب المنتظمين</a>
+            <a href="admin_finances.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-file-invoice-dollar ml-3"></i> الإدارة المالية</a>
+            <a href="admin_packages.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-box ml-3"></i> إدارة الباقات</a>
+            <a href="admin_curriculum.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-book-open ml-3"></i> إدارة المقررات</a>
+        </nav>
+    </aside>
+
+    <!-- المحتوى الرئيسي -->
     <main class="flex-1 flex flex-col overflow-y-auto bg-gray-50">
-        <header class="bg-white shadow-sm p-4 border-b">
-            <h2 class="text-2xl font-bold text-gray-700">طلبات التسجيل بانتظار المقابلة</h2>
+        <header class="bg-white shadow-sm p-4 flex justify-between items-center border-b z-10 sticky top-0">
+            <h2 class="text-2xl font-bold text-gray-700">طلبات التسجيل قيد المراجعة</h2>
         </header>
 
         <div class="p-8">
@@ -21,13 +38,15 @@
                 <table class="w-full text-right text-sm">
                     <thead class="bg-gray-50 text-gray-500 border-b">
                         <tr>
-                            <th class="px-6 py-4">اسم الطالب</th>
-                            <th class="px-6 py-4">تاريخ التسجيل</th>
-                            <th class="px-6 py-4">إسناد لمعلم (للمقابلة المبدئية)</th>
+                            <th class="px-6 py-4 font-bold">تاريخ الطلب</th>
+                            <th class="px-6 py-4 font-bold">اسم الطالب</th>
+                            <th class="px-6 py-4 font-bold">الباقة المطلوبة</th>
+                            <th class="px-6 py-4 font-bold">الإيصال المالي</th>
+                            <th class="px-6 py-4 font-bold text-center">القرار</th>
                         </tr>
                     </thead>
-                    <tbody id="pendingTable" class="divide-y divide-gray-100">
-                        <tr><td colspan="3" class="px-6 py-4 text-center">جاري التحميل...</td></tr>
+                    <tbody id="requestsTable" class="divide-y divide-gray-100">
+                        <tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 font-bold">جاري جلب الطلبات من قاعدة البيانات...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -36,37 +55,105 @@
 
     <script src="supabase.js"></script>
     <script>
-        async function loadPending() {
-            // جلب المعلمين للقائمة المنسدلة
-            const { data: teachers } = await window.supabase.from('users').select('id, full_name').eq('role', 'teacher');
-            let teacherOptions = '<option value="">-- اختر المعلم --</option>';
-            if(teachers) teachers.forEach(t => teacherOptions += `<option value="${t.id}">${t.full_name}</option>`);
+        // دالة جلب الطلبات المعلقة من جدول الاشتراكات
+        async function loadPendingRequests() {
+            const tbody = document.getElementById('requestsTable');
+            
+            // جلب البيانات مع ربطها بجدول المستخدمين والباقات
+            const { data, error } = await window.supabase
+                .from('subscriptions')
+                .select(`
+                    id,
+                    created_at,
+                    receipt_url,
+                    users ( full_name, email ),
+                    packages ( name, price )
+                `)
+                .eq('status', 'pending')
+                .order('created_at', { ascending: false });
 
-            // جلب الطلاب الذين حالتهم pending_interview
-            const { data: profiles } = await window.supabase.from('student_profiles').select('user_id, users(full_name, created_at)').eq('status', 'pending_interview');
-            
-            const tbody = document.getElementById('pendingTable');
             tbody.innerHTML = '';
-            
-            if(profiles && profiles.length > 0) {
-                profiles.forEach(prof => {
-                    const date = new Date(prof.users.created_at).toLocaleDateString('ar-OM');
+
+            if (error) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-red-500 font-bold">حدث خطأ أثناء جلب البيانات: ${error.message}</td></tr>`;
+                return;
+            }
+
+            if (data && data.length > 0) {
+                data.forEach(req => {
+                    const date = new Date(req.created_at).toLocaleDateString('ar-OM', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    
+                    // توليد الرابط المباشر لصورة الإيصال
+                    const { data: urlData } = window.supabase.storage.from('payment-receipts').getPublicUrl(req.receipt_url);
+                    const receiptUrl = urlData.publicUrl;
+
                     tbody.innerHTML += `
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 font-bold">${prof.users.full_name}</td>
-                            <td class="px-6 py-4 text-gray-500">${date}</td>
-                            <td class="px-6 py-4 flex items-center space-x-2 space-x-reverse">
-                                <select class="border rounded p-2 text-sm w-48">${teacherOptions}</select>
-                                <button class="bg-emerald-600 text-white px-3 py-2 rounded text-sm hover:bg-emerald-700">اعتماد الإسناد</button>
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4 text-gray-500 text-xs">${date}</td>
+                            <td class="px-6 py-4">
+                                <div class="font-bold text-gray-800">${req.users.full_name}</div>
+                                <div class="text-xs text-gray-500 mt-1">${req.users.email}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold">${req.packages.name}</span>
+                                <div class="text-xs font-bold text-gray-600 mt-1">${req.packages.price} ريال</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <a href="${receiptUrl}" target="_blank" class="flex items-center text-emerald-600 hover:text-emerald-800 font-bold transition">
+                                    <i class="fas fa-image text-xl ml-2"></i> عرض الإيصال
+                                </a>
+                            </td>
+                            <td class="px-6 py-4 flex justify-center space-x-2 space-x-reverse">
+                                <button onclick="approveRequest('${req.id}')" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white px-4 py-2 rounded-lg font-bold transition flex items-center shadow-sm">
+                                    <i class="fas fa-check ml-2"></i> اعتماد 
+                                </button>
+                                <button onclick="rejectRequest('${req.id}')" class="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white px-4 py-2 rounded-lg font-bold transition flex items-center shadow-sm">
+                                    <i class="fas fa-times ml-2"></i> رفض
+                                </button>
                             </td>
                         </tr>
                     `;
                 });
             } else {
-                tbody.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-gray-400">لا توجد طلبات جديدة.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400 font-bold text-lg"><i class="fas fa-inbox text-3xl mb-3 block"></i> لا توجد طلبات تسجيل جديدة قيد الانتظار حالياً.</td></tr>';
             }
         }
-        window.addEventListener('load', loadPending);
+
+        // دالة اعتماد الطلب
+        async function approveRequest(subId) {
+            if(!confirm('هل أنت متأكد من صحة الإيصال المالي واعتماد هذا الطالب؟ (سيتم نقله لقائمة الطلاب المنتظمين)')) return;
+
+            const { error } = await window.supabase
+                .from('subscriptions')
+                .update({ status: 'approved' })
+                .eq('id', subId);
+
+            if (error) {
+                alert('حدث خطأ أثناء الاعتماد: ' + error.message);
+            } else {
+                // إعادة تحميل الجدول بعد الاعتماد
+                loadPendingRequests();
+            }
+        }
+
+        // دالة رفض الطلب
+        async function rejectRequest(subId) {
+            if(!confirm('هل أنت متأكد من رفض هذا الطلب؟ (هذا الإجراء سيقوم بحذف الطلب من قائمة الانتظار)')) return;
+
+            const { error } = await window.supabase
+                .from('subscriptions')
+                .update({ status: 'rejected' })
+                .eq('id', subId);
+
+            if (error) {
+                alert('حدث خطأ أثناء الرفض: ' + error.message);
+            } else {
+                loadPendingRequests();
+            }
+        }
+
+        // تشغيل الدالة عند تحميل الصفحة
+        window.addEventListener('load', loadPendingRequests);
     </script>
 </body>
 </html>
