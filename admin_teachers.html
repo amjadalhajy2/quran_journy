@@ -158,31 +158,33 @@
         }
 
         // إرسال التعديل لقاعدة البيانات
-        document.getElementById('editTeacherForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('editBtn');
-            const msg = document.getElementById('editMsg');
-            btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+// إرسال التعديل لقاعدة البيانات عبر الدالة الخلفية (RPC)
+document.getElementById('editTeacherForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('editBtn');
+    const msg = document.getElementById('editMsg');
+    btn.disabled = true; btn.textContent = 'جاري الحفظ...';
 
-            const id = document.getElementById('editTeacherId').value;
-            const newName = document.getElementById('editTeacherName').value;
+    const id = document.getElementById('editTeacherId').value;
+    const newName = document.getElementById('editTeacherName').value;
 
-            const { error } = await window.supabase
-                .from('users')
-                .update({ full_name: newName })
-                .eq('id', id);
+    // استخدام دالة RPC بدلاً من التحديث المباشر للجدول
+    const { error } = await window.supabase.rpc('update_teacher_name', {
+        p_user_id: id,
+        p_full_name: newName
+    });
 
-            if (error) {
-                msg.textContent = 'حدث خطأ أثناء التعديل!';
-                msg.className = 'text-sm text-center font-bold p-2 rounded bg-red-50 text-red-600 mt-2 block';
-            } else {
-                msg.textContent = 'تم حفظ التعديلات بنجاح!';
-                msg.className = 'text-sm text-center font-bold p-2 rounded bg-green-50 text-green-600 mt-2 block';
-                loadTeachers(); // تحديث الجدول
-                setTimeout(() => closeModal('editTeacherModal'), 1000);
-            }
-            btn.disabled = false; btn.textContent = 'حفظ التعديلات';
-        });
+    if (error) {
+        msg.textContent = 'رسالة الخطأ: ' + error.message;
+        msg.className = 'text-sm text-center font-bold p-2 rounded bg-red-50 text-red-600 mt-2 block';
+    } else {
+        msg.textContent = 'تم حفظ التعديلات بنجاح!';
+        msg.className = 'text-sm text-center font-bold p-2 rounded bg-green-50 text-green-600 mt-2 block';
+        loadTeachers(); // تحديث الجدول
+        setTimeout(() => closeModal('editTeacherModal'), 1000);
+    }
+    btn.disabled = false; btn.textContent = 'حفظ التعديلات';
+});
 
         // دالة تغيير حالة المعلم (إيقاف / تفعيل)
         async function toggleStatus(id, newStatus) {
