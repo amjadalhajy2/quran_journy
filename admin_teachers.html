@@ -187,18 +187,20 @@ document.getElementById('editTeacherForm').addEventListener('submit', async (e) 
 });
 
         // دالة تغيير حالة المعلم (إيقاف / تفعيل)
-        async function toggleStatus(id, newStatus) {
-            const confirmMsg = newStatus ? 'هل أنت متأكد من تفعيل حساب هذا المعلم؟' : 'هل أنت متأكد من إيقاف هذا المعلم؟ (لن يتمكن من الدخول للمنصة)';
-            if(!confirm(confirmMsg)) return;
+// دالة تغيير حالة المعلم (إيقاف / تفعيل) عبر الدالة الخلفية (RPC)
+async function toggleStatus(id, newStatus) {
+    const confirmMsg = newStatus ? 'هل أنت متأكد من تفعيل حساب هذا المعلم؟' : 'هل أنت متأكد من إيقاف هذا المعلم؟ (لن يتمكن من الدخول للمنصة)';
+    if(!confirm(confirmMsg)) return;
 
-            const { error } = await window.supabase
-                .from('users')
-                .update({ is_active: newStatus })
-                .eq('id', id);
+    // استخدام دالة RPC بدلاً من التحديث المباشر
+    const { error } = await window.supabase.rpc('update_teacher_status', {
+        p_user_id: id,
+        p_is_active: newStatus
+    });
 
-            if (error) alert('رسالة الخطأ من السيرفر: ' + error.message);
-            else loadTeachers(); // تحديث الجدول فوراً
-        }
+    if (error) alert('خطأ من السيرفر: ' + error.message);
+    else loadTeachers(); // تحديث الجدول فوراً
+}
 
         // إضافة معلم جديد
         document.getElementById('addTeacherForm').addEventListener('submit', async (e) => {
