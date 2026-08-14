@@ -2,12 +2,14 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مدير النظام - إدارة المقررات</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style> body { font-family: 'Tajawal', sans-serif; background-color: #f4f7f6; } </style>
+    <style> @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap'); body { font-family: 'Tajawal', sans-serif; background-color: #f4f7f6; } </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="flex h-screen overflow-hidden text-gray-800">
+<body class="flex h-screen overflow-hidden text-gray-800 relative">
     
     <!-- القائمة الجانبية -->
     <aside class="w-64 bg-[#1a2b3c] text-white flex flex-col hidden md:flex shadow-2xl z-20">
@@ -21,13 +23,12 @@
             <a href="admin_students.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-user-graduate ml-3"></i> إدارة الطلاب المنتظمين</a>
             <a href="admin_finances.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-file-invoice-dollar ml-3"></i> الإدارة المالية</a>
             <a href="admin_packages.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-box ml-3"></i> إدارة الباقات</a>
-            <!-- الزر النشط -->
             <a href="admin_curriculum.html" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow"><i class="fas fa-book-open ml-3"></i> إدارة المقررات</a>
         </nav>
     </aside>
 
     <main class="flex-1 flex flex-col overflow-y-auto bg-gray-50">
-        <header class="bg-white shadow-sm p-4 border-b flex justify-between items-center">
+        <header class="bg-white shadow-sm p-4 border-b flex justify-between items-center z-10 sticky top-0">
             <h2 class="text-2xl font-bold text-gray-700">هيكلة خطط ومقررات الحفظ</h2>
         </header>
 
@@ -35,59 +36,128 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
                 <!-- إضافة خطة مرجعية جديدة -->
-                <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit">
+                <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit sticky top-24">
                     <h3 class="font-bold text-lg mb-4 text-emerald-600 border-b pb-2">إضافة مقرر جديد</h3>
-                    <form class="space-y-4" onsubmit="event.preventDefault(); alert('تم التصميم، يتطلب إنشاء جدول curriculums في Supabase لحفظ البيانات.');">
+                    <form id="addCurriculumForm" class="space-y-4">
                         <div>
                             <label class="block text-sm font-bold mb-1">اسم المقرر / الخطة</label>
-                            <input type="text" placeholder="مثال: حفظ الزهراوين (البقرة وآل عمران)" class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-emerald-500" required>
+                            <input type="text" id="currName" placeholder="مثال: حفظ الزهراوين" class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-emerald-500" required>
                         </div>
                         <div>
                             <label class="block text-sm font-bold mb-1">عدد الأجزاء المستهدفة</label>
-                            <input type="number" placeholder="مثال: 5" class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-emerald-500" required>
+                            <input type="number" id="currTarget" placeholder="مثال: 5" class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-emerald-500" required>
                         </div>
                         <div>
                             <label class="block text-sm font-bold mb-1">وصف المقرر للطلاب</label>
-                            <textarea rows="3" class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-emerald-500" placeholder="وصف المنهجية المتبعة في هذه الخطة..."></textarea>
+                            <textarea id="currDesc" rows="3" class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-emerald-500" placeholder="وصف المنهجية المتبعة..."></textarea>
                         </div>
-                        <button type="submit" class="w-full bg-emerald-600 text-white font-bold py-2 rounded shadow hover:bg-emerald-700 transition">
-                            حفظ الخطة
+                        
+                        <div id="formMsg" class="hidden text-sm font-bold p-2 text-center rounded"></div>
+
+                        <button type="submit" id="submitBtn" class="w-full bg-emerald-600 text-white font-bold py-3 rounded shadow hover:bg-emerald-700 transition">
+                            حفظ الخطة والمقرر
                         </button>
                     </form>
                 </div>
                 
                 <!-- قائمة المقررات الموجودة -->
-                <div class="lg:col-span-2 space-y-4">
-                    <!-- مثال على مقرر 1 -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start">
-                        <div>
-                            <h4 class="text-xl font-bold text-gray-800 mb-1">خطة الختم الشامل الميسر</h4>
-                            <p class="text-sm text-gray-500 mb-3">مسار متكامل لحفظ القرآن الكريم كاملاً بمعدل وجه واحد يومياً.</p>
-                            <span class="bg-blue-50 text-blue-700 px-3 py-1 rounded text-xs font-bold border border-blue-100"><i class="fas fa-bullseye mr-1"></i> المستهدف: 30 جزء</span>
-                        </div>
-                        <div class="flex space-x-2 space-x-reverse">
-                            <button class="text-gray-500 hover:text-emerald-600 bg-gray-50 hover:bg-emerald-50 p-2 rounded transition"><i class="fas fa-edit"></i></button>
-                            <button class="text-gray-500 hover:text-red-600 bg-gray-50 hover:bg-red-50 p-2 rounded transition"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
-
-                    <!-- مثال على مقرر 2 -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start">
-                        <div>
-                            <h4 class="text-xl font-bold text-gray-800 mb-1">خطة حفظ الأجزاء الخمسة الأخيرة</h4>
-                            <p class="text-sm text-gray-500 mb-3">مسار للمبتدئين يبدأ من سورة الأحقاف وحتى سورة الناس للتمهيد للختم.</p>
-                            <span class="bg-amber-50 text-amber-700 px-3 py-1 rounded text-xs font-bold border border-amber-100"><i class="fas fa-bullseye mr-1"></i> المستهدف: 5 أجزاء</span>
-                        </div>
-                        <div class="flex space-x-2 space-x-reverse">
-                            <button class="text-gray-500 hover:text-emerald-600 bg-gray-50 hover:bg-emerald-50 p-2 rounded transition"><i class="fas fa-edit"></i></button>
-                            <button class="text-gray-500 hover:text-red-600 bg-gray-50 hover:bg-red-50 p-2 rounded transition"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
+                <div id="curriculumsList" class="lg:col-span-2 space-y-4">
+                    <div class="text-center text-gray-500 bg-white p-6 rounded-xl border">جاري تحميل المقررات...</div>
                 </div>
 
             </div>
         </div>
     </main>
 
+    <script src="supabase.js"></script>
+    <script>
+        // دالة جلب المقررات من قاعدة البيانات
+        async function loadCurriculums() {
+            const { data, error } = await window.supabase
+                .from('curriculums')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            const listContainer = document.getElementById('curriculumsList');
+            listContainer.innerHTML = '';
+
+            if (data && data.length > 0) {
+                data.forEach(curr => {
+                    listContainer.innerHTML += `
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start transition hover:shadow-md">
+                            <div>
+                                <h4 class="text-xl font-bold text-gray-800 mb-1">${curr.name}</h4>
+                                <p class="text-sm text-gray-500 mb-3">${curr.description || 'لا يوجد وصف مضاف.'}</p>
+                                <span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-100">
+                                    <i class="fas fa-bullseye mr-1"></i> المستهدف: ${curr.target_parts} أجزاء
+                                </span>
+                            </div>
+                            <div class="flex space-x-2 space-x-reverse">
+                                <button onclick="deleteCurriculum('${curr.id}')" class="text-gray-400 hover:text-red-600 bg-gray-50 hover:bg-red-50 px-3 py-2 rounded-lg transition" title="حذف المقرر">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                listContainer.innerHTML = '<div class="text-center text-gray-500 bg-white p-8 rounded-xl border font-bold">لا توجد مقررات وخطط مضافة حالياً. ابدأ بإضافة مقرر جديد!</div>';
+            }
+        }
+
+        // إرسال المقرر الجديد لقاعدة البيانات
+        document.getElementById('addCurriculumForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const msg = document.getElementById('formMsg');
+            
+            btn.disabled = true; 
+            btn.textContent = 'جاري الحفظ...';
+            msg.classList.add('hidden');
+
+            const name = document.getElementById('currName').value;
+            const target = document.getElementById('currTarget').value;
+            const desc = document.getElementById('currDesc').value;
+
+            const { error } = await window.supabase.from('curriculums').insert([{
+                name: name,
+                target_parts: parseInt(target),
+                description: desc,
+                is_active: true
+            }]);
+
+            if (error) {
+                msg.textContent = 'حدث خطأ: ' + error.message;
+                msg.className = 'text-sm font-bold p-2 text-center rounded bg-red-50 text-red-600 mt-2 block';
+            } else {
+                msg.textContent = 'تم إضافة المقرر بنجاح!';
+                msg.className = 'text-sm font-bold p-2 text-center rounded bg-emerald-50 text-emerald-600 mt-2 block';
+                document.getElementById('addCurriculumForm').reset();
+                loadCurriculums(); // تحديث القائمة فوراً
+            }
+
+            btn.disabled = false; 
+            btn.textContent = 'حفظ الخطة والمقرر';
+            
+            // إخفاء رسالة النجاح بعد 3 ثواني
+            setTimeout(() => { msg.classList.add('hidden'); }, 3000);
+        });
+
+        // دالة حذف المقرر
+        async function deleteCurriculum(id) {
+            if(!confirm('هل أنت متأكد من حذف هذا المقرر؟ (تنبيه: سيتم إفراغ خانة المقرر لأي طالب مرتبط به)')) return;
+            
+            const { error } = await window.supabase.from('curriculums').delete().eq('id', id);
+            
+            if (error) {
+                alert('حدث خطأ أثناء الحذف: ' + error.message);
+            } else {
+                loadCurriculums();
+            }
+        }
+
+        // تشغيل دالة الجلب عند تحميل الصفحة
+        window.addEventListener('load', loadCurriculums);
+    </script>
 </body>
 </html>
