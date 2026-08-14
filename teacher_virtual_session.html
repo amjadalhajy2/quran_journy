@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>غرفة الإقراء التفاعلية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style> @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap'); body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; } </style>
+</head>
+<body class="flex h-screen overflow-hidden text-gray-200">
+    
+    <!-- القائمة الجانبية المصغرة للغرفة -->
+    <aside class="w-20 bg-gray-900 flex flex-col items-center py-6 border-l border-gray-800 z-10">
+        <a href="teacher_dashboard.html" class="text-gray-400 hover:text-white mb-8 transition" title="خروج من الغرفة"><i class="fas fa-sign-out-alt text-2xl"></i></a>
+        <button class="w-12 h-12 bg-emerald-600 rounded-full text-white mb-4 shadow-[0_0_15px_rgba(16,185,129,0.5)]"><i class="fas fa-microphone"></i></button>
+        <button class="w-12 h-12 bg-gray-700 hover:bg-gray-600 rounded-full text-white mb-4"><i class="fas fa-video"></i></button>
+        <button class="w-12 h-12 bg-gray-700 hover:bg-gray-600 rounded-full text-white mb-4"><i class="fas fa-share-square"></i></button>
+        <div class="flex-1"></div>
+        <button class="w-12 h-12 bg-red-600 hover:bg-red-700 rounded-full text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]"><i class="fas fa-phone-slash"></i></button>
+    </aside>
+
+    <main class="flex-1 flex flex-col md:flex-row">
+        
+        <!-- مساحة المصحف التفاعلي (يسار/وسط) -->
+        <div class="flex-1 bg-[#1e293b] p-4 flex flex-col relative border-l border-gray-800">
+            <div class="bg-gray-800 rounded-lg p-3 flex justify-between items-center mb-4">
+                <div class="font-bold text-emerald-400"><i class="fas fa-quran ml-2"></i> المصحف الشريف - سورة البقرة</div>
+                <div class="flex space-x-2 space-x-reverse">
+                    <button class="bg-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-600">السورة السابقة</button>
+                    <button class="bg-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-600">التالية</button>
+                </div>
+            </div>
+            
+            <!-- صورة مصحف تعبيرية -->
+            <div class="flex-1 bg-[#fef8e6] rounded-xl overflow-hidden flex items-center justify-center border-4 border-gray-700 relative shadow-inner text-gray-800 text-center p-8">
+                <div>
+                    <h1 class="text-4xl font-black mb-8 font-serif">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</h1>
+                    <p class="text-2xl leading-loose font-serif">
+                        الم ﴿١﴾ ذَٰلِكَ الْكِتَابُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ ﴿٢﴾ 
+                        الَّذِينَ يُؤْمِنُونَ بِالْغَيْبِ وَيُقِيمُونَ الصَّلَاةَ وَمِمَّا رَزَقْنَاهُمْ يُنفِقُونَ ﴿٣﴾
+                    </p>
+                </div>
+                <div class="absolute bottom-4 right-4 bg-emerald-700 text-white px-3 py-1 rounded text-sm shadow">الصفحة 2</div>
+            </div>
+        </div>
+
+        <!-- منطقة الفيديو والدردشة (يمين) -->
+        <div class="w-full md:w-96 bg-gray-900 flex flex-col">
+            <!-- فيديو الطالب -->
+            <div class="h-64 bg-black relative border-b border-gray-800">
+                <div class="absolute inset-0 flex items-center justify-center text-gray-600 text-sm">
+                    <div class="text-center"><i class="fas fa-user-circle text-6xl mb-2"></i><br>كاميرا الطالب</div>
+                </div>
+                <div class="absolute bottom-2 right-2 bg-black bg-opacity-60 px-2 py-1 rounded text-xs">أحمد محمد (الطالب)</div>
+                <!-- فيديو المعلم مصغر -->
+                <div class="absolute bottom-2 left-2 w-24 h-32 bg-gray-800 border-2 border-gray-600 rounded-lg overflow-hidden flex items-center justify-center">
+                    <i class="fas fa-video text-gray-500"></i>
+                </div>
+            </div>
+
+            <!-- صندوق الدردشة -->
+            <div class="flex-1 flex flex-col">
+                <div class="p-4 border-b border-gray-800 font-bold text-gray-400 text-sm"><i class="fas fa-comments ml-2"></i> المحادثة المباشرة</div>
+                <div class="flex-1 p-4 overflow-y-auto space-y-3">
+                    <div class="bg-gray-800 rounded-lg rounded-tr-none p-3 text-sm text-gray-300 max-w-[85%]">السلام عليكم أستاذي، هل الصوت واضح؟</div>
+                    <div class="bg-emerald-800 rounded-lg rounded-tl-none p-3 text-sm text-white max-w-[85%] self-end">وعليكم السلام، نعم واضح جداً، فلنبدأ من سورة البقرة.</div>
+                </div>
+                <div class="p-3 border-t border-gray-800 flex">
+                    <input type="text" class="flex-1 bg-gray-800 border-none rounded-r-lg px-3 py-2 text-sm text-white focus:outline-none" placeholder="اكتب رسالة...">
+                    <button class="bg-emerald-600 px-4 py-2 rounded-l-lg hover:bg-emerald-700 transition"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
