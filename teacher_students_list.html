@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>بوابة المعلم - قائمة طلابي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style> @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap'); body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; } </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="flex h-screen overflow-hidden text-gray-800">
+    
+    <aside class="w-64 bg-[#1e293b] text-white flex flex-col hidden md:flex z-20">
+        <div class="p-6 text-xl font-bold border-b border-gray-700 text-emerald-400"><i class="fas fa-book-reader mr-2 ml-2"></i> بوابة المعلم</div>
+        <nav class="flex-1 p-4 space-y-2 text-sm font-medium">
+            <a href="teacher_dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-home ml-3"></i> الرئيسية</a>
+            <a href="teacher_students_list.html" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow"><i class="fas fa-users ml-3"></i> قائمة طلابي</a>
+            <a href="teacher_interviews.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-clipboard-list ml-3"></i> المقابلات والتقييم</a>
+            <a href="teacher_virtual_session.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-video ml-3"></i> غرفة الإقراء</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto bg-gray-50 p-8">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-bold text-gray-700">طلابي الموكلين إليّ</h2>
+            <div class="relative">
+                <input type="text" placeholder="ابحث عن طالب..." class="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:border-emerald-500 w-64">
+                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+            <table class="w-full text-right text-sm">
+                <thead class="bg-gray-50 text-gray-600 border-b">
+                    <tr>
+                        <th class="px-6 py-4 font-bold">اسم الطالب</th>
+                        <th class="px-6 py-4 font-bold">المقرر (الخطة)</th>
+                        <th class="px-6 py-4 font-bold text-center">مستوى الإنجاز</th>
+                        <th class="px-6 py-4 font-bold">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="myStudentsTable" class="divide-y divide-gray-100">
+                    <tr><td colspan="4" class="px-6 py-8 text-center text-gray-500 font-bold">جاري تحميل بيانات الطلاب...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="supabase.js"></script>
+    <script>
+        window.addEventListener('load', async () => {
+            const { data: { user } } = await window.supabase.auth.getUser();
+            if(!user) return window.location.href = 'login.html';
+
+            // جلب طلاب المعلم الحالي فقط (بفضل RLS)
+            const { data, error } = await window.supabase.from('student_profiles')
+                .select(`user_id, users!student_profiles_user_id_fkey(full_name, email), curriculums(name)`)
+                .eq('teacher_id', user.id);
+
+            const tbody = document.getElementById('myStudentsTable');
+            tbody.innerHTML = '';
+
+            if (data && data.length > 0) {
+                data.forEach(s => {
+                    const cName = s.curriculums ? s.curriculums.name : 'غير محدد';
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4">
+                                <div class="font-bold text-gray-800">${s.users.full_name}</div>
+                                <div class="text-xs text-gray-500 mt-1">${s.users.email}</div>
+                            </td>
+                            <td class="px-6 py-4 font-bold text-emerald-600">${cName}</td>
+                            <td class="px-6 py-4">
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div class="bg-emerald-600 h-2.5 rounded-full" style="width: 0%"></div>
+                                </div>
+                                <span class="text-xs text-gray-500 mt-1 block text-center">بداية الخطة</span>
+                            </td>
+                            <td class="px-6 py-4 space-x-2 space-x-reverse flex">
+                                <a href="teacher_interviews.html?student=${s.user_id}" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded font-bold transition flex items-center">
+                                    <i class="fas fa-star-half-alt ml-1"></i> تقييم
+                                </a>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-12 text-center text-gray-400 font-bold"><i class="fas fa-users-slash text-3xl mb-3 block"></i>لا يوجد لديك طلاب موكلين حالياً.</td></tr>';
+            }
+        });
+    </script>
+</body>
+</html>
