@@ -243,67 +243,72 @@
         }
 
         // إرسال الطلب النهائي
-        async function submitRegistration() {
-            const fileInput = document.getElementById('receiptFile');
-            if(!fileInput.files || fileInput.files.length === 0) return alert('الرجاء إرفاق صورة الإيصال لاعتماد الطلب');
+// إرسال الطلب النهائي
+async function submitRegistration() {
+    const fileInput = document.getElementById('receiptFile');
+    if(!fileInput.files || fileInput.files.length === 0) return alert('الرجاء إرفاق صورة الإيصال لاعتماد الطلب');
 
-            const btn = document.getElementById('submitBtn');
-            const msg = document.getElementById('finalMsg');
-            btn.disabled = true; btn.textContent = 'جاري معالجة الطلب... يرجى الانتظار';
-            msg.classList.add('hidden');
+    const btn = document.getElementById('submitBtn');
+    const msg = document.getElementById('finalMsg');
+    btn.disabled = true; btn.textContent = 'جاري معالجة الطلب... يرجى الانتظار';
+    msg.classList.add('hidden');
 
-            const name = document.getElementById('regName').value;
-            const email = document.getElementById('regEmail').value;
-            const password = document.getElementById('regPassword').value;
-            const file = fileInput.files[0];
+    try {
+        // 🔥 الحل السحري: تسجيل الخروج لأي حساب مفتوح مسبقاً (مثل حساب المدير) لتجنب تعارض الصلاحيات
+        await window.supabase.auth.signOut();
 
-            try {
-                // 1. تسجيل المستخدم الجديد في النظام (الصلاحية: طالب افتراضياً)
-                const { data: authData, error: authError } = await window.supabase.auth.signUp({
-                    email: email, password: password,
-                    options: { data: { full_name: name, role: 'student' } }
-                });
-                if(authError) throw new Error("تعذر التسجيل: " + authError.message);
+        const name = document.getElementById('regName').value;
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+        const file = fileInput.files[0];
 
-                const userId = authData.user.id;
+        // 1. تسجيل المستخدم الجديد
+        const { data: authData, error: authError } = await window.supabase.auth.signUp({
+            email: email, password: password,
+            options: { data: { full_name: name, role: 'student' } }
+        });
+        if(authError) throw new Error("تعذر التسجيل: " + authError.message);
 
-                // 2. رفع صورة الإيصال إلى Storage
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${userId}_${Date.now()}.${fileExt}`; // اسم فريد للصورة
-                
-                const { error: uploadError } = await window.supabase.storage
-                    .from('payment-receipts')
-                    .upload(fileName, file);
-                if(uploadError) throw new Error("حدث خطأ أثناء رفع الإيصال: " + uploadError.message);
+        const userId = authData.user.id;
 
-                // 3. ربط الطالب بالمقرر الذي اختاره (تحديث بروفايل الطالب)
-                await window.supabase.from('student_profiles')
-                    .update({ curriculum_id: selectedCurriculum })
-                    .eq('user_id', userId);
+        // 2. رفع صورة الإيصال إلى Storage
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${userId}_${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await window.supabase.storage
+            .from('payment-receipts')
+            .upload(fileName, file);
+        if(uploadError) throw new Error("حدث خطأ أثناء رفع الإيصال: " + uploadError.message);
 
-                // 4. إنشاء سجل الاشتراك في جدول الاشتراكات
-                const { error: subError } = await window.supabase.from('subscriptions')
-                    .insert({
-                        user_id: userId,
-                        package_id: selectedPackage,
-                        receipt_url: fileName,
-                        status: 'pending' // بانتظار مراجعة الإدارة المالية
-                    });
-                if(subError) throw new Error("تم التسجيل ولكن حدث خطأ في حفظ الإيصال.");
+        // 3. ربط الطالب بالمقرر (تحديث الملف)
+        await window.supabase.from('student_profiles')
+            .update({ curriculum_id: selectedCurriculum })
+            .eq('user_id', userId);
 
-                // تم التسجيل بنجاح!
-                msg.textContent = '🎉 تم تسجيل طلبك بنجاح! سيتم تحويلك للوحة التحكم...';
-                msg.className = 'text-emerald-700 bg-emerald-100 font-bold p-3 rounded-lg mb-4 max-w-lg mx-auto block text-center';
-                
-                // توجيه الطالب إلى لوحته بعد ثانيتين
-                setTimeout(() => { window.location.href = 'student_dashboard.html'; }, 2000);
+        // 4. إنشاء سجل الاشتراك
+        const { error: subError } = await window.supabase.from('subscriptions')
+            .insert({
+                user_id: userId,
+                package_id: selectedPackage,
+                receipt_url: fileName,
+                status: 'pending'
+            });
+            
+        // إظهار سبب الخطأ بالتفصيل إن وجد
+        if(subError) throw new Error("تم التسجيل ولكن حدث خطأ في ربط الإيصال: " + subError.message);
 
-            } catch (err) {
-                msg.textContent = err.message;
-                msg.className = 'text-red-700 bg-red-100 font-bold p-3 rounded-lg mb-4 max-w-lg mx-auto block text-center';
-                btn.disabled = false; btn.textContent = 'إرسال الطلب واعتماد التسجيل';
-            }
-        }
+        // تم التسجيل بنجاح!
+        msg.textContent = '🎉 تم تسجيل طلبك بنجاح! سيتم تحويلك للوحة الطالب...';
+        msg.className = 'text-emerald-700 bg-emerald-100 font-bold p-3 rounded-lg mb-4 max-w-lg mx-auto block text-center';
+        
+        setTimeout(() => { window.location.href = 'student_dashboard.html'; }, 2000);
+
+    } catch (err) {
+        msg.textContent = err.message;
+        msg.className = 'text-red-700 bg-red-100 font-bold p-3 rounded-lg mb-4 max-w-lg mx-auto block text-center';
+        btn.disabled = false; btn.textContent = 'إرسال الطلب واعتماد التسجيل';
+    }
+}
     </script>
 </body>
 </html>
