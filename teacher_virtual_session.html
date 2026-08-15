@@ -32,12 +32,12 @@
             <!-- شريط التحكم بالمصحف -->
             <div class="bg-gray-800 rounded-lg p-3 flex justify-between items-center mb-4 shadow-md border border-gray-700">
                 <div class="font-bold text-emerald-400 flex items-center">
-                    <i class="fas fa-quran ml-2 text-xl"></i> المصحف الشريف
+                    <i class="fas fa-quran ml-2 text-xl"></i> المصحف الشريف (Mp3Quran)
                 </div>
                 
                 <div class="flex items-center space-x-2 space-x-reverse">
                     
-                    <!-- 🌟 الإضافة الجديدة: الفهرس الذكي المربوط بالـ API 🌟 -->
+                    <!-- الفهرس الذكي المربوط بـ Mp3Quran -->
                     <select id="surahIndexSelect" class="bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-emerald-400 outline-none cursor-pointer font-bold" onchange="jumpToPage(this.value)">
                         <option value="">جاري تحميل الفهرس...</option>
                     </select>
@@ -60,6 +60,7 @@
             </div>
             
             <div class="flex-1 bg-[#fdfbf7] rounded-xl overflow-hidden flex items-center justify-center border-4 border-gray-700 relative shadow-inner">
+                <!-- جلب الصور حصراً من سيرفرات Mp3Quran -->
                 <img id="quranPageImage" src="" class="h-full object-contain p-2" alt="صفحة المصحف">
                 <div id="loadingOverlay" class="absolute inset-0 bg-[#fdfbf7] flex items-center justify-center">
                     <i class="fas fa-spinner fa-spin text-4xl text-emerald-600"></i>
@@ -111,7 +112,6 @@
                 select.innerHTML = '<option value="">-- فهرس السور --</option>';
                 
                 data.suwar.forEach(surah => {
-                    // نستخدم start_page كقيمة (Value) للاختيار
                     select.innerHTML += `<option value="${surah.start_page}">${surah.id}. سورة ${surah.name}</option>`;
                 });
             } catch (error) {
@@ -120,7 +120,7 @@
             }
         }
 
-        // --- 2. نظام المصحف الإلكتروني (الصور من Github) ---
+        // --- 2. نظام المصحف الإلكتروني (الصور حصراً من Mp3Quran) ---
         let currentPage = 1;
         const pageImageElement = document.getElementById('quranPageImage');
         const loadingOverlay = document.getElementById('loadingOverlay');
@@ -136,15 +136,18 @@
             loadingOverlay.classList.remove('hidden'); 
             
             const formattedPageNum = String(currentPage).padStart(3, '0');
-            const imageUrl = `https://raw.githubusercontent.com/quran/quran.com-images/master/width_1024/page${formattedPageNum}.png`;
+            
+            // 🌟 تعديل الرابط ليجلب الصورة حصراً من سيرفرات mp3quran 🌟
+            const imageUrl = `https://www.mp3quran.net/api/quran_pages_ar/${formattedPageNum}.png`;
             
             pageImageElement.onerror = () => {
                 loadingOverlay.classList.add('hidden');
+                console.error("تعذر جلب الصورة من mp3quran (قد يكون بسبب قيود السيرفر أو سرعة الاتصال).");
             };
 
             pageImageElement.onload = () => {
                 loadingOverlay.classList.add('hidden');
-                // تحديث الفهرس ليتناسب مع الصفحة الحالية (تقريبياً)
+                // تحديث الفهرس ليتناسب مع الصفحة الحالية تقريبياً
                 Array.from(surahSelect.options).forEach(opt => {
                     if(opt.value && parseInt(opt.value) <= currentPage) {
                         surahSelect.value = opt.value;
@@ -159,7 +162,6 @@
             updateQuranPage(currentPage + direction);
         }
 
-        // هذه الدالة الآن تخدم مربع الإدخال (الأرقام) والفهرس المنسدل معاً!
         function jumpToPage(val) {
             if(val) updateQuranPage(parseInt(val));
         }
@@ -221,11 +223,10 @@
         }
 
         window.addEventListener('load', () => {
-            loadSurahsIndex(); // جلب فهرس السور فور تحميل الصفحة
+            loadSurahsIndex(); 
             updateQuranPage(1);
             initializeRoom();  
         });
-
     </script>
 </body>
 </html>
