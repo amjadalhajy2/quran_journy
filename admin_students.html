@@ -3,133 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدير النظام - الطلاب المنتظمين</title>
+    <title>إدارة الطلاب - منصة التلاوة</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style> @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap'); body { font-family: 'Tajawal', sans-serif; background-color: #f4f7f6; } </style>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap');
+        body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="flex h-screen overflow-hidden text-gray-800 relative">
-    <aside class="w-64 bg-[#1a2b3c] text-white flex flex-col hidden md:flex shadow-2xl z-20">
-        <div class="p-6 text-xl font-bold border-b border-gray-700 flex items-center"><i class="fas fa-shield-alt text-emerald-400 mr-2 ml-2"></i> الإدارة العليا</div>
-        <nav class="flex-1 p-4 space-y-2 text-sm font-medium">
-            <a href="admin_dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300"><i class="fas fa-chart-pie ml-3"></i> لوحة المؤشرات</a>
-            <a href="admin_teachers.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300"><i class="fas fa-chalkboard-teacher ml-3"></i> إدارة المعلمين</a>
-            <a href="admin_new_registrations.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300"><i class="fas fa-user-plus ml-3"></i> طلبات التسجيل</a>
-            <a href="admin_students.html" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow"><i class="fas fa-user-graduate ml-3"></i> إدارة الطلاب المنتظمين</a>
-            <a href="admin_finances.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300"><i class="fas fa-file-invoice-dollar ml-3"></i> الإدارة المالية</a>
-            <a href="admin_packages.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300"><i class="fas fa-box ml-3"></i> إدارة الباقات</a>
-            <a href="admin_curriculum.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300"><i class="fas fa-book-open ml-3"></i> إدارة المقررات</a>
-        </nav>
-    </aside>
-    <main class="flex-1 flex flex-col overflow-y-auto bg-gray-50">
-        <header class="bg-white shadow-sm p-4 border-b"><h2 class="text-2xl font-bold text-gray-700">الطلاب المنتظمين</h2></header>
-        <div class="p-8">
-            <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-                <table class="w-full text-right text-sm">
-                    <thead class="bg-gray-50 text-gray-500 border-b">
-                        <tr>
-                            <th class="px-6 py-4 font-bold">اسم الطالب</th>
-                            <th class="px-6 py-4 font-bold">المقرر الحالي</th>
-                            <th class="px-6 py-4 font-bold text-center">نوع الباقة</th>
-                            <th class="px-6 py-4 font-bold text-center">حالة الاشتراك</th>
-                            <th class="px-6 py-4 font-bold">المعلم المشرف</th>
-                            <th class="px-6 py-4 font-bold">إجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody id="studentsTable" class="divide-y divide-gray-100">
-                        <tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">جاري التحميل...</td></tr>
-                    </tbody>
-                </table>
+<body class="text-gray-200 min-h-screen flex">
+
+    <!-- القائمة الجانبية للمدير -->
+    <aside class="w-64 bg-gray-900 border-l border-gray-800 flex flex-col shadow-2xl hidden md:flex">
+        <div class="p-6 border-b border-gray-800 text-center">
+            <div class="w-16 h-16 mx-auto bg-purple-600 rounded-full flex items-center justify-center mb-3 shadow-lg shadow-purple-500/20">
+                <i class="fas fa-user-shield text-3xl text-white"></i>
             </div>
+            <h2 class="text-xl font-bold text-white">مدير النظام</h2>
+        </div>
+        
+        <nav class="flex-1 p-4 space-y-2">
+            <a href="admin_dashboard.html" class="flex items-center space-x-3 space-x-reverse hover:bg-gray-800 text-gray-400 hover:text-white px-4 py-3 rounded-xl font-bold transition">
+                <i class="fas fa-chart-line text-lg w-6"></i>
+                <span>الإحصائيات</span>
+            </a>
+            <a href="admin_teachers.html" class="flex items-center space-x-3 space-x-reverse hover:bg-gray-800 text-gray-400 hover:text-white px-4 py-3 rounded-xl font-bold transition">
+                <i class="fas fa-chalkboard-teacher text-lg w-6"></i>
+                <span>المعلمون</span>
+            </a>
+            <a href="#" class="flex items-center space-x-3 space-x-reverse bg-purple-600/20 text-purple-400 border border-purple-500/30 px-4 py-3 rounded-xl font-bold transition">
+                <i class="fas fa-user-graduate text-lg w-6"></i>
+                <span>الطلاب</span>
+            </a>
+        </nav>
+        
+        <div class="p-4 border-t border-gray-800">
+            <button onclick="logout()" class="w-full flex items-center justify-center space-x-2 space-x-reverse bg-red-500/10 hover:bg-red-500/20 text-red-400 px-4 py-2 rounded-lg font-bold transition">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>تسجيل الخروج</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
+        <div class="p-6 md:p-10 max-w-6xl mx-auto w-full space-y-8">
+            
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-white mb-2">إدارة الطلاب</h1>
+                    <p class="text-gray-400">عرض وإدارة جميع الطلاب المسجلين في المنصة.</p>
+                </div>
+                <div class="bg-gray-800 px-4 py-2 rounded-lg border border-gray-700 flex items-center gap-3 shadow-inner">
+                    <span class="text-gray-400 text-sm">إجمالي الطلاب:</span>
+                    <span id="studentsCount" class="text-2xl font-bold text-purple-400">0</span>
+                </div>
+            </div>
+
+            <!-- جدول الطلاب -->
+            <div class="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden shadow-xl">
+                <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-800/50">
+                    <h3 class="font-bold text-white"><i class="fas fa-users text-purple-500 ml-2"></i> قائمة الطلاب</h3>
+                    <div class="relative">
+                        <input type="text" id="searchInput" onkeyup="filterStudents()" placeholder="ابحث عن طالب..." class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-64 p-2.5 outline-none pl-10">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-500"></i>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-gray-800 text-gray-400">
+                            <tr>
+                                <th class="p-4 font-bold">اسم الطالب</th>
+                                <th class="p-4 font-bold">البريد الإلكتروني</th>
+                                <th class="p-4 font-bold">تاريخ التسجيل</th>
+                                <th class="p-4 font-bold text-center">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTableBody" class="divide-y divide-gray-800">
+                            <tr>
+                                <td colspan="4" class="p-8 text-center text-gray-500">
+                                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>جاري جلب بيانات الطلاب...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </main>
 
-    <!-- نافذة إسناد المعلم -->
-    <div id="assignModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-xl p-6 w-full max-w-sm">
-            <h3 class="text-xl font-bold mb-4">تعيين معلم للطالب</h3>
-            <input type="hidden" id="modalStudentId">
-            <select id="teacherSelect" class="w-full border p-3 rounded-lg mb-4 font-bold"></select>
-            <div class="flex space-x-2 space-x-reverse">
-                <button onclick="saveTeacher()" class="w-full bg-emerald-600 text-white p-3 rounded font-bold">حفظ</button>
-                <button onclick="document.getElementById('assignModal').classList.add('hidden')" class="w-full bg-gray-200 p-3 rounded font-bold">إلغاء</button>
-            </div>
-        </div>
-    </div>
-
     <script src="supabase.js"></script>
     <script>
-        let teachersList = [];
+        // التحقق من صلاحيات المدير وجلب الطلاب
+        async function checkAdminAndLoadStudents() {
+            const { data: { user } } = await window.supabase.auth.getUser();
+            if (!user || user.user_metadata?.role !== 'admin') {
+                window.location.href = 'login.html';
+                return;
+            }
+            fetchStudents();
+        }
 
-async function loadStudents() {
-            const { data: teachers } = await window.supabase.from('users').select('id, full_name').eq('role', 'teacher');
-            teachersList = teachers || [];
+        // جلب الطلاب من قاعدة البيانات
+        async function fetchStudents() {
+            try {
+                // جلب المستخدمين الذين دورهم 'student'
+                const { data: students, error } = await window.supabase
+                    .from('users')
+                    .select('*')
+                    .eq('role', 'student')
+                    .order('created_at', { ascending: false });
 
-            // استخدام الدالة الخلفية المحدثة
-            const { data: profiles, error } = await window.supabase.rpc('get_enrolled_students');
-            
-            const tbody = document.getElementById('studentsTable');
-            tbody.innerHTML = '';
-            
-            if(profiles && profiles.length > 0) {
-                profiles.forEach(p => {
-                    // تحديد شكل الخطة للعرض للمدير
-                    let planText = '<span class="text-orange-500 text-xs">بانتظار تقييم المعلم</span>';
-                    if (p.custom_plan_type === 'parts') planText = `حفظ ${p.target_parts} أجزاء`;
-                    else if (p.custom_plan_type === 'surahs') planText = `سور: ${p.target_surahs}`;
+                if (error) throw error;
 
-                    const pkgName = p.package_name || 'غير معروف';
-                    const statusBadge = p.sub_status === 'approved' 
-                        ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">نشط</span>' 
-                        : `<span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold">${p.sub_status}</span>`;
+                const tbody = document.getElementById('studentsTableBody');
+                document.getElementById('studentsCount').innerText = students.length;
+                tbody.innerHTML = '';
 
-                    const teacher = teachersList.find(t => t.id === p.teacher_id);
-                    const teacherName = teacher ? teacher.full_name : '<span class="text-orange-500 font-bold">بانتظار التعيين</span>';
+                if (students.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-gray-500">لا يوجد طلاب مسجلين في المنصة حتى الآن.</td></tr>';
+                    return;
+                }
 
-                    tbody.innerHTML += `
-                        <tr class="hover:bg-gray-50 border-b transition">
-                            <td class="px-6 py-4 font-bold">${p.full_name}<br><span class="text-xs text-gray-400 font-normal">${p.email}</span></td>
-                            <td class="px-6 py-4 font-bold text-emerald-600">${planText}</td>
-                            <td class="px-6 py-4"><span class="bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold text-xs">${pkgName}</span></td>
-                            <td class="px-6 py-4 text-center">${statusBadge}</td>
-                            <td class="px-6 py-4 font-bold">${teacherName}</td>
-                            <td class="px-6 py-4">
-                                <button onclick="openAssignModal('${p.student_id}', '${p.teacher_id || ''}')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded font-bold transition">
-                                    <i class="fas fa-exchange-alt"></i> تغيير المعلم
+                students.forEach(student => {
+                    const date = new Date(student.created_at).toLocaleDateString('ar-EG');
+                    
+                    const row = `
+                        <tr class="hover:bg-gray-800/50 transition student-row">
+                            <td class="p-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-purple-900 flex items-center justify-center text-purple-300 font-bold">
+                                        ${student.full_name ? student.full_name.charAt(0) : 'ط'}
+                                    </div>
+                                    <span class="font-bold text-white student-name">${student.full_name || 'بدون اسم'}</span>
+                                </div>
+                            </td>
+                            <td class="p-4 text-gray-400">${student.email || 'غير متوفر'}</td>
+                            <td class="p-4 text-gray-400">${date}</td>
+                            <td class="p-4 text-center">
+                                <button onclick="viewStudentDetails('${student.id}')" class="bg-gray-700 hover:bg-purple-600 text-white px-3 py-1 rounded text-xs font-bold transition">
+                                    عرض التفاصيل
                                 </button>
                             </td>
                         </tr>
                     `;
+                    tbody.innerHTML += row;
                 });
-            } else { tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-gray-500 font-bold">لا يوجد طلاب منتظمين حالياً.</td></tr>'; }
-        }
-
-        function openAssignModal(studentId, currentTeacherId) {
-            document.getElementById('modalStudentId').value = studentId;
-            const select = document.getElementById('teacherSelect');
-            select.innerHTML = '<option value="">-- اختر المعلم --</option>';
-            teachersList.forEach(t => {
-                const isSelected = t.id === currentTeacherId ? 'selected' : '';
-                select.innerHTML += `<option value="${t.id}" ${isSelected}>${t.full_name}</option>`;
-            });
-            document.getElementById('assignModal').classList.remove('hidden');
-            document.getElementById('assignModal').classList.add('flex');
-        }
-
-        async function saveTeacher() {
-            const stuId = document.getElementById('modalStudentId').value;
-            const tId = document.getElementById('teacherSelect').value;
-            if(!tId) return alert('الرجاء اختيار معلم!');
-            
-            const { error } = await window.supabase.rpc('assign_teacher', { p_student_id: stuId, p_teacher_id: tId });
-            if(error) alert('خطأ: ' + error.message);
-            else {
-                document.getElementById('assignModal').classList.add('hidden');
-                loadStudents();
+            } catch (err) {
+                console.error("خطأ في جلب الطلاب:", err);
+                document.getElementById('studentsTableBody').innerHTML = '<tr><td colspan="4" class="p-8 text-center text-red-400">حدث خطأ أثناء الاتصال بقاعدة البيانات. تأكد من إعدادات الـ SQL (RLS).</td></tr>';
             }
         }
-        window.addEventListener('load', loadStudents);
+
+        // دالة بحث بسيطة في الجدول
+        function filterStudents() {
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('.student-row');
+            
+            rows.forEach(row => {
+                const name = row.querySelector('.student-name').innerText.toLowerCase();
+                if (name.includes(input)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        function viewStudentDetails(studentId) {
+            alert("سيتم برمجة صفحة تفاصيل الطالب لاحقاً. رقم الطالب: " + studentId);
+        }
+
+        async function logout() {
+            await window.supabase.auth.signOut();
+            window.location.href = 'login.html';
+        }
+
+        window.onload = checkAdminAndLoadStudents;
     </script>
 </body>
 </html>
