@@ -173,6 +173,7 @@
         function jumpToPage(val) { if(val) updateQuranPage(parseInt(val)); }
 
         // دالة ربط الغرفة (المعلم)
+// دالة ربط الغرفة (المعلم)
         async function initializeRoom() {
             const { data: { user } } = await window.supabase.auth.getUser();
             if(!user) return window.location.href = 'login.html';
@@ -184,14 +185,16 @@
             const studentId = urlParams.get('student_id');
             
             let roomName = `Tilawah_General_Room_${Math.floor(Math.random()*1000)}`;
-            let studentName = "غرفة عامة (لم يتم تحديد طالب)";
+            let studentName = "جاري جلب الاسم...";
 
             if (studentId) {
+                // 1. الأهم: بناء اسم الغرفة المشفر فوراً لضمان تطابقه 100% مع الطالب
+                roomName = `Tilawah_Room_${teacherId.substring(0,8)}_${studentId.substring(0,8)}`;
+                
+                // 2. محاولة جلب اسم الطالب للعرض فقط (حتى لو فشل، الغرفة ستعمل)
                 const { data: studentData } = await window.supabase.from('users').select('full_name').eq('id', studentId).single();
                 if (studentData) {
                     studentName = studentData.full_name;
-                    // شيفرة التطابق: (أول 8 من المعلم) + (أول 8 من الطالب)
-                    roomName = `Tilawah_Room_${teacherId.substring(0,8)}_${studentId.substring(0,8)}`;
                 }
             } else {
                 alert("تنبيه: يفضل الدخول للحصص عبر الجدول الأسبوعي لتفعيل الربط التلقائي مع الطالب.");
