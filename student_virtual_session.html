@@ -202,33 +202,37 @@
 
         // 3. الغرفة المرئية Jitsi (منطق دخول الطالب)
         let api = null;
+// 3. الغرفة المرئية Jitsi (تم تحديثها للربط الذكي مع الطالب)
         async function initializeRoom() {
+            // جلب بيانات المعلم المسجل الدخول
             const { data: { user } } = await window.supabase.auth.getUser();
             if(!user) return window.location.href = 'login.html';
 
-            const studentName = user.user_metadata?.full_name || "طالب القرآن";
-            document.getElementById('studentNameDisplay').textContent = `الطالب: ${studentName}`;
-
-            // استخراج معرف المعلم من الرابط للاتصال بغرفته
-            const urlParams = new URLSearchParams(window.location.search);
-            const teacherId = urlParams.get('teacher_id');
+            const teacherName = user.user_metadata?.full_name || "معلم القرآن";
+            const teacherId = user.id;
             
-            let roomName = `Tilawah_General_Room`; // غرفة احتياطية
-            let teacherName = "جاري الاتصال...";
+            // قراءة معرف الطالب من الرابط الذي تم الضغط عليه في الجدول
+            const urlParams = new URLSearchParams(window.location.search);
+            const studentId = urlParams.get('student_id');
+            
+            let roomName = `Tilawah_General_Room_${Math.floor(Math.random()*1000)}`;
+            let studentName = "غرفة عامة (لم يتم تحديد طالب)";
 
-            if (teacherId) {
-                // جلب اسم المعلم للعرض
-                const { data: teacherData } = await window.supabase.from('users').select('full_name').eq('id', teacherId).single();
-                if (teacherData) {
-                    teacherName = teacherData.full_name;
-                    // السر: توليد نفس اسم الغرفة المشفر الخاص بالمعلم!
-                    roomName = `Tilawah_Room_${teacherId.substring(0,8)}_${user.id.substring(0,8)}`;
+            if (studentId) {
+                // جلب اسم الطالب للعرض
+                const { data: studentData } = await window.supabase.from('users').select('full_name').eq('id', studentId).single();
+                if (studentData) {
+                    studentName = studentData.full_name;
+                    // السر: إنشاء اسم غرفة يتطابق 100% مع الغرفة التي سيدخلها هذا الطالب!
+                    // النمط المستخدم في صفحة الطالب: Tilawah_Room_{teacherId}_{studentId}
+                    roomName = `Tilawah_Room_${teacherId.substring(0,8)}_${studentId.substring(0,8)}`;
                 }
             } else {
-                alert("لم يتم تحديد معلم لهذه الحصة!");
+                alert("تنبيه: أنت في الغرفة العامة. يفضل الدخول للحصص عبر الجدول الأسبوعي لتفعيل الربط مع الطالب.");
             }
             
             document.getElementById('teacherNameDisplay').textContent = `المعلم: ${teacherName}`;
+            document.getElementById('studentNameDisplay').textContent = `الطالب: ${studentName}`;
 
             const domain = 'meet.jit.si';
             const options = {
@@ -236,24 +240,24 @@
                 width: '100%', height: '100%',
                 parentNode: document.querySelector('#jitsi-container'),
                 userInfo: { 
-                    displayName: studentName,
-                    role: 'guest' // الطالب يدخل كضيف
+                    displayName: teacherName,
+                    role: 'moderator' // المعلم يدخل كمدير للغرفة
                 },
                 configOverwrite: { 
                     prejoinPageEnabled: false, 
                     disableDeepLinking: true,
-                    startWithVideoMuted: true, // كاميرا الطالب مطفأة
-                    startWithAudioMuted: false // المايك يعمل
+                    startWithVideoMuted: false, // الكاميرا تعمل للمعلم افتراضياً
+                    startWithAudioMuted: false  // الميكروفون يعمل افتراضياً
                 },
                 interfaceConfigOverwrite: { 
-                    TOOLBAR_BUTTONS: ['microphone', 'camera', 'chat'],
+                    TOOLBAR_BUTTONS: ['microphone', 'camera', 'chat', 'desktop', 'fullscreen', 'hangup'],
                     SHOW_JITSI_WATERMARK: false,
                     SHOW_WATERMARK_FOR_GUESTS: false
                 }
             };
             
             document.getElementById('jitsi-loader').style.display = 'none';
-            api = new JitsiMeetExternalAPI(domain, options);
+            new JitsiMeetExternalAPI(domain, options);
         }
 
         window.addEventListener('load', () => {
