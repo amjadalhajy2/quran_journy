@@ -170,32 +170,35 @@
         function jumpToPage(val) { if(val) updateQuranPage(parseInt(val)); }
 
         // دالة ربط الغرفة (الطالب)
+// دالة ربط الغرفة (الطالب)
         async function initializeRoom() {
             const { data: { user } } = await window.supabase.auth.getUser();
             if(!user) return window.location.href = 'login.html';
 
             const studentName = user.user_metadata?.full_name || "طالب القرآن";
             const studentId = user.id;
-            document.getElementById('studentNameDisplay').textContent = `الطالب: ${studentName}`;
 
             const urlParams = new URLSearchParams(window.location.search);
             const teacherId = urlParams.get('teacher_id');
             
             let roomName = `Tilawah_General_Room_${Math.floor(Math.random()*1000)}`; 
-            let teacherName = "جاري الاتصال...";
+            let teacherName = "جاري جلب الاسم...";
 
             if (teacherId) {
+                // 1. الأهم: بناء اسم الغرفة المشفر فوراً ليتطابق مع المعلم
+                roomName = `Tilawah_Room_${teacherId.substring(0,8)}_${studentId.substring(0,8)}`;
+                
+                // 2. محاولة جلب اسم المعلم للعرض فقط
                 const { data: teacherData } = await window.supabase.from('users').select('full_name').eq('id', teacherId).single();
                 if (teacherData) {
                     teacherName = teacherData.full_name;
-                    // شيفرة التطابق: يجب أن تكون متطابقة تماماً مع المعلم (أول 8 من المعلم) + (أول 8 من الطالب)
-                    roomName = `Tilawah_Room_${teacherId.substring(0,8)}_${studentId.substring(0,8)}`;
                 }
             } else {
                 alert("تنبيه: لم يتم العثور على المعلم المخصص لهذه الحصة!");
             }
             
             document.getElementById('teacherNameDisplay').textContent = `المعلم: ${teacherName}`;
+            document.getElementById('studentNameDisplay').textContent = `الطالب: ${studentName}`;
 
             const domain = 'meet.jit.si';
             const options = {
