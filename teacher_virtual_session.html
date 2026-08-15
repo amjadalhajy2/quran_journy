@@ -9,13 +9,16 @@
     <style> 
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap'); 
         body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; } 
-        #jitsi-container iframe { border-radius: 0.5rem; border: none; }
+        /* إخفاء الإطارات من مربع الفيديو والمصحف */
+        iframe { border: none; }
+        #jitsi-container iframe { border-radius: 0.5rem; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://meet.jit.si/external_api.js"></script>
 </head>
 <body class="flex h-screen overflow-hidden text-gray-200">
     
+    <!-- القائمة الجانبية المصغرة -->
     <aside class="w-20 bg-gray-900 flex flex-col items-center py-6 border-l border-gray-800 z-10 shadow-2xl">
         <a href="teacher_dashboard.html" class="text-gray-400 hover:text-white mb-8 transition" title="إنهاء الحصة والعودة للرئيسية">
             <i class="fas fa-sign-out-alt text-2xl text-red-400 hover:text-red-500"></i>
@@ -28,47 +31,26 @@
 
     <main class="flex-1 flex flex-col md:flex-row">
         
+        <!-- مساحة المصحف التفاعلي (تضمين موقع Mp3Quran الرسمي) -->
         <div class="flex-1 bg-[#1e293b] p-4 flex flex-col relative border-l border-gray-800">
-            <!-- شريط التحكم بالمصحف -->
             <div class="bg-gray-800 rounded-lg p-3 flex justify-between items-center mb-4 shadow-md border border-gray-700">
                 <div class="font-bold text-emerald-400 flex items-center">
-                    <i class="fas fa-quran ml-2 text-xl"></i> المصحف الشريف (Mp3Quran)
+                    <i class="fas fa-book-open ml-2 text-xl"></i> المصحف التفاعلي الرسمي (Mp3Quran)
                 </div>
-                
-                <div class="flex items-center space-x-2 space-x-reverse">
-                    
-                    <!-- الفهرس الذكي المربوط بـ Mp3Quran -->
-                    <select id="surahIndexSelect" class="bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-emerald-400 outline-none cursor-pointer font-bold" onchange="jumpToPage(this.value)">
-                        <option value="">جاري تحميل الفهرس...</option>
-                    </select>
-
-                    <button onclick="changePage(-1)" class="bg-gray-700 hover:bg-emerald-700 px-3 py-2 rounded font-bold text-sm transition text-white shadow">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                    
-                    <div class="flex items-center bg-gray-900 rounded px-2 py-1 border border-gray-600">
-                        <span class="text-xs text-gray-400 ml-1">صفحة:</span>
-                        <input type="number" id="pageNumberInput" value="1" min="1" max="604" 
-                               class="w-12 bg-transparent text-white font-bold text-center outline-none"
-                               onchange="jumpToPage(this.value)">
-                    </div>
-                    
-                    <button onclick="changePage(1)" class="bg-gray-700 hover:bg-emerald-700 px-3 py-2 rounded font-bold text-sm transition text-white shadow">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
+                <div class="text-xs text-gray-400 font-bold bg-gray-900 px-3 py-1 rounded">
+                    يمكنك استخدام أدوات المصحف للبحث والتقليب والتشغيل
                 </div>
             </div>
             
-            <div class="flex-1 bg-[#fdfbf7] rounded-xl overflow-hidden flex items-center justify-center border-4 border-gray-700 relative shadow-inner">
-                <!-- جلب الصور حصراً من سيرفرات Mp3Quran -->
-                <img id="quranPageImage" src="" class="h-full object-contain p-2" alt="صفحة المصحف">
-                <div id="loadingOverlay" class="absolute inset-0 bg-[#fdfbf7] flex items-center justify-center">
-                    <i class="fas fa-spinner fa-spin text-4xl text-emerald-600"></i>
-                </div>
+            <div class="flex-1 bg-white rounded-xl overflow-hidden flex items-center justify-center border-4 border-gray-700 relative shadow-inner">
+                <!-- نافذة Iframe السحرية التي تجلب الموقع بالكامل -->
+                <iframe src="https://www.mp3quran.net/ar/mushaf" class="w-full h-full"></iframe>
             </div>
         </div>
 
+        <!-- منطقة الاتصال المرئي ومعلومات الطالب (يسار الشاشة) -->
         <div class="w-full md:w-[450px] bg-gray-900 flex flex-col shadow-2xl">
+            
             <div class="p-4 border-b border-gray-800 bg-gray-900">
                 <div class="flex justify-between items-center">
                     <div>
@@ -81,6 +63,7 @@
                 </div>
             </div>
 
+            <!-- حاوية Jitsi -->
             <div id="jitsi-container" class="w-full h-[50vh] bg-black relative shadow-inner">
                 <div id="jitsi-loader" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
                     <i class="fas fa-video text-4xl mb-3 animate-bounce"></i>
@@ -92,7 +75,7 @@
                 <h4 class="font-bold text-gray-300 text-sm mb-3 border-b border-gray-700 pb-2">
                     <i class="fas fa-pen ml-2 text-emerald-500"></i> ملاحظات المعلم للحصة الحالية
                 </h4>
-                <textarea class="flex-1 w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm text-gray-200 outline-none focus:border-emerald-500 resize-none" placeholder="اكتب ملاحظاتك عن تلاوة الطالب هنا... (سيتم حفظها بملف الطالب)"></textarea>
+                <textarea class="flex-1 w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm text-gray-200 outline-none focus:border-emerald-500 resize-none" placeholder="اكتب ملاحظاتك عن تلاوة الطالب هنا..."></textarea>
                 <button class="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition w-full shadow-lg">
                     حفظ الملاحظات وإنهاء الحصة
                 </button>
@@ -102,71 +85,7 @@
 
     <script src="supabase.js"></script>
     <script>
-        // --- 1. جلب فهرس السور من API mp3quran ---
-        async function loadSurahsIndex() {
-            try {
-                const response = await fetch('https://mp3quran.net/api/v3/suwar?language=ar');
-                const data = await response.json();
-                
-                const select = document.getElementById('surahIndexSelect');
-                select.innerHTML = '<option value="">-- فهرس السور --</option>';
-                
-                data.suwar.forEach(surah => {
-                    select.innerHTML += `<option value="${surah.start_page}">${surah.id}. سورة ${surah.name}</option>`;
-                });
-            } catch (error) {
-                console.error("حدث خطأ في جلب فهرس السور: ", error);
-                document.getElementById('surahIndexSelect').innerHTML = '<option value="">خطأ في تحميل الفهرس</option>';
-            }
-        }
-
-        // --- 2. نظام المصحف الإلكتروني (الصور حصراً من Mp3Quran) ---
-        let currentPage = 1;
-        const pageImageElement = document.getElementById('quranPageImage');
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const pageInput = document.getElementById('pageNumberInput');
-        const surahSelect = document.getElementById('surahIndexSelect');
-
-        function updateQuranPage(pageNum) {
-            if (pageNum < 1) pageNum = 1;
-            if (pageNum > 604) pageNum = 604;
-            
-            currentPage = pageNum;
-            pageInput.value = currentPage;
-            loadingOverlay.classList.remove('hidden'); 
-            
-            const formattedPageNum = String(currentPage).padStart(3, '0');
-            
-            // 🌟 تعديل الرابط ليجلب الصورة حصراً من سيرفرات mp3quran 🌟
-            const imageUrl = `https://www.mp3quran.net/api/quran_pages_ar/${formattedPageNum}.png`;
-            
-            pageImageElement.onerror = () => {
-                loadingOverlay.classList.add('hidden');
-                console.error("تعذر جلب الصورة من mp3quran (قد يكون بسبب قيود السيرفر أو سرعة الاتصال).");
-            };
-
-            pageImageElement.onload = () => {
-                loadingOverlay.classList.add('hidden');
-                // تحديث الفهرس ليتناسب مع الصفحة الحالية تقريبياً
-                Array.from(surahSelect.options).forEach(opt => {
-                    if(opt.value && parseInt(opt.value) <= currentPage) {
-                        surahSelect.value = opt.value;
-                    }
-                });
-            };
-
-            pageImageElement.src = imageUrl;
-        }
-
-        function changePage(direction) {
-            updateQuranPage(currentPage + direction);
-        }
-
-        function jumpToPage(val) {
-            if(val) updateQuranPage(parseInt(val));
-        }
-
-        // --- 3. نظام الغرفة الصوتية والمرئية (Jitsi API) ---
+        // --- نظام الغرفة الصوتية والمرئية (Jitsi API) ---
         let api = null;
         
         async function initializeRoom() {
@@ -223,10 +142,9 @@
         }
 
         window.addEventListener('load', () => {
-            loadSurahsIndex(); 
-            updateQuranPage(1);
             initializeRoom();  
         });
+
     </script>
 </body>
 </html>
