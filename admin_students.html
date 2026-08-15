@@ -67,8 +67,17 @@ async function loadStudents() {
             teachersList = teachers || [];
 
             // استخدام الدالة الخلفية المحدثة
+// استخدام الدالة الخلفية المحدثة مع إضافة طباعة الأخطاء لتشخيص المشكلة
             const { data: profiles, error } = await window.supabase.rpc('get_enrolled_students');
             
+            // 🚨 هذا السطر سيخبرنا في شاشة الإدارة بالخطأ الحقيقي إن وجد 🚨
+            if (error) {
+                console.error("Supabase Error:", error);
+                alert("حدث خطأ في قاعدة البيانات: " + error.message);
+            }
+            
+            console.log("الطلاب القادمين من قاعدة البيانات:", profiles);
+
             const tbody = document.getElementById('studentsTable');
             tbody.innerHTML = '';
             
