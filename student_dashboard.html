@@ -6,113 +6,97 @@
     <title>بوابة الطالب - منصة التلاوة</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap');
-        body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; }
-        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-    </style>
+    <style> @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap'); body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; } </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="text-gray-200 min-h-screen flex">
+<body class="flex h-screen overflow-hidden text-gray-800">
 
-    <!-- القائمة الجانبية (Sidebar) -->
-    <aside class="w-64 bg-gray-900 border-l border-gray-800 hidden md:flex flex-col shadow-2xl">
-        <div class="p-6 border-b border-gray-800 text-center">
-            <div class="w-16 h-16 mx-auto bg-emerald-600 rounded-full flex items-center justify-center mb-3 shadow-lg shadow-emerald-500/20">
-                <i class="fas fa-user-graduate text-3xl text-white"></i>
+    <!-- القائمة الجانبية الموحدة -->
+    <aside class="w-64 bg-[#1e293b] text-white flex flex-col hidden md:flex shadow-2xl z-20">
+        <div class="p-6 text-xl font-bold border-b border-gray-700 flex items-center text-emerald-400">
+            <i class="fas fa-user-graduate mr-2 ml-2"></i> بوابة الطالب
+        </div>
+        
+        <!-- معلومات الطالب المصغرة -->
+        <div class="p-4 border-b border-gray-700 text-center">
+            <div class="w-12 h-12 mx-auto bg-emerald-600 rounded-full flex items-center justify-center mb-2 shadow-lg">
+                <i class="fas fa-user text-xl text-white"></i>
             </div>
-            <h2 class="text-xl font-bold text-white" id="sidebarStudentName">جاري التحميل...</h2>
-            <p class="text-xs text-emerald-400 mt-1">طالب قرآن</p>
+            <h2 class="font-bold text-white" id="sidebarStudentName">جاري التحميل...</h2>
+            <p class="text-xs text-gray-400 mt-1">طالب قرآن</p>
         </div>
         
-        <nav class="flex-1 p-4 space-y-2">
-            <a href="#" class="flex items-center space-x-3 space-x-reverse bg-emerald-600/20 text-emerald-400 px-4 py-3 rounded-xl font-bold border border-emerald-500/30 transition">
-                <i class="fas fa-home text-lg"></i>
-                <span>الرئيسية</span>
-            </a>
-            <a href="#" class="flex items-center space-x-3 space-x-reverse hover:bg-gray-800 text-gray-400 hover:text-white px-4 py-3 rounded-xl font-bold transition">
-                <i class="fas fa-history text-lg"></i>
-                <span>سجل الحصص</span>
-            </a>
+        <nav class="flex-1 p-4 space-y-2 text-sm font-medium">
+            <a href="student_dashboard.html" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow transition"><i class="fas fa-home ml-3"></i> الرئيسية</a>
+            <a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-history ml-3"></i> سجل الحصص</a>
         </nav>
-        
-        <div class="p-4 border-t border-gray-800">
-            <button onclick="logout()" class="w-full flex items-center justify-center space-x-2 space-x-reverse bg-red-500/10 hover:bg-red-500/20 text-red-400 px-4 py-2 rounded-lg font-bold transition border border-red-500/20">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>تسجيل الخروج</span>
-            </button>
-        </div>
     </aside>
 
     <!-- المحتوى الرئيسي -->
-    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
+    <main class="flex-1 flex flex-col overflow-y-auto bg-gray-50">
         
-        <!-- الشريط العلوي (Mobile) -->
-        <header class="md:hidden bg-gray-900 p-4 border-b border-gray-800 flex justify-between items-center sticky top-0 z-20">
-            <h1 class="font-bold text-lg text-white">منصة التلاوة</h1>
-            <button onclick="logout()" class="text-red-400"><i class="fas fa-sign-out-alt text-xl"></i></button>
+        <!-- الشريط العلوي -->
+        <header class="bg-white shadow-sm p-4 flex justify-between items-center z-10 sticky top-0 border-b">
+            <h2 class="text-xl font-bold text-gray-700">مرحباً بك، <span id="welcomeName" class="text-emerald-600">...</span></h2>
+            <button onclick="logout()" class="text-red-500 hover:bg-red-50 px-4 py-2 rounded-lg font-bold transition flex items-center">
+                <i class="fas fa-sign-out-alt ml-2"></i> تسجيل الخروج
+            </button>
         </header>
 
-        <div class="p-6 md:p-10 max-w-6xl mx-auto w-full space-y-8">
+        <div class="p-8 space-y-8">
             
-            <!-- الترحيب -->
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-3xl font-bold text-white mb-2">أهلاً بك، <span id="welcomeName" class="text-emerald-400">طالبنا العزيز</span>!</h1>
-                    <p class="text-gray-400">مستقبلك مع القرآن يبدأ هنا. استعد لحصتك القادمة.</p>
+            <!-- بطاقة الحصة القادمة (تصميم الآدمن/المعلم) -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-emerald-100 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+                <!-- شريط جانبي ملون لتمييز البطاقة -->
+                <div class="absolute top-0 right-0 w-2 h-full bg-emerald-500"></div>
+                
+                <div class="flex items-center gap-6">
+                    <div class="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 text-3xl border border-emerald-100">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-500 mb-1">الحصة القادمة</h3>
+                        <h2 class="text-2xl font-black text-gray-800 mb-2" id="nextTeacherName">جاري البحث...</h2>
+                        <p class="text-emerald-700 text-sm font-bold flex items-center gap-2">
+                            <i class="far fa-calendar-alt"></i> <span id="nextSessionDate">--</span>
+                            <span class="mx-2 text-gray-300">|</span>
+                            <i class="far fa-clock"></i> <span id="nextSessionTime">--</span>
+                        </p>
+                    </div>
+                </div>
+                
+                <div id="joinButtonContainer" class="w-full md:w-auto">
+                    <!-- الزر الافتراضي -->
+                    <button disabled class="w-full md:w-auto bg-gray-200 text-gray-500 px-8 py-3 rounded-lg font-bold cursor-not-allowed">
+                        <i class="fas fa-spinner fa-spin ml-2"></i> جاري التحميل
+                    </button>
                 </div>
             </div>
 
-            <!-- بطاقة الحصة القادمة (أهم عنصر للطالب) -->
-            <section class="glass-card rounded-2xl p-1 bg-gradient-to-r from-emerald-600 to-teal-500 shadow-xl shadow-emerald-900/50">
-                <div class="bg-gray-900 rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div class="flex items-center gap-6">
-                        <div class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center border-4 border-emerald-500/30">
-                            <i class="fas fa-chalkboard-teacher text-4xl text-emerald-400"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-bold text-emerald-400 mb-1">الحصة القادمة</h3>
-                            <h2 class="text-2xl font-bold text-white mb-2" id="nextTeacherName">جاري البحث...</h2>
-                            <p class="text-gray-400 text-sm flex items-center gap-2">
-                                <i class="far fa-calendar-alt"></i> <span id="nextSessionDate">--</span>
-                                <span class="mx-2">|</span>
-                                <i class="far fa-clock"></i> <span id="nextSessionTime">--</span>
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div id="joinButtonContainer" class="w-full md:w-auto">
-                        <!-- زر الدخول سيظهر هنا برمجياً -->
-                        <button disabled class="w-full md:w-auto bg-gray-700 text-gray-400 px-8 py-4 rounded-xl font-bold shadow-lg cursor-not-allowed">
-                            <i class="fas fa-spinner fa-spin ml-2"></i> جاري التحميل
-                        </button>
-                    </div>
-                </div>
-            </section>
-
             <!-- جدول الحصص القادمة -->
-            <section>
-                <h3 class="text-xl font-bold text-white mb-4 border-r-4 border-emerald-500 pr-3">جدول حصصك القادمة</h3>
-                <div class="glass-card rounded-2xl overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-right text-sm">
-                            <thead class="bg-gray-800 text-gray-400">
-                                <tr>
-                                    <th class="p-4 font-bold">التاريخ</th>
-                                    <th class="p-4 font-bold">الوقت</th>
-                                    <th class="p-4 font-bold">المعلم</th>
-                                    <th class="p-4 font-bold">الحالة</th>
-                                </tr>
-                            </thead>
-                            <tbody id="upcomingSessionsTable" class="divide-y divide-gray-800">
-                                <tr>
-                                    <td colspan="4" class="p-8 text-center text-gray-500">جاري تحميل جدولك...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+            <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+                <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-800"><i class="fas fa-list-ul text-emerald-600 ml-2"></i> جدول حصصك القادمة</h3>
                 </div>
-            </section>
+                
+                <div class="p-0">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-white border-b">
+                            <tr>
+                                <th class="px-6 py-4 text-gray-500">التاريخ</th>
+                                <th class="px-6 py-4 text-gray-500">الوقت</th>
+                                <th class="px-6 py-4 text-gray-500">المعلم</th>
+                                <th class="px-6 py-4 text-gray-500">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="upcomingSessionsTable" class="divide-y divide-gray-50">
+                            <tr>
+                                <td colspan="4" class="p-8 text-center text-gray-400 font-bold">جاري تحميل جدولك...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
         </div>
     </main>
@@ -129,7 +113,6 @@
                 return;
             }
             
-            // التحقق من الصلاحية (أن يكون طالب)
             if (user.user_metadata?.role !== 'student') {
                 alert("هذه الصفحة مخصصة للطلاب فقط.");
                 window.location.href = 'login.html';
@@ -148,7 +131,6 @@
         // 2. جلب جدول الحصص من قاعدة البيانات
         async function loadStudentSchedule() {
             try {
-                // جلب الحصص المجدولة والتي لم تنتهِ بعد (status = scheduled)
                 const { data: sessions, error } = await window.supabase
                     .from('sessions')
                     .select(`
@@ -166,31 +148,30 @@
                 tbody.innerHTML = '';
 
                 if (sessions.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-gray-400">لا يوجد حصص مجدولة لك حالياً. سيقوم المعلم بجدولتها قريباً.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-gray-500 font-bold">لا يوجد حصص مجدولة لك حالياً. سيقوم المعلم بجدولتها قريباً.</td></tr>';
                     
                     document.getElementById('nextTeacherName').innerText = "لا توجد حصص مجدولة";
                     document.getElementById('nextSessionDate').innerText = "--";
                     document.getElementById('nextSessionTime').innerText = "--";
                     document.getElementById('joinButtonContainer').innerHTML = `
-                        <button disabled class="w-full md:w-auto bg-gray-700 text-gray-400 px-8 py-4 rounded-xl font-bold cursor-not-allowed">
+                        <button disabled class="w-full md:w-auto bg-gray-100 text-gray-400 px-8 py-3 rounded-lg font-bold cursor-not-allowed">
                             لا يوجد حصة اليوم
                         </button>`;
                     return;
                 }
 
-                // عرض الحصة القادمة (أول حصة في المصفوفة)
+                // عرض الحصة القادمة
                 const nextSession = sessions[0];
                 const teacherName = nextSession.users?.full_name || "معلم القرآن";
                 
-                document.getElementById('nextTeacherName').innerText = `معلمك: ${teacherName}`;
+                document.getElementById('nextTeacherName').innerText = `المعلم: ${teacherName}`;
                 document.getElementById('nextSessionDate').innerText = nextSession.session_date;
-                // إزالة الثواني من الوقت
                 const timeOnly = nextSession.start_time.substring(0, 5);
                 document.getElementById('nextSessionTime').innerText = timeOnly;
 
-                // إعداد زر الدخول للحصة القادمة (توجيه للغرفة الافتراضية مع إرسال رقم المعلم)
+                // إعداد زر الدخول للحصة القادمة 
                 document.getElementById('joinButtonContainer').innerHTML = `
-                    <a href="student_virtual_session.html?teacher_id=${nextSession.teacher_id}" class="block w-full md:w-auto bg-emerald-500 hover:bg-emerald-400 text-gray-900 px-8 py-4 rounded-xl font-bold shadow-lg shadow-emerald-500/30 transition text-center hover:-translate-y-1">
+                    <a href="student_virtual_session.html?teacher_id=${nextSession.teacher_id}" class="block w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-lg font-bold shadow transition text-center">
                         <i class="fas fa-video ml-2"></i> دخول الحصة الآن
                     </a>`;
 
@@ -200,12 +181,12 @@
                     const sTime = session.start_time.substring(0, 5);
                     
                     const row = `
-                        <tr class="hover:bg-gray-800/50 transition">
-                            <td class="p-4 text-emerald-400">${session.session_date}</td>
-                            <td class="p-4 text-gray-300"><i class="far fa-clock ml-1 text-gray-500"></i> ${sTime}</td>
-                            <td class="p-4 font-bold">${tName}</td>
-                            <td class="p-4">
-                                <span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-full text-xs">مجدولة</span>
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4 font-bold text-gray-700">${session.session_date}</td>
+                            <td class="px-6 py-4 font-bold text-gray-700" dir="ltr"><i class="far fa-clock mr-1 text-gray-400"></i> ${sTime}</td>
+                            <td class="px-6 py-4 font-bold text-gray-800">${tName}</td>
+                            <td class="px-6 py-4">
+                                <span class="bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1 rounded-full text-xs font-bold">مجدولة</span>
                             </td>
                         </tr>
                     `;
@@ -214,7 +195,7 @@
 
             } catch (error) {
                 console.error("خطأ في جلب الجدول:", error);
-                document.getElementById('upcomingSessionsTable').innerHTML = '<tr><td colspan="4" class="p-8 text-center text-red-400">حدث خطأ أثناء تحميل الجدول.</td></tr>';
+                document.getElementById('upcomingSessionsTable').innerHTML = '<tr><td colspan="4" class="p-8 text-center text-red-500 font-bold">حدث خطأ أثناء تحميل الجدول.</td></tr>';
             }
         }
 
