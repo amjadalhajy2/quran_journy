@@ -22,12 +22,12 @@
         <!-- شريط التقدم (Progress Bar) المحسن لـ 3 خطوات -->
         <div class="bg-emerald-800 text-white p-6">
             <h2 class="text-2xl font-bold text-center mb-8">طلب تسجيل طالب جديد</h2>
-            <div class="relative max-w-lg mx-auto flex justify-between items-center px-4">
+<div class="relative max-w-lg mx-auto flex justify-between items-center px-4">
                 
-                <!-- الخطوط الخلفية -->
-                <div class="absolute top-4 left-8 right-8 h-1 bg-emerald-900/50 -translate-y-1/2 z-0 rounded"></div>
-                <!-- الخط التفاعلي الممتد -->
-                <div id="progressLine" class="absolute top-4 right-8 h-1 bg-white -translate-y-1/2 z-0 transition-all duration-500 ease-in-out" style="width: 0%;"></div>
+                <!-- الخطوط الخلفية والتفاعلية (مدمجة لضمان الدقة) -->
+                <div class="absolute top-4 left-8 right-8 h-1 bg-emerald-900/50 -translate-y-1/2 z-0 rounded overflow-hidden">
+                    <div id="progressLine" class="absolute top-0 right-0 h-full bg-white transition-all duration-500 ease-in-out" style="width: 0%;"></div>
+                </div>
                 
                 <!-- الخطوة 1 -->
                 <div class="z-10 flex flex-col items-center relative">
