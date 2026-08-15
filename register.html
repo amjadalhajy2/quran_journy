@@ -9,7 +9,6 @@
     <style> 
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap'); 
         body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; }
-        /* إخفاء شريط التمرير للخطوات */
         .step-container::-webkit-scrollbar { display: none; }
         .radio-card:checked + div { border-color: #059669; background-color: #ecfdf5; }
         .radio-card:checked + div .check-icon { display: block; }
@@ -20,29 +19,35 @@
 
     <div class="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden relative">
         
-        <!-- شريط التقدم (Progress Bar) -->
+        <!-- شريط التقدم (Progress Bar) المحسن لـ 3 خطوات -->
         <div class="bg-emerald-800 text-white p-6">
-            <h2 class="text-2xl font-bold text-center mb-6">طلب تسجيل طالب جديد</h2>
-            <div class="flex justify-between items-center relative max-w-2xl mx-auto">
-                <div class="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-1 bg-emerald-600 z-0"></div>
+            <h2 class="text-2xl font-bold text-center mb-8">طلب تسجيل طالب جديد</h2>
+            <div class="relative max-w-lg mx-auto flex justify-between items-center px-4">
                 
-                <div class="z-10 flex flex-col items-center">
-                    <div id="ind-1" class="w-8 h-8 rounded-full bg-white text-emerald-800 font-bold flex items-center justify-center border-4 border-emerald-800 transition">1</div>
-                    <span class="text-xs mt-2 font-bold">الباقة</span>
+                <!-- الخطوط الخلفية -->
+                <div class="absolute top-4 left-8 right-8 h-1 bg-emerald-900/50 -translate-y-1/2 z-0 rounded"></div>
+                <!-- الخط التفاعلي الممتد -->
+                <div id="progressLine" class="absolute top-4 right-8 h-1 bg-white -translate-y-1/2 z-0 transition-all duration-500 ease-in-out" style="width: 0%;"></div>
+                
+                <!-- الخطوة 1 -->
+                <div class="z-10 flex flex-col items-center relative">
+                    <div id="ind-1" class="w-8 h-8 rounded-full bg-white text-emerald-800 font-bold flex items-center justify-center border-4 border-white transition shadow-[0_0_0_4px_rgba(255,255,255,0.2)]">1</div>
+                    <span id="text-1" class="text-xs mt-2 font-bold text-white absolute top-8 w-20 text-center">الباقة</span>
                 </div>
-                <div class="z-10 flex flex-col items-center">
-                    <div id="ind-2" class="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center border-4 border-emerald-800 transition">2</div>
-                    <span class="text-xs mt-2 font-bold text-emerald-200">الخطة</span>
+                
+                <!-- الخطوة 2 -->
+                <div class="z-10 flex flex-col items-center relative">
+                    <div id="ind-2" class="w-8 h-8 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center border-4 border-emerald-800 transition">2</div>
+                    <span id="text-2" class="text-xs mt-2 font-bold text-emerald-300 absolute top-8 w-20 text-center">البيانات</span>
                 </div>
-                <div class="z-10 flex flex-col items-center">
-                    <div id="ind-3" class="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center border-4 border-emerald-800 transition">3</div>
-                    <span class="text-xs mt-2 font-bold text-emerald-200">البيانات</span>
-                </div>
-                <div class="z-10 flex flex-col items-center">
-                    <div id="ind-4" class="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center border-4 border-emerald-800 transition">4</div>
-                    <span class="text-xs mt-2 font-bold text-emerald-200">الدفع</span>
+                
+                <!-- الخطوة 3 -->
+                <div class="z-10 flex flex-col items-center relative">
+                    <div id="ind-3" class="w-8 h-8 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center border-4 border-emerald-800 transition">3</div>
+                    <span id="text-3" class="text-xs mt-2 font-bold text-emerald-300 absolute top-8 w-20 text-center">الدفع</span>
                 </div>
             </div>
+            <div class="h-4"></div> <!-- مسافة للأسفل -->
         </div>
 
         <!-- حاوية الخطوات -->
@@ -50,30 +55,19 @@
             
             <!-- الخطوة 1: اختيار الباقة -->
             <div id="step-1" class="step-content">
-                <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">أولاً: اختر باقة الاشتراك</h3>
-                <div id="packagesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <p class="text-center text-gray-500 w-full col-span-2 py-8">جاري تحميل الباقات...</p>
+                <h3 class="text-xl font-bold text-gray-800 mb-6 border-b pb-2">أولاً: اختر باقة الاشتراك</h3>
+                <!-- تغيير الـ Grid إلى Flex ليكون صف واحد ويعمل سكرول في الشاشات الصغيرة -->
+                <div id="packagesContainer" class="flex flex-col md:flex-row justify-center items-stretch gap-4 w-full">
+                    <p class="text-center text-gray-500 w-full py-8">جاري تحميل الباقات...</p>
                 </div>
                 <div class="mt-8 flex justify-end">
                     <button onclick="nextStep(2, 'package')" class="bg-emerald-600 text-white px-8 py-3 rounded-lg font-bold shadow hover:bg-emerald-700 transition">التالي <i class="fas fa-arrow-left ml-2"></i></button>
                 </div>
             </div>
 
-            <!-- الخطوة 2: اختيار المقرر (الخطة) -->
+            <!-- الخطوة 2: البيانات الشخصية -->
             <div id="step-2" class="step-content hidden">
-                <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">ثانياً: اختر خطة الحفظ (المقرر)</h3>
-                <div id="curriculumsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <p class="text-center text-gray-500 w-full col-span-2 py-8">جاري تحميل الخطط...</p>
-                </div>
-                <div class="mt-8 flex justify-between">
-                    <button onclick="prevStep(1)" class="text-gray-500 hover:text-emerald-600 font-bold px-4 py-2"><i class="fas fa-arrow-right mr-2"></i> رجوع</button>
-                    <button onclick="nextStep(3, 'curriculum')" class="bg-emerald-600 text-white px-8 py-3 rounded-lg font-bold shadow hover:bg-emerald-700 transition">التالي <i class="fas fa-arrow-left ml-2"></i></button>
-                </div>
-            </div>
-
-            <!-- الخطوة 3: البيانات الشخصية -->
-            <div id="step-3" class="step-content hidden">
-                <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">ثالثاً: بيانات الطالب</h3>
+                <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">ثانياً: بيانات الطالب</h3>
                 <form id="userDataForm" class="space-y-4 max-w-lg mx-auto">
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-1">الاسم الرباعي</label>
@@ -83,30 +77,63 @@
                         <label class="block text-sm font-bold text-gray-700 mb-1">البريد الإلكتروني</label>
                         <input type="email" id="regEmail" class="w-full border border-gray-300 rounded-lg p-3 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" required>
                     </div>
+                    
+                    <!-- حقل الواتساب مع مفتاح الدولة -->
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">رقم الواتساب</label>
+                        <div class="flex">
+                            <select id="countryCode" class="border border-gray-300 rounded-r-lg p-3 focus:border-emerald-500 bg-gray-50 outline-none w-28 font-bold" dir="ltr">
+                                <option value="+968">+968 (OM)</option>
+                                <option value="+966">+966 (SA)</option>
+                                <option value="+971">+971 (AE)</option>
+                                <option value="+965">+965 (KW)</option>
+                                <option value="+974">+974 (QA)</option>
+                                <option value="+973">+973 (BH)</option>
+                            </select>
+                            <input type="tel" id="regPhone" class="w-full border border-gray-300 border-r-0 rounded-l-lg p-3 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none" required placeholder="مثال: 91234567">
+                        </div>
+                    </div>
+
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-1">كلمة المرور (للدخول لاحقاً)</label>
                         <input type="password" id="regPassword" class="w-full border border-gray-300 rounded-lg p-3 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" required>
+                        <!-- مساحة إظهار خطأ كلمة المرور -->
+                        <div id="passwordError" class="text-red-500 text-sm font-bold mt-2 hidden">
+                            <i class="fas fa-exclamation-circle ml-1"></i> كلمة المرور يجب أن تكون 6 خانات أو أكثر.
+                        </div>
                     </div>
                 </form>
+                
                 <div class="mt-8 flex justify-between max-w-lg mx-auto">
-                    <button onclick="prevStep(2)" class="text-gray-500 hover:text-emerald-600 font-bold px-4 py-2"><i class="fas fa-arrow-right mr-2"></i> رجوع</button>
-                    <button onclick="validateStep3()" class="bg-emerald-600 text-white px-8 py-3 rounded-lg font-bold shadow hover:bg-emerald-700 transition">التالي <i class="fas fa-arrow-left ml-2"></i></button>
+                    <button onclick="prevStep(1)" class="text-gray-500 hover:text-emerald-600 font-bold px-4 py-2"><i class="fas fa-arrow-right mr-2"></i> رجوع</button>
+                    <button onclick="validateStep2()" class="bg-emerald-600 text-white px-8 py-3 rounded-lg font-bold shadow hover:bg-emerald-700 transition">التالي <i class="fas fa-arrow-left ml-2"></i></button>
                 </div>
             </div>
 
-            <!-- الخطوة 4: الدفع والإرسال -->
-            <div id="step-4" class="step-content hidden">
-                <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">رابعاً: الفاتورة وإرفاق الإيصال</h3>
+            <!-- الخطوة 3: الدفع والإرسال -->
+            <div id="step-3" class="step-content hidden">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">ثالثاً: ملخص الطلب والدفع</h3>
                 
                 <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 mb-6 max-w-lg mx-auto">
-                    <h4 class="font-bold text-gray-700 mb-4">ملخص الطلب:</h4>
-                    <div class="flex justify-between border-b pb-2 mb-2">
-                        <span class="text-gray-600" id="summaryPackage">الباقة: --</span>
-                        <span class="font-bold text-emerald-600" id="summaryPrice">-- ريال</span>
-                    </div>
-                    <div class="flex justify-between pb-2 mb-4">
-                        <span class="text-gray-600">المقرر:</span>
-                        <span class="font-bold text-gray-800" id="summaryCurriculum">--</span>
+                    <h4 class="font-bold text-gray-700 mb-4 text-lg">بيانات التسجيل:</h4>
+                    
+                    <div class="space-y-3 mb-6 bg-white p-4 rounded-lg border">
+                        <div class="flex justify-between border-b pb-2">
+                            <span class="text-gray-500 text-sm">الاسم:</span>
+                            <span class="font-bold text-gray-800" id="summaryName">--</span>
+                        </div>
+                        <div class="flex justify-between border-b pb-2">
+                            <span class="text-gray-500 text-sm">البريد:</span>
+                            <span class="font-bold text-gray-800" id="summaryEmail">--</span>
+                        </div>
+                        <div class="flex justify-between border-b pb-2">
+                            <span class="text-gray-500 text-sm">الواتساب:</span>
+                            <span class="font-bold text-gray-800" id="summaryPhone" dir="ltr">--</span>
+                        </div>
+                        <div class="flex justify-between bg-emerald-50 p-2 rounded">
+                            <span class="text-emerald-700 font-bold text-sm">الباقة المطلوبة:</span>
+                            <span class="font-black text-emerald-700" id="summaryPackage">--</span>
+                        </div>
                     </div>
                     
                     <div class="bg-white p-4 rounded-lg border border-dashed border-gray-400 text-center">
@@ -118,7 +145,7 @@
                 <div id="finalMsg" class="hidden text-center font-bold p-3 rounded-lg mb-4 max-w-lg mx-auto"></div>
 
                 <div class="mt-8 flex justify-between max-w-lg mx-auto">
-                    <button onclick="prevStep(3)" class="text-gray-500 hover:text-emerald-600 font-bold px-4 py-2"><i class="fas fa-arrow-right mr-2"></i> رجوع</button>
+                    <button onclick="prevStep(2)" class="text-gray-500 hover:text-emerald-600 font-bold px-4 py-2"><i class="fas fa-arrow-right mr-2"></i> رجوع</button>
                     <button id="submitBtn" onclick="submitRegistration()" class="bg-emerald-600 text-white px-8 py-3 rounded-lg font-bold shadow-lg hover:bg-emerald-700 transition w-full ml-4">
                         إرسال الطلب واعتماد التسجيل
                     </button>
@@ -130,63 +157,41 @@
 
     <script src="supabase.js"></script>
     <script>
-        // المتغيرات لحفظ بيانات الخطوات
         let selectedPackage = null;
         let selectedPackageName = '';
         let selectedPrice = 0;
-        let selectedCurriculum = null;
-        let selectedCurriculumName = '';
 
-        // جلب البيانات عند تحميل الصفحة
         window.addEventListener('load', async () => {
-            // جلب الباقات النشطة
-            const { data: pkgs } = await window.supabase.from('packages').select('*').eq('is_active', true);
+            // جلب الباقات وترتيبها من الأرخص للأغلى
+            const { data: pkgs } = await window.supabase.from('packages')
+                .select('*')
+                .eq('is_active', true)
+                .order('price', { ascending: true }); // ترتيب تصاعدي حسب السعر
+                
             const pCont = document.getElementById('packagesContainer');
             pCont.innerHTML = '';
+            
             if(pkgs && pkgs.length > 0) {
                 pkgs.forEach(p => {
+                    // جعل العنصر flex-1 ليأخذ مساحة متساوية في الصف الواحد
                     pCont.innerHTML += `
-                        <label class="relative cursor-pointer">
+                        <label class="relative cursor-pointer flex-1 min-w-[250px]">
                             <input type="radio" name="package_id" value="${p.id}" data-name="${p.name}" data-price="${p.price}" class="radio-card sr-only">
-                            <div class="border-2 border-gray-200 rounded-xl p-6 hover:border-emerald-300 transition h-full bg-white relative">
+                            <div class="border-2 border-gray-200 rounded-xl p-6 hover:border-emerald-300 transition h-full bg-white relative flex flex-col text-center">
                                 <div class="check-icon absolute top-4 left-4 text-emerald-600 hidden"><i class="fas fa-check-circle text-xl"></i></div>
                                 <h4 class="text-lg font-bold text-gray-800">${p.name}</h4>
-                                <p class="text-2xl font-black text-emerald-600 my-2">${p.price} <span class="text-sm text-gray-500 font-normal">ريال</span></p>
-                                <p class="text-sm text-gray-600 whitespace-pre-line">${p.features || 'مميزات الباقة...'}</p>
+                                <p class="text-3xl font-black text-emerald-600 my-4">${p.price} <span class="text-sm text-gray-500 font-normal">ريال</span></p>
+                                <p class="text-sm text-gray-600 whitespace-pre-line flex-1">${p.features || 'مميزات الباقة...'}</p>
                             </div>
                         </label>
                     `;
                 });
             } else {
-                pCont.innerHTML = '<p class="col-span-2 text-center text-red-500 font-bold">لا توجد باقات متاحة حالياً.</p>';
-            }
-
-            // جلب المقررات النشطة
-            const { data: currs } = await window.supabase.from('curriculums').select('*').eq('is_active', true);
-            const cCont = document.getElementById('curriculumsContainer');
-            cCont.innerHTML = '';
-            if(currs && currs.length > 0) {
-                currs.forEach(c => {
-                    cCont.innerHTML += `
-                        <label class="relative cursor-pointer">
-                            <input type="radio" name="curriculum_id" value="${c.id}" data-name="${c.name}" class="radio-card sr-only">
-                            <div class="border-2 border-gray-200 rounded-xl p-6 hover:border-emerald-300 transition h-full bg-white relative">
-                                <div class="check-icon absolute top-4 left-4 text-emerald-600 hidden"><i class="fas fa-check-circle text-xl"></i></div>
-                                <h4 class="text-lg font-bold text-gray-800 mb-1">${c.name}</h4>
-                                <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block mb-2">المستهدف: ${c.target_parts} أجزاء</span>
-                                <p class="text-sm text-gray-500">${c.description || ''}</p>
-                            </div>
-                        </label>
-                    `;
-                });
-            } else {
-                cCont.innerHTML = '<p class="col-span-2 text-center text-red-500 font-bold">لم يتم إضافة مقررات بعد.</p>';
+                pCont.innerHTML = '<p class="text-center text-red-500 font-bold w-full">لا توجد باقات متاحة حالياً.</p>';
             }
         });
 
-        // التنقل بين الخطوات
         function nextStep(step, validationType) {
-            // التحقق من الاختيار قبل الانتقال
             if (validationType === 'package') {
                 const checked = document.querySelector('input[name="package_id"]:checked');
                 if(!checked) return alert('الرجاء اختيار باقة للاستمرار');
@@ -194,138 +199,136 @@
                 selectedPackageName = checked.dataset.name;
                 selectedPrice = checked.dataset.price;
             } 
-            else if (validationType === 'curriculum') {
-                const checked = document.querySelector('input[name="curriculum_id"]:checked');
-                if(!checked) return alert('الرجاء اختيار المقرر للاستمرار');
-                selectedCurriculum = checked.value;
-                selectedCurriculumName = checked.dataset.name;
-            }
-
             goToStep(step);
         }
 
         function prevStep(step) { goToStep(step); }
 
-        function validateStep3() {
+        function validateStep2() {
             const form = document.getElementById('userDataForm');
+            const password = document.getElementById('regPassword').value;
+            const passError = document.getElementById('passwordError');
+
+            // 1. فحص حقول الـ HTML الافتراضية
             if(!form.checkValidity()) {
                 form.reportValidity();
                 return;
             }
-            // تحديث الفاتورة في الخطوة 4
-            document.getElementById('summaryPackage').textContent = `الباقة: ${selectedPackageName}`;
-            document.getElementById('summaryPrice').textContent = `${selectedPrice} ريال`;
-            document.getElementById('summaryCurriculum').textContent = selectedCurriculumName;
-            goToStep(4);
+
+            // 2. التحقق من طول كلمة المرور (6 خانات على الأقل)
+            if(password.length < 6) {
+                passError.classList.remove('hidden');
+                return; // إيقاف الانتقال
+            } else {
+                passError.classList.add('hidden');
+            }
+
+            // تجهيز الفاتورة للخطوة القادمة
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const phoneCode = document.getElementById('countryCode').value;
+            const phoneNum = document.getElementById('regPhone').value;
+            const fullPhone = phoneCode + ' ' + phoneNum; // رقم هاتف منسق
+
+            document.getElementById('summaryName').textContent = name;
+            document.getElementById('summaryEmail').textContent = email;
+            document.getElementById('summaryPhone').textContent = fullPhone;
+            document.getElementById('summaryPackage').textContent = `${selectedPackageName} (${selectedPrice} ريال)`;
+
+            goToStep(3);
         }
 
         function goToStep(step) {
-            // إخفاء جميع الخطوات
             document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
-            // إظهار الخطوة المطلوبة
             document.getElementById(`step-${step}`).classList.remove('hidden');
             
-            // تحديث شريط التقدم بالأعلى
-            for(let i=1; i<=4; i++) {
+            // تحريك شريط التقدم 
+            const progressLine = document.getElementById('progressLine');
+            if(step === 1) progressLine.style.width = '0%';
+            else if(step === 2) progressLine.style.width = '50%';
+            else if(step === 3) progressLine.style.width = '100%';
+
+            for(let i=1; i<=3; i++) {
                 const ind = document.getElementById(`ind-${i}`);
-                const span = ind.nextElementSibling;
+                const text = document.getElementById(`text-${i}`);
+                
                 if(i < step) {
                     ind.className = 'w-8 h-8 rounded-full bg-white text-emerald-800 font-bold flex items-center justify-center border-4 border-white transition';
-                    span.className = 'text-xs mt-2 font-bold text-white';
+                    text.className = 'text-xs mt-2 font-bold text-white absolute top-8 w-20 text-center';
                 } else if(i === step) {
-                    ind.className = 'w-8 h-8 rounded-full bg-white text-emerald-800 font-bold flex items-center justify-center border-4 border-emerald-800 transition shadow-[0_0_0_4px_rgba(255,255,255,0.3)]';
-                    span.className = 'text-xs mt-2 font-bold text-white';
+                    ind.className = 'w-8 h-8 rounded-full bg-white text-emerald-800 font-bold flex items-center justify-center border-4 border-white transition shadow-[0_0_0_4px_rgba(255,255,255,0.2)]';
+                    text.className = 'text-xs mt-2 font-bold text-white absolute top-8 w-20 text-center';
                 } else {
-                    ind.className = 'w-8 h-8 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center border-4 border-emerald-800 transition';
-                    span.className = 'text-xs mt-2 font-bold text-emerald-200';
+                    ind.className = 'w-8 h-8 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center border-4 border-emerald-800 transition';
+                    text.className = 'text-xs mt-2 font-bold text-emerald-300 absolute top-8 w-20 text-center';
                 }
             }
         }
 
-        // إرسال الطلب النهائي
-// إرسال الطلب النهائي
-// إرسال الطلب النهائي
-async function submitRegistration() {
-    const fileInput = document.getElementById('receiptFile');
-    if(!fileInput.files || fileInput.files.length === 0) return alert('الرجاء إرفاق صورة الإيصال لاعتماد الطلب');
+        async function submitRegistration() {
+            const fileInput = document.getElementById('receiptFile');
+            if(!fileInput.files || fileInput.files.length === 0) return alert('الرجاء إرفاق صورة الإيصال لاعتماد الطلب');
 
-    const btn = document.getElementById('submitBtn');
-    const msg = document.getElementById('finalMsg');
-    btn.disabled = true; btn.textContent = 'جاري معالجة الطلب... يرجى الانتظار';
-    msg.classList.add('hidden');
+            const btn = document.getElementById('submitBtn');
+            const msg = document.getElementById('finalMsg');
+            btn.disabled = true; btn.textContent = 'جاري معالجة الطلب... يرجى الانتظار';
+            msg.classList.add('hidden');
 
-    try {
-        // تنظيف أي جلسة سابقة (لضمان عدم وجود تداخل)
-        await window.supabase.auth.signOut();
+            try {
+                await window.supabase.auth.signOut();
 
-        const name = document.getElementById('regName').value;
-        const email = document.getElementById('regEmail').value;
-        const password = document.getElementById('regPassword').value;
-        const file = fileInput.files[0];
+                const name = document.getElementById('regName').value;
+                const email = document.getElementById('regEmail').value;
+                const password = document.getElementById('regPassword').value;
+                const fullPhone = document.getElementById('countryCode').value + document.getElementById('regPhone').value;
+                const file = fileInput.files[0];
 
-        // 1. تسجيل المستخدم الجديد
-        const { data: authData, error: authError } = await window.supabase.auth.signUp({
-            email: email, password: password,
-            options: { data: { full_name: name, role: 'student' } }
-        });
-        if(authError) throw new Error("تعذر التسجيل: " + authError.message);
+                // 1. تسجيل الطالب مع رقم الواتساب
+                const { data: authData, error: authError } = await window.supabase.auth.signUp({
+                    email: email, password: password,
+                    options: { data: { full_name: name, role: 'student', phone: fullPhone } }
+                });
+                if(authError) throw new Error("تعذر التسجيل: " + authError.message);
 
-        // 🔥 السطر السحري: تسجيل الدخول فوراً لإجبار المتصفح على أخذ "مفتاح الدخول" (Session)
-        const { data: loginData, error: loginError } = await window.supabase.auth.signInWithPassword({
-            email: email,
-            password: password
-        });
-        if(loginError || !loginData.session) throw new Error("حدث خطأ أثناء المصادقة الأمنية لرفع الملف.");
+                const { data: loginData, error: loginError } = await window.supabase.auth.signInWithPassword({ email: email, password: password });
+                if(loginError || !loginData.session) throw new Error("حدث خطأ أثناء المصادقة الأمنية لرفع الملف.");
 
-        const userId = loginData.user.id;
+                const userId = loginData.user.id;
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${userId}_${Date.now()}.${fileExt}`;
+                
+                // 2. رفع صورة الإيصال
+                const { error: uploadError } = await window.supabase.storage.from('payment-receipts').upload(fileName, file);
+                if(uploadError) throw new Error("حدث خطأ أثناء رفع الإيصال: " + uploadError.message);
 
-        // 2. رفع صورة الإيصال إلى Storage (الآن المتصفح يمتلك المفتاح وسيقبله الجدار الأمني)
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${userId}_${Date.now()}.${fileExt}`;
-        
-        const { error: uploadError } = await window.supabase.storage
-            .from('payment-receipts')
-            .upload(fileName, file);
-        if(uploadError) throw new Error("حدث خطأ أثناء رفع الإيصال: " + uploadError.message);
+                // 3. إنشاء ملف الطالب (بدون مقرر)
+                const { error: profileError } = await window.supabase.from('student_profiles')
+                    .upsert({ user_id: userId });
+                    
+                if(profileError) throw new Error("حدث خطأ أثناء حفظ الملف الشخصي: " + profileError.message);
 
-        // 3. ربط الطالب بالمقرر المختار
-// 3. إنشاء ملف الطالب وربطه بالمقرر المختار
-// 3. تحديث ملف الطالب وربطه بالمقرر المختار (بدلاً من الإضافة)
-// 3. ربط الطالب بالمقرر المختار (استخدام upsert لتجنب تعارض المفاتيح)
-// 3. إنشاء أو تحديث ملف الطالب وربطه بالمقرر المختار
-const { error: profileError } = await window.supabase.from('student_profiles')
-    .upsert({ 
-        user_id: userId, 
-        curriculum_id: selectedCurriculum 
-    });
-    
-if(profileError) throw new Error("حدث خطأ أثناء حفظ المقرر: " + profileError.message);
+                // 4. إنشاء سجل الفاتورة والاشتراك
+                const { error: subError } = await window.supabase.from('subscriptions')
+                    .insert({
+                        user_id: userId,
+                        student_id: userId,
+                        package_id: selectedPackage,
+                        receipt_url: fileName,
+                        status: 'pending'
+                    });
+                    
+                if(subError) throw new Error("تم التسجيل ولكن حدث خطأ في ربط الإيصال: " + subError.message);
 
-// 4. إنشاء سجل الفاتورة والاشتراك
-const { error: subError } = await window.supabase.from('subscriptions')
-    .insert({
-        user_id: userId,          // تأكد من تمرير user_id 
-        student_id: userId,       // وتمرير student_id ليطابق تصميم قاعدة بياناتك
-        package_id: selectedPackage,
-        receipt_url: fileName,
-        status: 'pending'
-    });
-    
-if(subError) throw new Error("تم التسجيل ولكن حدث خطأ في ربط الإيصال: " + subError.message);
+                msg.textContent = '🎉 تم تسجيل طلبك بنجاح! سيتم تحويلك للوحة الطالب...';
+                msg.className = 'text-emerald-700 bg-emerald-100 font-bold p-3 rounded-lg mb-4 max-w-lg mx-auto block text-center';
+                setTimeout(() => { window.location.href = 'student_dashboard.html'; }, 2000);
 
-        // نجاح العملية!
-        msg.textContent = '🎉 تم تسجيل طلبك بنجاح! سيتم تحويلك للوحة الطالب...';
-        msg.className = 'text-emerald-700 bg-emerald-100 font-bold p-3 rounded-lg mb-4 max-w-lg mx-auto block text-center';
-        
-        // التوجيه للوحة الطالب
-        setTimeout(() => { window.location.href = 'student_dashboard.html'; }, 2000);
-
-    } catch (err) {
-        msg.textContent = err.message;
-        msg.className = 'text-red-700 bg-red-100 font-bold p-3 rounded-lg mb-4 max-w-lg mx-auto block text-center';
-        btn.disabled = false; btn.textContent = 'إرسال الطلب واعتماد التسجيل';
-    }
-}
+            } catch (err) {
+                msg.textContent = err.message;
+                msg.className = 'text-red-700 bg-red-100 font-bold p-3 rounded-lg mb-4 max-w-lg mx-auto block text-center';
+                btn.disabled = false; btn.textContent = 'إرسال الطلب واعتماد التسجيل';
+            }
+        }
     </script>
 </body>
 </html>
