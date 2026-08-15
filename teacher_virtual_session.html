@@ -2,75 +2,221 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>غرفة الإقراء التفاعلية</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>غرفة الإقراء الافتراضية - بوابة المعلم</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style> @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap'); body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; } </style>
+    <style> 
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap'); 
+        body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; } 
+        /* إخفاء شريط التمرير من مربع الفيديو */
+        #jitsi-container iframe { border-radius: 0.5rem; border: none; }
+    </style>
+    <!-- استدعاء مكتبة قاعدة البيانات -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- استدعاء مكتبة Jitsi Meet للاتصال المرئي (السر البرمجي للاتصال) -->
+    <script src="https://meet.jit.si/external_api.js"></script>
 </head>
 <body class="flex h-screen overflow-hidden text-gray-200">
     
-    <!-- القائمة الجانبية المصغرة للغرفة -->
-    <aside class="w-20 bg-gray-900 flex flex-col items-center py-6 border-l border-gray-800 z-10">
-        <a href="teacher_dashboard.html" class="text-gray-400 hover:text-white mb-8 transition" title="خروج من الغرفة"><i class="fas fa-sign-out-alt text-2xl"></i></a>
-        <button class="w-12 h-12 bg-emerald-600 rounded-full text-white mb-4 shadow-[0_0_15px_rgba(16,185,129,0.5)]"><i class="fas fa-microphone"></i></button>
-        <button class="w-12 h-12 bg-gray-700 hover:bg-gray-600 rounded-full text-white mb-4"><i class="fas fa-video"></i></button>
-        <button class="w-12 h-12 bg-gray-700 hover:bg-gray-600 rounded-full text-white mb-4"><i class="fas fa-share-square"></i></button>
+    <!-- القائمة الجانبية المصغرة للتحكم بالغرفة -->
+    <aside class="w-20 bg-gray-900 flex flex-col items-center py-6 border-l border-gray-800 z-10 shadow-2xl">
+        <a href="teacher_dashboard.html" class="text-gray-400 hover:text-white mb-8 transition" title="إنهاء الحصة والعودة للرئيسية">
+            <i class="fas fa-sign-out-alt text-2xl text-red-400 hover:text-red-500"></i>
+        </a>
+        
         <div class="flex-1"></div>
-        <button class="w-12 h-12 bg-red-600 hover:bg-red-700 rounded-full text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]"><i class="fas fa-phone-slash"></i></button>
+        
+        <div class="text-xs text-gray-500 font-bold rotate-180" style="writing-mode: vertical-rl;">
+            مِـنَـصَّـةُ التِّـلَاوَةِ
+        </div>
     </aside>
 
     <main class="flex-1 flex flex-col md:flex-row">
         
-        <!-- مساحة المصحف التفاعلي (يسار/وسط) -->
+        <!-- مساحة المصحف التفاعلي (يمين/وسط الشاشة) -->
         <div class="flex-1 bg-[#1e293b] p-4 flex flex-col relative border-l border-gray-800">
-            <div class="bg-gray-800 rounded-lg p-3 flex justify-between items-center mb-4">
-                <div class="font-bold text-emerald-400"><i class="fas fa-quran ml-2"></i> المصحف الشريف - سورة البقرة</div>
-                <div class="flex space-x-2 space-x-reverse">
-                    <button class="bg-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-600">السورة السابقة</button>
-                    <button class="bg-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-600">التالية</button>
+            <!-- شريط التحكم بالمصحف -->
+            <div class="bg-gray-800 rounded-lg p-3 flex justify-between items-center mb-4 shadow-md border border-gray-700">
+                <div class="font-bold text-emerald-400 flex items-center">
+                    <i class="fas fa-quran ml-2 text-xl"></i> المصحف الشريف
+                </div>
+                
+                <div class="flex items-center space-x-2 space-x-reverse">
+                    <button onclick="changePage(-1)" class="bg-gray-700 hover:bg-emerald-700 px-4 py-2 rounded font-bold text-sm transition text-white shadow">
+                        <i class="fas fa-chevron-right ml-1"></i> الصفحة السابقة
+                    </button>
+                    
+                    <!-- إدخال رقم الصفحة للقفز السريع -->
+                    <div class="flex items-center bg-gray-900 rounded px-3 py-1 border border-gray-600">
+                        <span class="text-xs text-gray-400 ml-2">صفحة:</span>
+                        <input type="number" id="pageNumberInput" value="1" min="1" max="604" 
+                               class="w-14 bg-transparent text-white font-bold text-center outline-none"
+                               onchange="jumpToPage(this.value)">
+                    </div>
+                    
+                    <button onclick="changePage(1)" class="bg-gray-700 hover:bg-emerald-700 px-4 py-2 rounded font-bold text-sm transition text-white shadow">
+                        التالية <i class="fas fa-chevron-left mr-1"></i>
+                    </button>
                 </div>
             </div>
             
-            <!-- صورة مصحف تعبيرية -->
-            <div class="flex-1 bg-[#fef8e6] rounded-xl overflow-hidden flex items-center justify-center border-4 border-gray-700 relative shadow-inner text-gray-800 text-center p-8">
-                <div>
-                    <h1 class="text-4xl font-black mb-8 font-serif">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</h1>
-                    <p class="text-2xl leading-loose font-serif">
-                        الم ﴿١﴾ ذَٰلِكَ الْكِتَابُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ ﴿٢﴾ 
-                        الَّذِينَ يُؤْمِنُونَ بِالْغَيْبِ وَيُقِيمُونَ الصَّلَاةَ وَمِمَّا رَزَقْنَاهُمْ يُنفِقُونَ ﴿٣﴾
-                    </p>
+            <!-- عارض صورة المصحف فائق السرعة -->
+            <div class="flex-1 bg-[#fdfbf7] rounded-xl overflow-hidden flex items-center justify-center border-4 border-gray-700 relative shadow-inner">
+                <!-- صورة الصفحة بجودة عالية -->
+                <img id="quranPageImage" src="" 
+                     class="h-full object-contain p-2" 
+                     alt="صفحة المصحف">
+                     
+                <!-- مؤشر التحميل (يظهر أثناء تقليب الصفحات فقط) -->
+                <div id="loadingOverlay" class="absolute inset-0 bg-[#fdfbf7] flex items-center justify-center">
+                    <i class="fas fa-spinner fa-spin text-4xl text-emerald-600"></i>
                 </div>
-                <div class="absolute bottom-4 right-4 bg-emerald-700 text-white px-3 py-1 rounded text-sm shadow">الصفحة 2</div>
             </div>
         </div>
 
-        <!-- منطقة الفيديو والدردشة (يمين) -->
-        <div class="w-full md:w-96 bg-gray-900 flex flex-col">
-            <!-- فيديو الطالب -->
-            <div class="h-64 bg-black relative border-b border-gray-800">
-                <div class="absolute inset-0 flex items-center justify-center text-gray-600 text-sm">
-                    <div class="text-center"><i class="fas fa-user-circle text-6xl mb-2"></i><br>كاميرا الطالب</div>
-                </div>
-                <div class="absolute bottom-2 right-2 bg-black bg-opacity-60 px-2 py-1 rounded text-xs">أحمد محمد (الطالب)</div>
-                <!-- فيديو المعلم مصغر -->
-                <div class="absolute bottom-2 left-2 w-24 h-32 bg-gray-800 border-2 border-gray-600 rounded-lg overflow-hidden flex items-center justify-center">
-                    <i class="fas fa-video text-gray-500"></i>
+        <!-- منطقة الاتصال المرئي ومعلومات الطالب (يسار الشاشة) -->
+        <div class="w-full md:w-[450px] bg-gray-900 flex flex-col shadow-2xl">
+            
+            <!-- رأس معلومات الطالب والحصة -->
+            <div class="p-4 border-b border-gray-800 bg-gray-900">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-white text-lg" id="studentNameDisplay">جاري التحميل...</h3>
+                        <p class="text-xs text-emerald-400 font-bold" id="teacherNameDisplay">المعلم: جاري التحميل...</p>
+                    </div>
+                    <span class="bg-red-500 text-white text-xs px-2 py-1 rounded animate-pulse font-bold flex items-center">
+                        <i class="fas fa-circle text-[8px] ml-1"></i> مباشر
+                    </span>
                 </div>
             </div>
 
-            <!-- صندوق الدردشة -->
-            <div class="flex-1 flex flex-col">
-                <div class="p-4 border-b border-gray-800 font-bold text-gray-400 text-sm"><i class="fas fa-comments ml-2"></i> المحادثة المباشرة</div>
-                <div class="flex-1 p-4 overflow-y-auto space-y-3">
-                    <div class="bg-gray-800 rounded-lg rounded-tr-none p-3 text-sm text-gray-300 max-w-[85%]">السلام عليكم أستاذي، هل الصوت واضح؟</div>
-                    <div class="bg-emerald-800 rounded-lg rounded-tl-none p-3 text-sm text-white max-w-[85%] self-end">وعليكم السلام، نعم واضح جداً، فلنبدأ من سورة البقرة.</div>
+            <!-- حاوية Jitsi لغرفة الفيديو (يتم حقنها برمجياً) -->
+            <div id="jitsi-container" class="w-full h-[50vh] bg-black relative shadow-inner">
+                <div id="jitsi-loader" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                    <i class="fas fa-video text-4xl mb-3 animate-bounce"></i>
+                    <p class="font-bold text-sm">جاري إنشاء وتشفير الغرفة المرئية...</p>
                 </div>
-                <div class="p-3 border-t border-gray-800 flex">
-                    <input type="text" class="flex-1 bg-gray-800 border-none rounded-r-lg px-3 py-2 text-sm text-white focus:outline-none" placeholder="اكتب رسالة...">
-                    <button class="bg-emerald-600 px-4 py-2 rounded-l-lg hover:bg-emerald-700 transition"><i class="fas fa-paper-plane"></i></button>
-                </div>
+            </div>
+
+            <!-- ملاحظات الحصة (أسفل الفيديو) -->
+            <div class="flex-1 p-4 bg-gray-800 flex flex-col">
+                <h4 class="font-bold text-gray-300 text-sm mb-3 border-b border-gray-700 pb-2">
+                    <i class="fas fa-pen ml-2 text-emerald-500"></i> ملاحظات المعلم للحصة الحالية
+                </h4>
+                <textarea class="flex-1 w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm text-gray-200 outline-none focus:border-emerald-500 resize-none" placeholder="اكتب ملاحظاتك عن تلاوة الطالب هنا... (سيتم حفظها بملف الطالب)"></textarea>
+                <button class="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition w-full shadow-lg">
+                    حفظ الملاحظات وإنهاء الحصة
+                </button>
             </div>
         </div>
     </main>
+
+    <script src="supabase.js"></script>
+    <script>
+        // --- 1. نظام المصحف الإلكتروني (تصفح الصور السريع) ---
+        let currentPage = 1;
+        const pageImageElement = document.getElementById('quranPageImage');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const pageInput = document.getElementById('pageNumberInput');
+
+        // دالة تغيير صفحة المصحف وجلب الصورة
+        function updateQuranPage(pageNum) {
+            if (pageNum < 1) pageNum = 1;
+            if (pageNum > 604) pageNum = 604;
+            
+            currentPage = pageNum;
+            pageInput.value = currentPage;
+            loadingOverlay.classList.remove('hidden'); // إظهار اللودينج
+            
+            // تحويل الرقم إلى صيغة 3 خانات (مثال: 1 يصبح 001) لجلبه من السيرفر
+            const formattedPageNum = String(currentPage).padStart(3, '0');
+            const imageUrl = `https://www.mp3quran.net/api/quran_pages_ar/${formattedPageNum}.png`;
+            
+            pageImageElement.src = imageUrl;
+            
+            pageImageElement.onload = () => {
+                loadingOverlay.classList.add('hidden'); // إخفاء اللودينج عند اكتمال التحميل
+            };
+        }
+
+        function changePage(direction) {
+            updateQuranPage(currentPage + direction);
+        }
+
+        function jumpToPage(val) {
+            updateQuranPage(parseInt(val) || 1);
+        }
+
+        // --- 2. نظام الغرفة الصوتية والمرئية (Jitsi API) ---
+        let api = null;
+        
+        async function initializeRoom() {
+            // التحقق من هوية المعلم
+            const { data: { user } } = await window.supabase.auth.getUser();
+            if(!user) return window.location.href = 'login.html';
+
+            const teacherName = user.user_metadata?.full_name || "معلم القرآن";
+            document.getElementById('teacherNameDisplay').textContent = `المعلم: ${teacherName}`;
+
+            // استخراج معرف الطالب من الرابط (لاستخدامه في تشفير اسم الغرفة)
+            const urlParams = new URLSearchParams(window.location.search);
+            const studentId = urlParams.get('student_id');
+            
+            let studentName = "غرفة عامة (بانتظار أي طالب)";
+            let roomName = `Tilawah_Teacher_${user.id.substring(0,10)}`; // اسم الغرفة الافتراضي
+
+            // إذا كان هناك طالب محدد في الرابط
+            if (studentId) {
+                const { data: studentData } = await window.supabase.from('users').select('full_name').eq('id', studentId).single();
+                if (studentData) {
+                    studentName = studentData.full_name;
+                    document.getElementById('studentNameDisplay').textContent = `الطالب: ${studentName}`;
+                    // إنشاء اسم غرفة مشفر وفريد يجمع المعلم والطالب معاً
+                    roomName = `Tilawah_Room_${user.id.substring(0,8)}_${studentId.substring(0,8)}`;
+                }
+            } else {
+                document.getElementById('studentNameDisplay').textContent = studentName;
+            }
+
+            // إعدادات إنشاء غرفة Jitsi
+            const domain = 'meet.jit.si';
+            const options = {
+                roomName: roomName,
+                width: '100%',
+                height: '100%',
+                parentNode: document.querySelector('#jitsi-container'),
+                userInfo: {
+                    displayName: teacherName,
+                    role: 'moderator' // المعلم هو مدير الغرفة
+                },
+                configOverwrite: {
+                    startWithAudioMuted: false, // تشغيل المايك فوراً
+                    startWithVideoMuted: false, // تشغيل الكاميرا فوراً
+                    disableModeratorIndicator: true,
+                    disableDeepLinking: true, // منع فتح تطبيق خارجي وإجباره على المتصفح
+                    prejoinPageEnabled: false // تخطي صفحة الانتظار والدخول المباشر
+                },
+                interfaceConfigOverwrite: {
+                    // الأزرار التي ستظهر للمعلم
+                    TOOLBAR_BUTTONS: ['microphone', 'camera', 'desktop', 'fullscreen', 'chat', 'settings'],
+                    SHOW_JITSI_WATERMARK: false,
+                    SHOW_WATERMARK_FOR_GUESTS: false,
+                    SHOW_BRAND_WATERMARK: false
+                }
+            };
+            
+            // إخفاء مؤشر التحميل الخاص بـ Jitsi وبدء الغرفة
+            document.getElementById('jitsi-loader').style.display = 'none';
+            api = new JitsiMeetExternalAPI(domain, options);
+        }
+
+        // تشغيل كل شيء عند اكتمال تحميل الصفحة
+        window.addEventListener('load', () => {
+            updateQuranPage(1); // فتح الفاتحة افتراضياً
+            initializeRoom();   // تجهيز وبدء غرفة الفيديو
+        });
+
+    </script>
 </body>
 </html>
