@@ -219,13 +219,13 @@
                     endDate.setHours(hours, mins + durationMins, 0, 0);
                     const endTimeStr = endDate.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
 
-                    sessionsToInsert.push({
+sessionsToInsert.push({
                         teacher_id: currentUserId,
                         student_id: studentId,
                         session_date: dateStr,
                         start_time: startTimeStr + ':00',
                         end_time: endTimeStr + ':00',
-                        status: 'scheduled'
+                        status: 'scheduled',  // <--- الفاصلة هنا كانت مفقودة
                         scheduled_at: new Date().toISOString()
                     });
                 }
