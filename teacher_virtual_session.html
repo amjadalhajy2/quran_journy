@@ -9,24 +9,20 @@
     <style> 
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap'); 
         body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; } 
-        /* إخفاء شريط التمرير من مربع الفيديو */
+        /* إخفاء الإطارات من مربع الفيديو */
         #jitsi-container iframe { border-radius: 0.5rem; border: none; }
     </style>
-    <!-- استدعاء مكتبة قاعدة البيانات -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- استدعاء مكتبة Jitsi Meet للاتصال المرئي (السر البرمجي للاتصال) -->
     <script src="https://meet.jit.si/external_api.js"></script>
 </head>
 <body class="flex h-screen overflow-hidden text-gray-200">
     
-    <!-- القائمة الجانبية المصغرة للتحكم بالغرفة -->
+    <!-- القائمة الجانبية المصغرة -->
     <aside class="w-20 bg-gray-900 flex flex-col items-center py-6 border-l border-gray-800 z-10 shadow-2xl">
         <a href="teacher_dashboard.html" class="text-gray-400 hover:text-white mb-8 transition" title="إنهاء الحصة والعودة للرئيسية">
             <i class="fas fa-sign-out-alt text-2xl text-red-400 hover:text-red-500"></i>
         </a>
-        
         <div class="flex-1"></div>
-        
         <div class="text-xs text-gray-500 font-bold rotate-180" style="writing-mode: vertical-rl;">
             مِـنَـصَّـةُ التِّـلَاوَةِ
         </div>
@@ -47,7 +43,6 @@
                         <i class="fas fa-chevron-right ml-1"></i> الصفحة السابقة
                     </button>
                     
-                    <!-- إدخال رقم الصفحة للقفز السريع -->
                     <div class="flex items-center bg-gray-900 rounded px-3 py-1 border border-gray-600">
                         <span class="text-xs text-gray-400 ml-2">صفحة:</span>
                         <input type="number" id="pageNumberInput" value="1" min="1" max="604" 
@@ -68,17 +63,17 @@
                      class="h-full object-contain p-2" 
                      alt="صفحة المصحف">
                      
-                <!-- مؤشر التحميل (يظهر أثناء تقليب الصفحات فقط) -->
+                <!-- مؤشر التحميل -->
                 <div id="loadingOverlay" class="absolute inset-0 bg-[#fdfbf7] flex items-center justify-center">
                     <i class="fas fa-spinner fa-spin text-4xl text-emerald-600"></i>
                 </div>
             </div>
         </div>
 
-        <!-- منطقة الاتصال المرئي ومعلومات الطالب (يسار الشاشة) -->
+        <!-- منطقة الاتصال المرئي (يسار الشاشة) -->
         <div class="w-full md:w-[450px] bg-gray-900 flex flex-col shadow-2xl">
             
-            <!-- رأس معلومات الطالب والحصة -->
+            <!-- رأس معلومات الطالب -->
             <div class="p-4 border-b border-gray-800 bg-gray-900">
                 <div class="flex justify-between items-center">
                     <div>
@@ -91,7 +86,7 @@
                 </div>
             </div>
 
-            <!-- حاوية Jitsi لغرفة الفيديو (يتم حقنها برمجياً) -->
+            <!-- حاوية Jitsi -->
             <div id="jitsi-container" class="w-full h-[50vh] bg-black relative shadow-inner">
                 <div id="jitsi-loader" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
                     <i class="fas fa-video text-4xl mb-3 animate-bounce"></i>
@@ -99,7 +94,7 @@
                 </div>
             </div>
 
-            <!-- ملاحظات الحصة (أسفل الفيديو) -->
+            <!-- ملاحظات الحصة -->
             <div class="flex-1 p-4 bg-gray-800 flex flex-col">
                 <h4 class="font-bold text-gray-300 text-sm mb-3 border-b border-gray-700 pb-2">
                     <i class="fas fa-pen ml-2 text-emerald-500"></i> ملاحظات المعلم للحصة الحالية
@@ -114,30 +109,37 @@
 
     <script src="supabase.js"></script>
     <script>
-        // --- 1. نظام المصحف الإلكتروني (تصفح الصور السريع) ---
+        // --- 1. نظام المصحف الإلكتروني (تصفح الصور السريع من Github) ---
         let currentPage = 1;
         const pageImageElement = document.getElementById('quranPageImage');
         const loadingOverlay = document.getElementById('loadingOverlay');
         const pageInput = document.getElementById('pageNumberInput');
 
-        // دالة تغيير صفحة المصحف وجلب الصورة
         function updateQuranPage(pageNum) {
             if (pageNum < 1) pageNum = 1;
             if (pageNum > 604) pageNum = 604;
             
             currentPage = pageNum;
             pageInput.value = currentPage;
-            loadingOverlay.classList.remove('hidden'); // إظهار اللودينج
+            loadingOverlay.classList.remove('hidden'); 
             
-            // تحويل الرقم إلى صيغة 3 خانات (مثال: 1 يصبح 001) لجلبه من السيرفر
+            // تحويل الرقم إلى صيغة 3 خانات (مثال: 1 يصبح 001)
             const formattedPageNum = String(currentPage).padStart(3, '0');
-            const imageUrl = `https://www.mp3quran.net/api/quran_pages_ar/${formattedPageNum}.png`;
             
-            pageImageElement.src = imageUrl;
+            // استخدام سيرفر Github القوي والمفتوح المصدر (1024px عالية الدقة)
+            const imageUrl = `https://raw.githubusercontent.com/quran/quran.com-images/master/width_1024/page${formattedPageNum}.png`;
             
-            pageImageElement.onload = () => {
-                loadingOverlay.classList.add('hidden'); // إخفاء اللودينج عند اكتمال التحميل
+            // في حال فشل التحميل لسبب ما، نزيل الدائرة حتى لا تعلق الشاشة
+            pageImageElement.onerror = () => {
+                loadingOverlay.classList.add('hidden');
+                console.error("خطأ في تحميل صفحة المصحف من السيرفر الأول");
             };
+
+            pageImageElement.onload = () => {
+                loadingOverlay.classList.add('hidden'); // إخفاء الدائرة عند نجاح التحميل
+            };
+
+            pageImageElement.src = imageUrl;
         }
 
         function changePage(direction) {
@@ -152,34 +154,29 @@
         let api = null;
         
         async function initializeRoom() {
-            // التحقق من هوية المعلم
             const { data: { user } } = await window.supabase.auth.getUser();
             if(!user) return window.location.href = 'login.html';
 
             const teacherName = user.user_metadata?.full_name || "معلم القرآن";
             document.getElementById('teacherNameDisplay').textContent = `المعلم: ${teacherName}`;
 
-            // استخراج معرف الطالب من الرابط (لاستخدامه في تشفير اسم الغرفة)
             const urlParams = new URLSearchParams(window.location.search);
             const studentId = urlParams.get('student_id');
             
             let studentName = "غرفة عامة (بانتظار أي طالب)";
-            let roomName = `Tilawah_Teacher_${user.id.substring(0,10)}`; // اسم الغرفة الافتراضي
+            let roomName = `Tilawah_Teacher_${user.id.substring(0,10)}`; 
 
-            // إذا كان هناك طالب محدد في الرابط
             if (studentId) {
                 const { data: studentData } = await window.supabase.from('users').select('full_name').eq('id', studentId).single();
                 if (studentData) {
                     studentName = studentData.full_name;
                     document.getElementById('studentNameDisplay').textContent = `الطالب: ${studentName}`;
-                    // إنشاء اسم غرفة مشفر وفريد يجمع المعلم والطالب معاً
                     roomName = `Tilawah_Room_${user.id.substring(0,8)}_${studentId.substring(0,8)}`;
                 }
             } else {
                 document.getElementById('studentNameDisplay').textContent = studentName;
             }
 
-            // إعدادات إنشاء غرفة Jitsi
             const domain = 'meet.jit.si';
             const options = {
                 roomName: roomName,
@@ -188,17 +185,16 @@
                 parentNode: document.querySelector('#jitsi-container'),
                 userInfo: {
                     displayName: teacherName,
-                    role: 'moderator' // المعلم هو مدير الغرفة
+                    role: 'moderator'
                 },
                 configOverwrite: {
-                    startWithAudioMuted: false, // تشغيل المايك فوراً
-                    startWithVideoMuted: false, // تشغيل الكاميرا فوراً
+                    startWithAudioMuted: false,
+                    startWithVideoMuted: false,
                     disableModeratorIndicator: true,
-                    disableDeepLinking: true, // منع فتح تطبيق خارجي وإجباره على المتصفح
-                    prejoinPageEnabled: false // تخطي صفحة الانتظار والدخول المباشر
+                    disableDeepLinking: true, 
+                    prejoinPageEnabled: false 
                 },
                 interfaceConfigOverwrite: {
-                    // الأزرار التي ستظهر للمعلم
                     TOOLBAR_BUTTONS: ['microphone', 'camera', 'desktop', 'fullscreen', 'chat', 'settings'],
                     SHOW_JITSI_WATERMARK: false,
                     SHOW_WATERMARK_FOR_GUESTS: false,
@@ -206,15 +202,13 @@
                 }
             };
             
-            // إخفاء مؤشر التحميل الخاص بـ Jitsi وبدء الغرفة
             document.getElementById('jitsi-loader').style.display = 'none';
             api = new JitsiMeetExternalAPI(domain, options);
         }
 
-        // تشغيل كل شيء عند اكتمال تحميل الصفحة
         window.addEventListener('load', () => {
-            updateQuranPage(1); // فتح الفاتحة افتراضياً
-            initializeRoom();   // تجهيز وبدء غرفة الفيديو
+            updateQuranPage(1);
+            initializeRoom();  
         });
 
     </script>
