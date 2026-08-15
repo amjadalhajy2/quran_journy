@@ -11,18 +11,16 @@
         body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; } 
         #jitsi-container iframe { border-radius: 0.5rem; border: none; }
         
-        /* 🌟 هندسة الكتاب الواقعي 🌟 */
+        /* هندسة الكتاب الواقعي - ممتد بالكامل */
         .book-container {
-            /* نسبة أبعاد دقيقة لصفحتين متقابلتين من المصحف (عرض/طول) */
-            aspect-ratio: 1.4 / 1;
-            max-height: 85vh;
-            perspective: 2500px; /* عمق بصري كبير لواقعية الـ 3D */
+            width: 100%;
+            height: 100%; /* يتمدد ليعبئ كل المساحة العمودية */
+            perspective: 2500px;
             position: relative;
             background-color: #ffffff;
             box-shadow: 0 20px 40px rgba(0,0,0,0.6), inset 0 0 10px rgba(0,0,0,0.1);
         }
 
-        /* ظل كعب الكتاب (المنتصف) */
         .book-spine {
             position: absolute;
             top: 0; bottom: 0; left: 50%;
@@ -38,45 +36,26 @@
             pointer-events: none;
         }
 
-        /* الصفحات */
         .page {
             flex: 1;
             position: relative;
             transform-style: preserve-3d;
-            /* سرعة ونعومة طي الورق */
             transition: transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1), filter 0.5s; 
             background-color: #ffffff;
         }
 
-        /* الصفحة اليمنى ترتكز من اليسار (المنتصف) */
-        .page-right {
-            transform-origin: left center;
-        }
-        
-        /* الصفحة اليسرى ترتكز من اليمين (المنتصف) */
-        .page-left {
-            transform-origin: right center;
-        }
+        .page-right { transform-origin: left center; }
+        .page-left { transform-origin: right center; }
 
-        /* 🌟 حركات التقليب حسب فيزياء الكتب العربية 🌟 */
-        /* التقليب للأمام (التالي): الصفحة اليسرى تنطوي نحو اليمين */
-        .turning-next .page-left {
-            transform: rotateY(90deg);
-            filter: brightness(0.7); /* تعتيم الورقة أثناء الطي */
-        }
-        
-        /* التقليب للخلف (السابق): الصفحة اليمنى تنطوي نحو اليسار */
-        .turning-prev .page-right {
-            transform: rotateY(-90deg);
-            filter: brightness(0.7);
-        }
+        /* فيزياء التقليب */
+        .turning-next .page-left { transform: rotateY(90deg); filter: brightness(0.7); }
+        .turning-prev .page-right { transform: rotateY(-90deg); filter: brightness(0.7); }
 
-        /* منع الفراغات من الصور */
         .quran-img {
             width: 100%;
             height: 100%;
-            object-fit: fill; /* يعبئ الصفحة تماماً لتجنب الفراغات */
-            mix-blend-mode: multiply; /* لدمج لون خلفية الصورة مع لون الورقة */
+            object-fit: fill; /* يجبر الصورة على تعبئة المساحة مهما كانت أبعاد الشاشة */
+            mix-blend-mode: multiply;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -84,7 +63,7 @@
 </head>
 <body class="flex h-screen overflow-hidden text-gray-200">
     
-    <aside class="w-20 bg-gray-900 flex flex-col items-center py-6 border-l border-gray-800 z-10 shadow-2xl">
+    <aside class="w-16 md:w-20 bg-gray-900 flex flex-col items-center py-6 border-l border-gray-800 z-10 shadow-2xl">
         <a href="teacher_dashboard.html" class="text-gray-400 hover:text-white mb-8 transition" title="العودة">
             <i class="fas fa-sign-out-alt text-2xl text-red-400 hover:text-red-500"></i>
         </a>
@@ -92,66 +71,60 @@
 
     <main class="flex-1 flex flex-col md:flex-row">
         
-        <!-- مساحة المصحف (اليمين) -->
-        <div class="flex-1 bg-[#1e293b] p-2 md:p-6 flex flex-col relative border-l border-gray-800 justify-center items-center">
+        <!-- مساحة المصحف (تمت توسعتها لتمثل حوالي 65% من الشاشة) -->
+        <div class="flex-1 lg:w-2/3 bg-[#1e293b] p-2 flex flex-col relative border-l border-gray-800">
             
-            <!-- شريط التحكم العلوي -->
-            <div class="w-full bg-gray-800 rounded-lg p-3 flex justify-between items-center mb-6 shadow-md border border-gray-700 z-30">
-                <div class="font-bold text-emerald-400 flex items-center text-sm md:text-base">
-                    <i class="fas fa-book-open ml-2 text-xl"></i> مصحف المدينة
+            <!-- منصة الكتاب الممتدة -->
+            <div class="flex-1 w-full rounded-md flex overflow-hidden mb-2">
+                <div id="bookContainer" class="book-container rounded-md flex w-full group">
+                    
+                    <div class="book-spine"></div>
+
+                    <!-- أزرار التقليب العائمة -->
+                    <button onclick="changePage(-2)" class="absolute right-0 top-0 bottom-0 w-24 hover:bg-gradient-to-l from-black/20 to-transparent flex items-center justify-start pr-4 z-40 transition opacity-0 group-hover:opacity-100 cursor-pointer">
+                        <i class="fas fa-chevron-right text-5xl text-gray-800 opacity-50 hover:opacity-100 transition drop-shadow-md"></i>
+                    </button>
+
+                    <button onclick="changePage(2)" class="absolute left-0 top-0 bottom-0 w-24 hover:bg-gradient-to-r from-black/20 to-transparent flex items-center justify-end pl-4 z-40 transition opacity-0 group-hover:opacity-100 cursor-pointer">
+                        <i class="fas fa-chevron-left text-5xl text-gray-800 opacity-50 hover:opacity-100 transition drop-shadow-md"></i>
+                    </button>
+
+                    <!-- الصفحات (بدون أرقام أسفلها) -->
+                    <div class="page page-right border-l border-gray-300">
+                        <img id="rightPageImage" src="" class="quran-img" alt="يمنى">
+                    </div>
+
+                    <div class="page page-left">
+                        <img id="leftPageImage" src="" class="quran-img" alt="يسرى">
+                    </div>
+
+                    <!-- مؤشر التحميل -->
+                    <div id="loadingOverlay" class="absolute inset-0 bg-white/90 flex items-center justify-center z-50 hidden rounded-md">
+                        <i class="fas fa-circle-notch fa-spin text-5xl text-gray-400"></i>
+                    </div>
                 </div>
-                
+            </div>
+
+            <!-- شريط التحكم السفلي (موسط تماماً) -->
+            <div class="w-full bg-gray-800 rounded-lg p-2 flex justify-center items-center shadow-md border border-gray-700 z-30">
                 <div class="flex items-center space-x-2 space-x-reverse">
-                    <select id="surahIndexSelect" class="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-sm text-emerald-400 font-bold outline-none cursor-pointer" onchange="jumpToPage(this.value)">
+                    <select id="surahIndexSelect" class="bg-gray-900 border border-gray-600 rounded px-4 py-2 text-sm text-emerald-400 font-bold outline-none cursor-pointer" onchange="jumpToPage(this.value)">
                         <option value="">الفهرس...</option>
                     </select>
 
-                    <div class="flex items-center bg-gray-900 rounded px-2 py-1 border border-gray-600">
-                        <span class="text-xs text-gray-400 ml-1">صفحة:</span>
+                    <div class="flex items-center bg-gray-900 rounded px-3 py-1.5 border border-gray-600">
+                        <span class="text-xs text-gray-400 ml-2">صفحة:</span>
                         <input type="number" id="pageNumberInput" value="1" min="1" max="603" step="2"
-                               class="w-12 bg-transparent text-white font-bold text-center outline-none"
+                               class="w-14 bg-transparent text-white font-bold text-center outline-none"
                                onchange="jumpToPage(this.value)">
                     </div>
                 </div>
             </div>
             
-            <!-- 🌟 منصة الكتاب الواقعي (Book Simulator) 🌟 -->
-            <div id="bookContainer" class="book-container rounded-md flex w-full max-w-5xl group">
-                
-                <!-- ظل المنتصف -->
-                <div class="book-spine"></div>
-
-                <!-- زر التقليب للخلف (الصفحة السابقة - يمين الكتاب) -->
-                <button onclick="changePage(-2)" class="absolute right-0 top-0 bottom-0 w-20 md:w-32 hover:bg-gradient-to-l from-black/20 to-transparent flex items-center justify-start pr-4 z-40 transition opacity-0 group-hover:opacity-100 cursor-pointer">
-                    <i class="fas fa-chevron-right text-5xl text-gray-800 opacity-50 hover:opacity-100 hover:scale-110 transition drop-shadow-md"></i>
-                </button>
-
-                <!-- 📖 الصفحة اليمنى (رقم فردي) -->
-                <div class="page page-right border-l border-gray-300">
-                    <img id="rightPageImage" src="" class="quran-img" alt="يمنى">
-                    <div id="rightPageNum" class="absolute bottom-1 right-0 left-0 text-center text-[10px] md:text-xs text-gray-500 font-bold bg-white/50 w-max mx-auto px-2 rounded-full">1</div>
-                </div>
-
-                <!-- 📖 الصفحة اليسرى (رقم زوجي) -->
-                <div class="page page-left">
-                    <img id="leftPageImage" src="" class="quran-img" alt="يسرى">
-                    <div id="leftPageNum" class="absolute bottom-1 right-0 left-0 text-center text-[10px] md:text-xs text-gray-500 font-bold bg-white/50 w-max mx-auto px-2 rounded-full">2</div>
-                </div>
-
-                <!-- زر التقليب للأمام (الصفحة التالية - يسار الكتاب) -->
-                <button onclick="changePage(2)" class="absolute left-0 top-0 bottom-0 w-20 md:w-32 hover:bg-gradient-to-r from-black/20 to-transparent flex items-center justify-end pl-4 z-40 transition opacity-0 group-hover:opacity-100 cursor-pointer">
-                    <i class="fas fa-chevron-left text-5xl text-gray-800 opacity-50 hover:opacity-100 hover:scale-110 transition drop-shadow-md"></i>
-                </button>
-
-                <!-- مؤشر التحميل الخاص بالكتاب -->
-                <div id="loadingOverlay" class="absolute inset-0 bg-white/90 flex items-center justify-center z-50 hidden rounded-md">
-                    <i class="fas fa-circle-notch fa-spin text-5xl text-gray-400"></i>
-                </div>
-            </div>
         </div>
 
-        <!-- منطقة الاتصال المرئي -->
-        <div class="w-full md:w-[450px] bg-gray-900 flex flex-col shadow-2xl z-20">
+        <!-- منطقة الاتصال المرئي (تمت توسعتها لتأخذ ثلث الشاشة تقريباً 35%) -->
+        <div class="w-full lg:w-[500px] xl:w-[600px] bg-gray-900 flex flex-col shadow-2xl z-20">
             <div class="p-4 border-b border-gray-800 bg-gray-900">
                 <div class="flex justify-between items-center">
                     <div>
@@ -164,7 +137,8 @@
                 </div>
             </div>
 
-            <div id="jitsi-container" class="w-full h-[50vh] bg-black relative shadow-inner border-b border-gray-800">
+            <!-- حاوية الفيديو أصبحت أكبر -->
+            <div id="jitsi-container" class="w-full h-[60vh] bg-black relative shadow-inner border-b border-gray-800">
                 <div id="jitsi-loader" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
                     <i class="fas fa-video text-4xl mb-3 animate-bounce"></i>
                     <p class="font-bold text-sm">جاري تشفير الغرفة...</p>
@@ -195,7 +169,7 @@
             } catch (error) { console.error(error); }
         }
 
-        // 2. محرك الكتاب الواقعي (Book Engine)
+        // 2. محرك الكتاب 
         let currentPage = 1;
         const rightImage = document.getElementById('rightPageImage');
         const leftImage = document.getElementById('leftPageImage');
@@ -207,8 +181,7 @@
             return `https://cdn.jsdelivr.net/gh/adelpro/open-mushaf-native@master/assets/mushaf-data/mushaf-elmadina-hafs-assim/${formattedNum}.png`;
         }
 
-        function updateQuranPage(pageNum, isNext = true) {
-            // ضمان اليمين دائماً فردي
+        function updateQuranPage(pageNum) {
             if (pageNum % 2 === 0) pageNum -= 1; 
             if (pageNum < 1) pageNum = 1;
             if (pageNum > 603) pageNum = 603;
@@ -217,13 +190,10 @@
             currentPage = pageNum;
             document.getElementById('pageNumberInput').value = currentPage;
 
-            // تحديد اتجاه طي الورقة (فيزياء الكتاب العربي)
-            // التالي: طي الورقة اليسرى لليمين | السابق: طي الورقة اليمنى لليسار
             if (currentPage !== oldPage) {
                 bookContainer.classList.add(currentPage > oldPage ? 'turning-next' : 'turning-prev');
             }
 
-            // انتظار انتهاء حركة الطي (0.4 ثانية) ثم تبديل الصور
             setTimeout(() => {
                 loadingOverlay.classList.remove('hidden'); 
                 
@@ -232,11 +202,7 @@
                     loaded++;
                     if (loaded === 2) {
                         loadingOverlay.classList.add('hidden');
-                        // إزالة كلاس الطي لتعود الورقة لوضعها المسطح مع الصور الجديدة
                         bookContainer.classList.remove('turning-next', 'turning-prev');
-                        
-                        document.getElementById('rightPageNum').innerText = currentPage;
-                        document.getElementById('leftPageNum').innerText = (currentPage + 1 <= 604) ? currentPage + 1 : "";
                     }
                 };
 
@@ -252,25 +218,25 @@
                     leftImage.src = "";
                     onImageLoad();
                 }
-            }, currentPage === oldPage ? 0 : 400); // لا ننتظر إذا كانت هذه أول مرة نفتح فيها الصفحة
+            }, currentPage === oldPage ? 0 : 400); 
         }
 
-        function changePage(direction) {
-            updateQuranPage(currentPage + direction);
-        }
+        function changePage(direction) { updateQuranPage(currentPage + direction); }
+        function jumpToPage(val) { if(val) updateQuranPage(parseInt(val)); }
 
-        function jumpToPage(val) {
-            if(val) updateQuranPage(parseInt(val));
-        }
-
-        // 3. الغرفة المرئية Jitsi
+        // 3. الغرفة المرئية Jitsi (فيديو مطفأ، صوت يعمل)
         async function initializeRoom() {
             const domain = 'meet.jit.si';
             const options = {
                 roomName: `Tilawah_General_Room_${Math.floor(Math.random()*1000)}`,
                 width: '100%', height: '100%',
                 parentNode: document.querySelector('#jitsi-container'),
-                configOverwrite: { prejoinPageEnabled: false, disableDeepLinking: true },
+                configOverwrite: { 
+                    prejoinPageEnabled: false, 
+                    disableDeepLinking: true,
+                    startWithVideoMuted: true,  /* الكاميرا مطفأة افتراضياً */
+                    startWithAudioMuted: false  /* الميكروفون يعمل افتراضياً */
+                },
                 interfaceConfigOverwrite: { TOOLBAR_BUTTONS: ['microphone', 'camera', 'chat'] }
             };
             document.getElementById('jitsi-loader').style.display = 'none';
