@@ -291,9 +291,12 @@ async function submitRegistration() {
         // 3. ربط الطالب بالمقرر المختار
 // 3. إنشاء ملف الطالب وربطه بالمقرر المختار
 // 3. تحديث ملف الطالب وربطه بالمقرر المختار (بدلاً من الإضافة)
+// 3. ربط الطالب بالمقرر المختار (استخدام upsert لتجنب تعارض المفاتيح)
 const { error: profileError } = await window.supabase.from('student_profiles')
-    .update({ curriculum_id: selectedCurriculum })
-    .eq('user_id', userId);
+    .upsert({ 
+        user_id: userId, 
+        curriculum_id: selectedCurriculum 
+    });
             
         if(profileError) throw new Error("حدث خطأ أثناء حفظ المقرر: " + profileError.message);
 
