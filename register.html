@@ -292,24 +292,26 @@ async function submitRegistration() {
 // 3. إنشاء ملف الطالب وربطه بالمقرر المختار
 // 3. تحديث ملف الطالب وربطه بالمقرر المختار (بدلاً من الإضافة)
 // 3. ربط الطالب بالمقرر المختار (استخدام upsert لتجنب تعارض المفاتيح)
+// 3. إنشاء أو تحديث ملف الطالب وربطه بالمقرر المختار
 const { error: profileError } = await window.supabase.from('student_profiles')
     .upsert({ 
         user_id: userId, 
         curriculum_id: selectedCurriculum 
     });
-            
-        if(profileError) throw new Error("حدث خطأ أثناء حفظ المقرر: " + profileError.message);
+    
+if(profileError) throw new Error("حدث خطأ أثناء حفظ المقرر: " + profileError.message);
 
-        // 4. إنشاء سجل الفاتورة والاشتراك
-        const { error: subError } = await window.supabase.from('subscriptions')
-            .insert({
-                user_id: userId,
-                package_id: selectedPackage,
-                receipt_url: fileName,
-                status: 'pending'
-            });
-            
-        if(subError) throw new Error("تم التسجيل ولكن حدث خطأ في ربط الإيصال: " + subError.message);
+// 4. إنشاء سجل الفاتورة والاشتراك
+const { error: subError } = await window.supabase.from('subscriptions')
+    .insert({
+        user_id: userId,          // تأكد من تمرير user_id 
+        student_id: userId,       // وتمرير student_id ليطابق تصميم قاعدة بياناتك
+        package_id: selectedPackage,
+        receipt_url: fileName,
+        status: 'pending'
+    });
+    
+if(subError) throw new Error("تم التسجيل ولكن حدث خطأ في ربط الإيصال: " + subError.message);
 
         // نجاح العملية!
         msg.textContent = '🎉 تم تسجيل طلبك بنجاح! سيتم تحويلك للوحة الطالب...';
