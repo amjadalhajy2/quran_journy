@@ -28,16 +28,16 @@
                 <table class="w-full text-right text-sm">
                     <thead class="bg-gray-50 text-gray-500 border-b">
                         <tr>
-                            <th class="px-6 py-4 font-bold">اسم الطالب</th>
+                            <th class="px-6 py-4 font-bold">اسم الطالب وبياناته</th>
                             <th class="px-6 py-4 font-bold">المقرر الحالي</th>
-                            <th class="px-6 py-4 font-bold text-center">نوع الباقة</th>
-                            <th class="px-6 py-4 font-bold text-center">حالة الاشتراك</th>
+                            <th class="px-6 py-4 font-bold text-center">نوع الباقة والحصص</th>
+                            <th class="px-6 py-4 font-bold text-center">الحالة</th>
                             <th class="px-6 py-4 font-bold">المعلم المشرف</th>
-                            <th class="px-6 py-4 font-bold">إجراءات</th>
+                            <th class="px-6 py-4 font-bold text-center">إجراءات</th>
                         </tr>
                     </thead>
                     <tbody id="studentsTable" class="divide-y divide-gray-100">
-                        <tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">جاري التحميل...</td></tr>
+                        <tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 font-bold">جاري التحميل...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -47,13 +47,36 @@
     <!-- نافذة إسناد المعلم -->
     <div id="assignModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-xl p-6 w-full max-w-sm">
-            <h3 class="text-xl font-bold mb-4">تعيين معلم للطالب</h3>
+            <h3 class="text-xl font-bold mb-4 text-emerald-700">تعيين معلم للطالب</h3>
             <input type="hidden" id="modalStudentId">
-            <select id="teacherSelect" class="w-full border p-3 rounded-lg mb-4 font-bold"></select>
+            <select id="teacherSelect" class="w-full border p-3 rounded-lg mb-4 font-bold outline-none"></select>
             <div class="flex space-x-2 space-x-reverse">
-                <button onclick="saveTeacher()" class="w-full bg-emerald-600 text-white p-3 rounded font-bold">حفظ</button>
-                <button onclick="document.getElementById('assignModal').classList.add('hidden')" class="w-full bg-gray-200 p-3 rounded font-bold">إلغاء</button>
+                <button onclick="saveTeacher()" class="w-full bg-emerald-600 hover:bg-emerald-700 transition text-white p-3 rounded-lg font-bold">حفظ التغيير</button>
+                <button onclick="document.getElementById('assignModal').classList.add('hidden')" class="w-full bg-gray-200 hover:bg-gray-300 transition p-3 rounded-lg font-bold">إلغاء</button>
             </div>
+        </div>
+    </div>
+
+    <!-- نافذة تعديل بيانات الطالب -->
+    <div id="editStudentModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 w-full max-w-sm">
+            <h3 class="text-xl font-bold mb-4 text-emerald-700">تعديل بيانات الطالب</h3>
+            <form id="editStudentForm" class="space-y-4">
+                <input type="hidden" id="editStudentId">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">اسم الطالب</label>
+                    <input type="text" id="editStudentName" class="w-full border rounded-lg p-3 outline-none focus:border-emerald-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">رقم الهاتف / الواتساب</label>
+                    <input type="tel" id="editStudentPhone" dir="ltr" class="w-full border rounded-lg p-3 outline-none text-right focus:border-emerald-500" required>
+                </div>
+                <div id="editStudentMsg" class="hidden text-sm font-bold p-2 text-center rounded"></div>
+                <div class="flex space-x-2 space-x-reverse mt-4">
+                    <button type="submit" id="saveEditBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 transition text-white p-3 rounded-lg font-bold">حفظ التعديلات</button>
+                    <button type="button" onclick="document.getElementById('editStudentModal').classList.add('hidden')" class="w-full bg-gray-200 hover:bg-gray-300 transition p-3 rounded-lg font-bold">إلغاء</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -61,28 +84,48 @@
     <script>
         let teachersList = [];
 
-async function loadStudents() {
+        async function loadStudents() {
+            // جلب المعلمين
             const { data: teachers } = await window.supabase.from('users').select('id, full_name').eq('role', 'teacher');
             teachersList = teachers || [];
 
-            // استخدام الدالة الخلفية المحدثة
-// استخدام الدالة الخلفية المحدثة مع إضافة طباعة الأخطاء لتشخيص المشكلة
+            // جلب بيانات الطلاب
             const { data: profiles, error } = await window.supabase.rpc('get_enrolled_students');
             
-            // 🚨 هذا السطر سيخبرنا في شاشة الإدارة بالخطأ الحقيقي إن وجد 🚨
-            if (error) {
-                console.error("Supabase Error:", error);
-                alert("حدث خطأ في قاعدة البيانات: " + error.message);
-            }
+            // جلب أرقام الهواتف
+            const { data: usersList } = await window.supabase.from('users').select('id, phone');
             
-            console.log("الطلاب القادمين من قاعدة البيانات:", profiles);
+            // جلب الاشتراكات لحساب الحصص
+            const { data: subsList } = await window.supabase.from('subscriptions').select('student_id, packages(sessions_per_week)').eq('status', 'approved');
+            
+            // جلب الجلسات المكتملة لخصمها من الحصص
+            const { data: sessionsList } = await window.supabase.from('sessions').select('student_id, status').eq('status', 'completed');
+
+            if (error) {
+                alert("حدث خطأ في قاعدة البيانات: " + error.message);
+                return;
+            }
 
             const tbody = document.getElementById('studentsTable');
             tbody.innerHTML = '';
             
             if(profiles && profiles.length > 0) {
                 profiles.forEach(p => {
-                    // تحديد شكل الخطة للعرض للمدير
+                    // بيانات الهاتف ورابط الواتساب
+                    const user = usersList?.find(u => u.id === p.student_id);
+                    const phone = user?.phone || 'غير متوفر';
+                    const cleanPhone = phone !== 'غير متوفر' ? phone.replace(/\D/g, '') : '';
+                    const waLink = cleanPhone ? `https://wa.me/${cleanPhone}` : '#';
+                    const waHtml = cleanPhone ? `<a href="${waLink}" target="_blank" class="text-green-600 hover:text-green-800 transition inline-flex items-center"><i class="fab fa-whatsapp ml-1"></i> ${phone}</a>` : `<span class="text-gray-400">${phone}</span>`;
+
+                    // حساب الحصص المتبقية (مبني على 4 أسابيع للشهر الواحد)
+                    const sub = subsList?.find(s => s.student_id === p.student_id);
+                    const totalSessions = sub?.packages?.sessions_per_week ? sub.packages.sessions_per_week * 4 : 0;
+                    const usedSessions = sessionsList?.filter(s => s.student_id === p.student_id).length || 0;
+                    const remainingSessions = Math.max(0, totalSessions - usedSessions);
+                    const sessionsBadge = totalSessions > 0 ? `<div class="text-xs mt-1 text-gray-500 font-bold">متبقي: <span class="text-blue-600">${remainingSessions} من ${totalSessions}</span> حصة</div>` : '';
+
+                    // تحديد شكل الخطة
                     let planText = '<span class="text-orange-500 text-xs">بانتظار تقييم المعلم</span>';
                     if (p.custom_plan_type === 'parts') planText = `حفظ ${p.target_parts} أجزاء`;
                     else if (p.custom_plan_type === 'surahs') planText = `سور: ${p.target_surahs}`;
@@ -97,22 +140,33 @@ async function loadStudents() {
 
                     tbody.innerHTML += `
                         <tr class="hover:bg-gray-50 border-b transition">
-                            <td class="px-6 py-4 font-bold">${p.full_name}<br><span class="text-xs text-gray-400 font-normal">${p.email}</span></td>
-                            <td class="px-6 py-4 font-bold text-emerald-600">${planText}</td>
-                            <td class="px-6 py-4"><span class="bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold text-xs">${pkgName}</span></td>
-                            <td class="px-6 py-4 text-center">${statusBadge}</td>
-                            <td class="px-6 py-4 font-bold">${teacherName}</td>
                             <td class="px-6 py-4">
-                                <button onclick="openAssignModal('${p.student_id}', '${p.teacher_id || ''}')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded font-bold transition">
-                                    <i class="fas fa-exchange-alt"></i> تغيير المعلم
+                                <div class="font-bold text-gray-800">${p.full_name}</div>
+                                <div class="text-xs text-gray-400 mb-1">${p.email}</div>
+                                <div class="text-xs font-bold" dir="ltr" style="text-align: right;">${waHtml}</div>
+                            </td>
+                            <td class="px-6 py-4 font-bold text-emerald-600">${planText}</td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold text-xs block mx-auto w-max">${pkgName}</span>
+                                ${sessionsBadge}
+                            </td>
+                            <td class="px-6 py-4 text-center">${statusBadge}</td>
+                            <td class="px-6 py-4 font-bold text-gray-700">${teacherName}</td>
+                            <td class="px-6 py-4 text-center flex flex-col space-y-2 w-max mx-auto">
+                                <button onclick="openEditStudentModal('${p.student_id}', '${p.full_name}', '${phone}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1.5 rounded font-bold transition flex items-center justify-center text-xs">
+                                    <i class="fas fa-edit ml-1"></i> تعديل بيانات
+                                </button>
+                                <button onclick="openAssignModal('${p.student_id}', '${p.teacher_id || ''}')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded font-bold transition flex items-center justify-center text-xs">
+                                    <i class="fas fa-exchange-alt ml-1"></i> نقل لمعلم
                                 </button>
                             </td>
                         </tr>
                     `;
                 });
-            } else { tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-gray-500 font-bold">لا يوجد طلاب منتظمين حالياً.</td></tr>'; }
+            } else { tbody.innerHTML = '<tr><td colspan="6" class="text-center p-12 text-gray-500 font-bold">لا يوجد طلاب منتظمين حالياً.</td></tr>'; }
         }
 
+        // نوافذ تعيين المعلم
         function openAssignModal(studentId, currentTeacherId) {
             document.getElementById('modalStudentId').value = studentId;
             const select = document.getElementById('teacherSelect');
@@ -137,6 +191,51 @@ async function loadStudents() {
                 loadStudents();
             }
         }
+
+        // نوافذ تعديل بيانات الطالب
+        function openEditStudentModal(id, name, phone) {
+            document.getElementById('editStudentId').value = id;
+            document.getElementById('editStudentName').value = name;
+            document.getElementById('editStudentPhone').value = phone === 'غير متوفر' ? '' : phone;
+            document.getElementById('editStudentMsg').classList.add('hidden');
+            
+            document.getElementById('editStudentModal').classList.remove('hidden');
+            document.getElementById('editStudentModal').classList.add('flex');
+        }
+
+        document.getElementById('editStudentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveEditBtn');
+            const msg = document.getElementById('editStudentMsg');
+            btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+
+            const id = document.getElementById('editStudentId').value;
+            const newName = document.getElementById('editStudentName').value;
+            const newPhone = document.getElementById('editStudentPhone').value;
+
+            // تحديث البيانات في جدول users (نحتاج لدالة خلفية لتجاوز RLS إذا كنا نستدعيها من واجهة الإدارة)
+            // استخدام دالة مخصصة أو التحديث المباشر إذا كان الأدمن يملك صلاحيات Service Role
+            // سنستخدم RPC مشابهة لتلك الخاصة بالمعلمين
+            const { error } = await window.supabase.rpc('update_teacher_info', { 
+                p_user_id: id, 
+                p_full_name: newName, 
+                p_phone: newPhone, 
+                p_meet_link: null // لا يوجد رابط للطالب
+            });
+
+            msg.classList.remove('hidden');
+            if(error) {
+                msg.textContent = 'حدث خطأ: ' + error.message;
+                msg.className = 'text-sm font-bold p-2 text-center rounded bg-red-50 text-red-600 block mt-2';
+            } else {
+                msg.textContent = 'تم تحديث بيانات الطالب بنجاح!';
+                msg.className = 'text-sm font-bold p-2 text-center rounded bg-green-50 text-green-600 block mt-2';
+                loadStudents();
+                setTimeout(() => document.getElementById('editStudentModal').classList.add('hidden'), 1500);
+            }
+            btn.disabled = false; btn.textContent = 'حفظ التعديلات';
+        });
+
         window.addEventListener('load', loadStudents);
     </script>
 </body>
