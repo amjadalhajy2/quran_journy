@@ -123,12 +123,13 @@
 
         async function loadSurahsIndex() {
             try {
-                const response = await fetch('https://mp3quran.net/api/v3/suwar?language=ar');
+                // استخدام API دقيق يوفر أرقام صفحات بداية السور (pages[0])
+                const response = await fetch('https://api.quran.com/api/v4/chapters?language=ar');
                 const data = await response.json();
                 const select = document.getElementById('surahIndexSelect');
                 select.innerHTML = '<option value="">-- الفهرس --</option>';
-                data.suwar.forEach(surah => {
-                    select.innerHTML += `<option value="${surah.start_page}">${surah.id}. سورة ${surah.name}</option>`;
+                data.chapters.forEach(surah => {
+                    select.innerHTML += `<option value="${surah.pages[0]}">${surah.id}. سورة ${surah.name_arabic}</option>`;
                 });
             } catch (error) { console.error(error); }
         }
@@ -139,14 +140,13 @@
         const bookContainer = document.getElementById('bookContainer');
         const loadingOverlay = document.getElementById('loadingOverlay');
 
-        // جلب مسار الصورة من المجلد المحلي (quran-low) وبصيغة jpg
+        // جلب مسار الصورة من المجلد المحلي (quran-low)
         function getImageUrl(pageNum) {
             const fileNum = pageNum + 4;
             const formattedNum = String(fileNum).padStart(3, '0');
             return `quran-low/${formattedNum}.jpg`;
         }
 
-        // دالة التحميل المسبق (Preloading) لتحميل الصفحات التالية والسابقة في الذاكرة لتسريع التقليب
         function preloadImages(pageNum) {
             const pagesToPreload = [pageNum - 2, pageNum - 1, pageNum + 2, pageNum + 3];
             pagesToPreload.forEach(p => {
@@ -178,8 +178,6 @@
                     if (loaded === 2) {
                         loadingOverlay.classList.add('hidden');
                         bookContainer.classList.remove('turning-next', 'turning-prev');
-                        
-                        // بدء التحميل المسبق للصفحات فور الانتهاء من تحميل الصفحة الحالية
                         preloadImages(currentPage);
                     }
                 };
@@ -194,7 +192,7 @@
                     leftImage.src = getImageUrl(currentPage + 1);
                 } else {
                     leftImage.src = "";
-                    onImageLoad(); // إذا لم يكن هناك صفحة يسرى
+                    onImageLoad(); 
                 }
             }, currentPage === oldPage ? 0 : 400); 
         }
