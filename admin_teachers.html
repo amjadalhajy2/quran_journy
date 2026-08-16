@@ -276,36 +276,38 @@
         });
 
         // تعديل بيانات المعلم وحفظ رقم الهاتف
-        document.getElementById('editTeacherForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('editBtn');
-            const msg = document.getElementById('editMsg');
-            btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+// تعديل بيانات المعلم وحفظ التحديثات الجديدة عبر الدالة الخلفية (RPC)
+document.getElementById('editTeacherForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('editBtn');
+    const msg = document.getElementById('editMsg');
+    btn.disabled = true; btn.textContent = 'جاري الحفظ...';
 
-            const id = document.getElementById('editTeacherId').value;
-            const newName = document.getElementById('editTeacherName').value;
-            const newPhone = document.getElementById('editTeacherPhone').value;
-            const newMeetLink = document.getElementById('editTeacherMeet').value;
+    const id = document.getElementById('editTeacherId').value;
+    const newName = document.getElementById('editTeacherName').value;
+    const newPhone = document.getElementById('editTeacherPhone').value;
+    const newMeetLink = document.getElementById('editTeacherMeet').value;
 
-            // تحديث الاسم والهاتف والرابط مباشرة في جدول المستخدمين
-            const { error } = await window.supabase.from('users').update({ 
-                full_name: newName,
-                phone: newPhone,
-                meet_link: newMeetLink 
-            }).eq('id', id);
+    // استخدام الدالة الخلفية (RPC) لتجاوز قيود الأمان (RLS) التي تمنع التعديل المباشر
+    const { error } = await window.supabase.rpc('update_teacher_info', { 
+        p_user_id: id,
+        p_full_name: newName,
+        p_phone: newPhone,
+        p_meet_link: newMeetLink 
+    });
 
-            msg.classList.remove('hidden');
-            if (error) {
-                msg.textContent = 'حدث خطأ: ' + error.message;
-                msg.className = 'text-sm font-bold p-2 rounded text-center bg-red-50 text-red-600 block mt-2';
-            } else {
-                msg.textContent = 'تم حفظ التعديلات بنجاح!';
-                msg.className = 'text-sm font-bold p-2 rounded text-center bg-green-50 text-green-600 block mt-2';
-                loadTeachers();
-                setTimeout(() => closeModal('editTeacherModal'), 1500);
-            }
-            btn.disabled = false; btn.textContent = 'حفظ التعديلات';
-        });
+    msg.classList.remove('hidden');
+    if (error) {
+        msg.textContent = 'حدث خطأ: ' + error.message;
+        msg.className = 'text-sm font-bold p-2 rounded text-center bg-red-50 text-red-600 block mt-2';
+    } else {
+        msg.textContent = 'تم حفظ التعديلات بنجاح!';
+        msg.className = 'text-sm font-bold p-2 rounded text-center bg-green-50 text-green-600 block mt-2';
+        loadTeachers();
+        setTimeout(() => closeModal('editTeacherModal'), 1500);
+    }
+    btn.disabled = false; btn.textContent = 'حفظ التعديلات';
+});
 
         window.addEventListener('load', loadTeachers);
     </script>
