@@ -30,6 +30,7 @@
 </head>
 <body class="flex h-screen overflow-hidden text-gray-200">
     
+    <!-- القائمة الجانبية المصغرة -->
     <aside class="w-16 md:w-20 bg-gray-900 flex flex-col items-center py-6 border-l border-gray-800 z-10 shadow-2xl">
         <a href="teacher_dashboard.html" class="text-gray-400 hover:text-white mb-8 transition" title="العودة">
             <i class="fas fa-sign-out-alt text-2xl text-red-400 hover:text-red-500"></i>
@@ -61,6 +62,7 @@
                 </div>
             </div>
 
+            <!-- التحكم بالمصحف -->
             <div class="w-full bg-gray-800 rounded-lg p-2 flex justify-center items-center shadow-md border border-gray-700 z-30">
                 <div class="flex items-center space-x-2 space-x-reverse">
                     <select id="surahIndexSelect" class="bg-gray-900 border border-gray-600 rounded px-4 py-2 text-sm text-emerald-400 font-bold outline-none cursor-pointer" onchange="jumpToPage(this.value)">
@@ -75,9 +77,9 @@
             </div>
         </div>
 
-        <!-- قسم الفيديو والملاحظات -->
-<!-- قسم الفيديو والملاحظات (محدث) -->
+        <!-- قسم الفيديو والمتابعة (المحدث) -->
         <div class="w-full lg:w-[450px] xl:w-[500px] bg-gray-900 flex flex-col shadow-2xl z-20">
+            <!-- الهيدر -->
             <div class="p-4 border-b border-gray-800 bg-gray-900">
                 <div class="flex justify-between items-center">
                     <div>
@@ -96,17 +98,17 @@
                     <i class="fas fa-video text-4xl text-blue-500 mb-3 animate-pulse"></i>
                     <h4 class="text-lg font-bold text-white mb-2">غرفة الاتصال المرئي</h4>
                     <button onclick="openMeetPopup()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition w-full shadow-lg flex items-center justify-center cursor-pointer text-sm">
-                        <i class="fas fa-external-link-square-alt ml-2"></i> فتح الكاميرا (Meet)
+                        <i class="fas fa-external-link-square-alt ml-2"></i> فتح الكاميرا (Google Meet)
                     </button>
                 </div>
             </div>
 
-<!-- حقول التقييم والتسجيل للحصة (محدثة بالنطاقات) -->
+            <!-- حقول التقييم والتسجيل للحصة (محدثة بالنطاقات) -->
             <div class="flex-1 p-4 bg-gray-800 flex flex-col overflow-y-auto space-y-4">
                 <h4 class="font-bold text-emerald-400 border-b border-gray-700 pb-2 mb-2"><i class="fas fa-clipboard-check ml-1"></i> المتابعة والحفظ</h4>
                 
                 <div class="bg-gray-900 p-3 rounded-lg border border-gray-700">
-                    <label class="block text-xs font-bold text-gray-400 mb-2">اختر المقرر المستهدف</label>
+                    <label class="block text-xs font-bold text-gray-400 mb-2">اختر المقرر المستهدف للحصة</label>
                     <select id="selectCurriculum" onchange="onCurriculumChange()" class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-sm text-white outline-none focus:border-emerald-500 mb-3"></select>
                     
                     <label class="block text-xs font-bold text-blue-400 mb-1">نطاق الحفظ المطلوب:</label>
@@ -122,9 +124,9 @@
                     </div>
                 </div>
 
-                <div class="flex-1 flex flex-col">
+                <div class="flex-1 flex flex-col min-h-[100px]">
                     <label class="block text-xs font-bold text-gray-400 mb-1">ملاحظات المعلم والتوجيهات</label>
-                    <textarea id="sessionNotes" class="flex-1 w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white outline-none focus:border-emerald-500 resize-none"></textarea>
+                    <textarea id="sessionNotes" class="flex-1 w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white outline-none focus:border-emerald-500 resize-none" placeholder="اكتب ملاحظاتك وتوجيهاتك للطالب هنا..."></textarea>
                 </div>
 
                 <button onclick="saveAndEndSession()" id="finishBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition w-full shadow-lg">
@@ -136,7 +138,17 @@
 
     <script src="supabase.js"></script>
     <script>
-        let myMeetLink = ""; // متغير الرابط الديناميكي للمعلم
+        let myMeetLink = ""; 
+        let activeSessionId = null;
+        let studentPlans = [];
+        window.quranChapters = [];
+
+        // حدود الأجزاء
+        const juzPageBounds = {
+            1:[1,21], 2:[22,41], 3:[42,61], 4:[62,81], 5:[82,101], 6:[102,121], 7:[122,141], 8:[142,161], 9:[162,181], 10:[182,201],
+            11:[202,221], 12:[222,241], 13:[242,261], 14:[262,281], 15:[282,301], 16:[302,321], 17:[322,341], 18:[342,361], 19:[362,381], 20:[382,401],
+            21:[402,421], 22:[422,441], 23:[442,461], 24:[462,481], 25:[482,501], 26:[502,521], 27:[522,541], 28:[542,561], 29:[562,581], 30:[582,604]
+        };
 
         function openMeetPopup() {
             if (!myMeetLink) {
@@ -146,7 +158,6 @@
             const width = 800; const height = 600;
             const left = (window.screen.width - width) / 2;
             const top = (window.screen.height - height) / 2;
-            
             window.open(myMeetLink, "GoogleMeetWindow", `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`);
         }
 
@@ -154,6 +165,7 @@
             try {
                 const response = await fetch('https://api.quran.com/api/v4/chapters?language=ar');
                 const data = await response.json();
+                window.quranChapters = data.chapters;
                 const select = document.getElementById('surahIndexSelect');
                 select.innerHTML = '<option value="">-- الفهرس --</option>';
                 data.chapters.forEach(surah => {
@@ -227,57 +239,30 @@
         function changePage(direction) { updateQuranPage(currentPage + direction); }
         function jumpToPage(val) { if(val) updateQuranPage(parseInt(val)); }
 
-        async function initializeRoom() {
-            const { data: { user } } = await window.supabase.auth.getUser();
-            if(!user) return window.location.href = 'login.html';
-
-            const teacherName = user.user_metadata?.full_name || "معلم القرآن";
-            const urlParams = new URLSearchParams(window.location.search);
-            const studentId = urlParams.get('student_id');
-            let studentName = "طالب (بدون تحديد)";
-
-            // 1. جلب بيانات الطالب إذا تم اختيار طالب من الجدول
-            if (studentId) {
-                const { data: studentData } = await window.supabase.from('users').select('full_name').eq('id', studentId).single();
-                if (studentData) { studentName = studentData.full_name; }
-            }
+        // المتابعة والنطاقات
+        function onCurriculumChange() {
+            const sel = document.getElementById('selectCurriculum');
+            if(!sel.value) return;
+            const opt = sel.options[sel.selectedIndex];
+            const minP = parseInt(opt.getAttribute('data-min'));
+            const maxP = parseInt(opt.getAttribute('data-max'));
             
-            document.getElementById('teacherNameDisplay').textContent = `المعلم: ${teacherName}`;
-            document.getElementById('studentNameDisplay').textContent = `الطالب: ${studentName}`;
-
-            // 2. جلب رابط Google Meet الخاص بالمعلم نفسه من قاعدة البيانات
-            const { data: teacherData } = await window.supabase.from('users').select('meet_link').eq('id', user.id).single();
-            
-            if(teacherData) {
-                myMeetLink = teacherData.meet_link || "";
-            }
-
-            // 3. تحديث واجهة زر الدخول
-            const joinBtn = document.getElementById('joinMeetBtn');
-            const icon = document.getElementById('meetBtnIcon');
-            const text = document.getElementById('meetBtnText');
-            
-            if (myMeetLink) {
-                joinBtn.disabled = false;
-                icon.className = "fas fa-external-link-square-alt ml-2";
-                text.textContent = "فتح الكاميرا (Google Meet)";
-            } else {
-                icon.className = "fas fa-times-circle ml-2 text-red-200";
-                text.textContent = "الرابط غير متوفر حالياً";
-                joinBtn.classList.replace("bg-blue-600", "bg-gray-600");
-                joinBtn.classList.replace("hover:bg-blue-700", "hover:bg-gray-700");
-            }
+            const tf = document.getElementById('targetFrom');
+            const tt = document.getElementById('targetTo');
+            tf.min = minP; tf.max = maxP; tf.value = minP;
+            tt.min = minP; tt.max = maxP; tt.value = maxP;
+            syncActualRange();
         }
 
-        window.addEventListener('load', () => {
-            loadSurahsIndex(); 
-            updateQuranPage(1);
-            initializeRoom();  
-        });
+        function syncActualRange() {
+            const tf = document.getElementById('targetFrom').value;
+            const tt = document.getElementById('targetTo').value;
+            const af = document.getElementById('actualFrom');
+            const at = document.getElementById('actualTo');
+            af.min = tf; af.max = tt; af.value = tf;
+            at.min = tf; at.max = tt; at.value = tt;
+        }
 
-        let activeSessionId = null;
-
-        // تعديل دالة initializeRoom لجلب الـ session_id لحصة اليوم
         async function initializeRoom() {
             const { data: { user } } = await window.supabase.auth.getUser();
             if(!user) return window.location.href = 'login.html';
@@ -287,26 +272,69 @@
             const studentId = urlParams.get('student_id');
             let studentName = "طالب (بدون تحديد)";
 
-            if (studentId) {
-                const { data: studentData } = await window.supabase.from('users').select('full_name').eq('id', studentId).single();
-                if (studentData) { studentName = studentData.full_name; }
+            const { data: teacherData } = await window.supabase.from('users').select('meet_link').eq('id', user.id).single();
+            if(teacherData) { myMeetLink = teacherData.meet_link || ""; }
 
-                // محاولة إيجاد الحصة المجدولة لهذا اليوم لربط التحديث بها
-                const todayStr = new Date().toISOString().split('T')[0];
+            if (studentId) {
+                // جلب بيانات وخطط الطالب
+                const { data: profile } = await window.supabase.from('student_profiles')
+                    .select('target_parts, custom_plan_type, target_surahs, users!student_profiles_user_id_fkey(full_name)')
+                    .eq('user_id', studentId).single();
+                
+                if(profile) {
+                    studentName = profile.users.full_name;
+                    
+                    if(profile.target_parts && profile.target_parts.startsWith('[')) {
+                        studentPlans = JSON.parse(profile.target_parts);
+                    } else if(profile.target_parts || profile.target_surahs) {
+                        studentPlans = [{ id: 1, type: profile.custom_plan_type || 'parts', items: profile.custom_plan_type === 'parts' ? profile.target_parts.split('،').map(s=>s.trim()).filter(Boolean) : profile.target_surahs.split('،').map(s=>s.trim().replace(/^\d+\.\s*/, '')).filter(Boolean) }];
+                    }
+
+                    const sel = document.getElementById('selectCurriculum');
+                    sel.innerHTML = '<option value="">-- اختر من مقررات الطالب --</option>';
+                    studentPlans.forEach(plan => {
+                        plan.items.forEach(item => {
+                            let b = [1, 604], lbl = '';
+                            if(plan.type === 'parts') {
+                                const jN = parseInt(item.replace(/\D/g,''));
+                                if(juzPageBounds[jN]) b = juzPageBounds[jN];
+                                lbl = `مقرر ${plan.id} - ${item}`;
+                            } else {
+                                const ch = window.quranChapters?.find(c => c.name_arabic === item);
+                                if(ch) b = ch.pages;
+                                lbl = `مقرر ${plan.id} - سورة ${item}`;
+                            }
+                            sel.innerHTML += `<option value="${item}" data-plan="مقرر ${plan.id}" data-min="${b[0]}" data-max="${b[1]}">${lbl} (ص ${b[0]}-${b[1]})</option>`;
+                        });
+                    });
+                }
+
+                // الحصة الجارية
+                const now = new Date();
+                const y = now.getFullYear();
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const d = String(now.getDate()).padStart(2, '0');
+                const todayStr = `${y}-${m}-${d}`;
+
                 const { data: sessData } = await window.supabase.from('sessions')
                     .select('id, next_assignment')
-                    .eq('student_id', studentId)
-                    .eq('teacher_id', user.id)
-                    .eq('session_date', todayStr)
-                    .in('status', ['scheduled', 'ongoing'])
-                    .limit(1).single();
+                    .eq('student_id', studentId).eq('teacher_id', user.id).eq('session_date', todayStr)
+                    .in('status', ['scheduled', 'ongoing']).limit(1).single();
                 
                 if(sessData) {
                     activeSessionId = sessData.id;
-                    // تحديث الحالة إلى جارية
                     await window.supabase.from('sessions').update({ status: 'ongoing' }).eq('id', activeSessionId);
-                    // تعبئة المقرر إن كان مكتوباً مسبقاً
-                    if(sessData.next_assignment) document.getElementById('sessionTarget').value = sessData.next_assignment;
+                    
+                    if(sessData.next_assignment && sessData.next_assignment.includes('ص')) {
+                        const matchName = sessData.next_assignment.split(' - ')[1]?.split(' (')[0];
+                        if(matchName) document.getElementById('selectCurriculum').value = matchName;
+                        onCurriculumChange();
+                        const nums = sessData.next_assignment.match(/\d+/g);
+                        if (nums && nums.length >= 3) {
+                            document.getElementById('targetFrom').value = nums[1];
+                            document.getElementById('targetTo').value = nums[2];
+                        }
+                    }
                 }
             }
             
@@ -314,37 +342,39 @@
             document.getElementById('studentNameDisplay').textContent = `الطالب: ${studentName}`;
         }
 
-        // دالة حفظ البيانات وإنهاء الحصة
         async function saveAndEndSession() {
-            if(!activeSessionId) {
-                alert("لم يتم العثور على حصة مجدولة لهذا الطالب اليوم في النظام لحفظ السجل فيها. يمكنك كتابة الملاحظات في تفاصيل الطالب لاحقاً.");
-                window.location.href = 'teacher_dashboard.html';
-                return;
-            }
-
+            if(!activeSessionId) return alert("لا توجد حصة مجدولة لحفظ السجل فيها.");
+            
             const btn = document.getElementById('finishBtn');
             btn.disabled = true; btn.textContent = 'جاري الحفظ...';
 
-            const target = document.getElementById('sessionTarget').value;
-            const actual = document.getElementById('sessionActual').value;
-            const grade = document.getElementById('sessionGrade').value;
+            const sel = document.getElementById('selectCurriculum');
+            const opt = sel.options[sel.selectedIndex];
+            const tf = document.getElementById('targetFrom').value;
+            const tt = document.getElementById('targetTo').value;
+            const af = document.getElementById('actualFrom').value;
+            const at = document.getElementById('actualTo').value;
             const notes = document.getElementById('sessionNotes').value;
 
+            let targetStr = '', actualStr = '';
+            if(sel.value) {
+                targetStr = `${opt.getAttribute('data-plan')} - ${sel.value} (ص ${tf} إلى ${tt})`;
+                actualStr = `ص ${af} إلى ${at}`;
+            }
+
             const { error } = await window.supabase.from('sessions').update({
-                next_assignment: target,
-                memorized_from: actual,
-                evaluation: grade ? parseInt(grade) : null,
-                teacher_notes: notes,
-                status: 'completed' // إنهاء الحصة
+                next_assignment: targetStr, memorized_from: actualStr, teacher_notes: notes, status: 'completed', evaluation: null
             }).eq('id', activeSessionId);
 
-            if(error) {
-                alert("حدث خطأ أثناء الحفظ: " + error.message);
-                btn.disabled = false; btn.textContent = 'حفظ السجل وإنهاء الحصة';
-            } else {
-                window.location.href = 'teacher_dashboard.html';
-            }
+            if(error) { alert("خطأ: " + error.message); btn.disabled = false; btn.textContent = 'حفظ السجل وإنهاء الحصة'; }
+            else window.location.href = 'teacher_dashboard.html';
         }
+
+        window.addEventListener('load', async () => {
+            await loadSurahsIndex(); 
+            updateQuranPage(1);
+            initializeRoom();  
+        });
     </script>
 </body>
 </html>
