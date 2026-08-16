@@ -9,28 +9,27 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="flex flex-col h-screen overflow-hidden text-gray-800">
-    <!-- تم استعادة id="studentNameHeader" المفقود هنا -->
-    <header class="bg-white shadow p-4 flex justify-between items-center z-10 relative border-b">
+    
+    <!-- الشريط العلوي المحدث ببيانات الطالب -->
+    <header class="bg-white shadow p-4 flex flex-col md:flex-row justify-between items-start md:items-center z-10 relative border-b gap-4">
         <div class="flex items-center">
-            <a href="teacher_students_list.html" class="text-gray-500 hover:text-emerald-600 bg-gray-100 px-4 py-2 rounded-lg ml-4 transition font-bold"><i class="fas fa-arrow-right ml-1"></i> رجوع للقائمة</a>
-            <h2 class="text-xl font-bold text-gray-700">سجل الطالب: <span id="studentNameHeader" class="text-emerald-600">...</span></h2>
+            <a href="teacher_students_list.html" class="text-gray-500 hover:text-emerald-600 bg-gray-100 px-4 py-2 rounded-lg ml-4 transition font-bold shrink-0 flex items-center"><i class="fas fa-arrow-right ml-2"></i> رجوع</a>
+            <div>
+                <h2 class="text-xl font-black text-emerald-800" id="studentNameDisplay">جاري التحميل...</h2>
+                <div class="text-gray-500 text-xs font-bold flex items-center mt-1">
+                    <span id="studentEmailDisplay"><i class="fas fa-envelope ml-1 text-gray-400"></i> ...</span>
+                </div>
+            </div>
         </div>
+        <div id="studentPhoneDisplay" class="text-left" dir="ltr"></div>
     </header>
 
     <main class="flex-1 overflow-y-auto p-6 space-y-6">
         
+        <!-- رسالة الخطأ إن وجدت -->
         <div id="errorMessage" class="hidden bg-red-100 text-red-700 p-4 rounded-lg font-bold border border-red-200"></div>
 
-        <div class="bg-white rounded-xl shadow-sm border p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-                <h2 class="text-2xl font-black text-emerald-800 mb-2" id="studentNameDisplay">جاري التحميل...</h2>
-                <div class="text-gray-500 text-sm font-bold flex items-center gap-2">
-                    <span id="studentEmailDisplay"><i class="fas fa-envelope ml-1 text-gray-400"></i> ...</span>
-                </div>
-            </div>
-            <div id="studentPhoneDisplay" class="text-left" dir="ltr"></div>
-        </div>
-
+        <!-- مقررات الحفظ وشريط التقدم لكل مقرر -->
         <div class="bg-white rounded-xl shadow-sm border p-6">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 pb-4 border-b">
                 <h3 class="font-bold text-emerald-700 text-lg"><i class="fas fa-book-open ml-2"></i> مقررات الحفظ للطالب</h3>
@@ -44,6 +43,7 @@
             </div>
         </div>
 
+        <!-- السجل الشامل للحصص -->
         <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
             <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
                 <h3 class="font-bold text-gray-800"><i class="fas fa-list-ul text-emerald-600 ml-2"></i> سجل الحصص والمتابعة</h3>
@@ -66,7 +66,7 @@
         </div>
     </main>
 
-    <!-- النوافذ المنبثقة (نفس الكود السابق بدون تغيير) -->
+    <!-- نافذة إدارة المقررات (إضافة وتعديل) -->
     <div id="planModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl">
             <h3 class="text-xl font-bold text-emerald-700 mb-4 border-b pb-2" id="planModalTitle">إدارة المقرر</h3>
@@ -99,15 +99,19 @@
         </div>
     </div>
 
+    <!-- نافذة تحديث سجل الحصة -->
     <div id="editSessionModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl">
             <h3 class="text-xl font-bold text-emerald-700 mb-4 border-b pb-2">تحديث سجل الحصة</h3>
             <form id="editSessionForm" class="space-y-4">
                 <input type="hidden" id="editSessionId">
+                
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">المقرر المستهدف</label>
-                    <select id="selectCurriculum" onchange="onCurriculumChange()" class="w-full border rounded-lg p-2.5 outline-none font-bold focus:border-emerald-500 bg-gray-50" required></select>
+                    <select id="selectCurriculum" onchange="onCurriculumChange()" class="w-full border rounded-lg p-2.5 outline-none font-bold focus:border-emerald-500 bg-gray-50" required>
+                    </select>
                 </div>
+
                 <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
                     <label class="block text-xs font-bold text-blue-800 mb-2">نطاق مقرر الحفظ المطلوب للحصة:</label>
                     <div class="grid grid-cols-2 gap-3">
@@ -115,6 +119,7 @@
                         <div><span class="text-xs text-gray-500">إلى صفحة:</span><input type="number" id="targetToPage" onchange="syncActualRange()" class="w-full border rounded p-2 text-sm font-bold bg-white outline-none focus:border-blue-500" required></div>
                     </div>
                 </div>
+
                 <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-200">
                     <label class="block text-xs font-bold text-emerald-800 mb-2">الحفظ الفعلي (الذي أتمه الطالب):</label>
                     <div class="grid grid-cols-2 gap-3">
@@ -122,10 +127,12 @@
                         <div><span class="text-xs text-gray-500">إلى صفحة:</span><input type="number" id="actualToPage" class="w-full border rounded p-2 text-sm font-bold bg-white outline-none focus:border-emerald-500"></div>
                     </div>
                 </div>
+
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">ملاحظات المعلم</label>
                     <textarea id="editNotes" rows="3" placeholder="اكتب ملاحظات وتوجيهاتك للطالب..." class="w-full border rounded-lg p-2.5 outline-none focus:border-emerald-500"></textarea>
                 </div>
+
                 <div class="flex space-x-2 space-x-reverse mt-4">
                     <button type="submit" id="saveSessionBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-lg font-bold transition">حفظ السجل</button>
                     <button type="button" onclick="document.getElementById('editSessionModal').classList.add('hidden')" class="w-full bg-gray-200 hover:bg-gray-300 p-3 rounded-lg font-bold transition">إلغاء</button>
@@ -182,14 +189,14 @@
                 if(profile) {
                     const userData = Array.isArray(profile.users) ? profile.users[0] : (profile.users || {});
                     
-                    document.getElementById('studentNameHeader').textContent = userData.full_name || 'طالب';
+                    // تحديث بيانات الترويسة
                     document.getElementById('studentNameDisplay').textContent = userData.full_name || 'طالب';
                     document.getElementById('studentEmailDisplay').innerHTML = `<i class="fas fa-envelope ml-1 text-gray-400"></i> ${userData.email || 'لا يوجد بريد'}`;
 
                     const phone = String(userData.phone || '');
                     const cleanPhone = phone.replace(/\D/g, '');
                     if(cleanPhone) {
-                        document.getElementById('studentPhoneDisplay').innerHTML = `<a href="https://wa.me/${cleanPhone}" target="_blank" class="text-green-600 hover:text-green-800 font-bold bg-green-50 px-5 py-3 rounded-lg border border-green-200 inline-flex items-center shadow-sm text-sm"><i class="fab fa-whatsapp ml-2 text-xl"></i> تواصل بالواتساب</a>`;
+                        document.getElementById('studentPhoneDisplay').innerHTML = `<a href="https://wa.me/${cleanPhone}" target="_blank" class="text-green-600 hover:text-green-800 font-bold bg-green-50 px-5 py-2 rounded-lg border border-green-200 inline-flex items-center shadow-sm text-sm"><i class="fab fa-whatsapp ml-2 text-xl"></i> تواصل بالواتساب</a>`;
                     } else {
                         document.getElementById('studentPhoneDisplay').innerHTML = '';
                     }
