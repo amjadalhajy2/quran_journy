@@ -9,19 +9,18 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="flex flex-col h-screen overflow-hidden text-gray-800">
+    <!-- تم استعادة id="studentNameHeader" المفقود هنا -->
     <header class="bg-white shadow p-4 flex justify-between items-center z-10 relative border-b">
         <div class="flex items-center">
             <a href="teacher_students_list.html" class="text-gray-500 hover:text-emerald-600 bg-gray-100 px-4 py-2 rounded-lg ml-4 transition font-bold"><i class="fas fa-arrow-right ml-1"></i> رجوع للقائمة</a>
-            <h2 class="text-xl font-bold text-gray-700">سجل الطالب الشامل</h2>
+            <h2 class="text-xl font-bold text-gray-700">سجل الطالب: <span id="studentNameHeader" class="text-emerald-600">...</span></h2>
         </div>
     </header>
 
     <main class="flex-1 overflow-y-auto p-6 space-y-6">
         
-        <!-- رسالة الخطأ إن وجدت -->
         <div id="errorMessage" class="hidden bg-red-100 text-red-700 p-4 rounded-lg font-bold border border-red-200"></div>
 
-        <!-- بطاقة بيانات الطالب الأساسية -->
         <div class="bg-white rounded-xl shadow-sm border p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <h2 class="text-2xl font-black text-emerald-800 mb-2" id="studentNameDisplay">جاري التحميل...</h2>
@@ -32,7 +31,6 @@
             <div id="studentPhoneDisplay" class="text-left" dir="ltr"></div>
         </div>
 
-        <!-- مقررات الحفظ وشريط التقدم لكل مقرر -->
         <div class="bg-white rounded-xl shadow-sm border p-6">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 pb-4 border-b">
                 <h3 class="font-bold text-emerald-700 text-lg"><i class="fas fa-book-open ml-2"></i> مقررات الحفظ للطالب</h3>
@@ -46,7 +44,6 @@
             </div>
         </div>
 
-        <!-- السجل الشامل للحصص -->
         <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
             <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
                 <h3 class="font-bold text-gray-800"><i class="fas fa-list-ul text-emerald-600 ml-2"></i> سجل الحصص والمتابعة</h3>
@@ -69,7 +66,7 @@
         </div>
     </main>
 
-    <!-- نافذة إدارة المقررات (إضافة وتعديل) -->
+    <!-- النوافذ المنبثقة (نفس الكود السابق بدون تغيير) -->
     <div id="planModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl">
             <h3 class="text-xl font-bold text-emerald-700 mb-4 border-b pb-2" id="planModalTitle">إدارة المقرر</h3>
@@ -102,19 +99,15 @@
         </div>
     </div>
 
-    <!-- نافذة تحديث سجل الحصة -->
     <div id="editSessionModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl">
             <h3 class="text-xl font-bold text-emerald-700 mb-4 border-b pb-2">تحديث سجل الحصة</h3>
             <form id="editSessionForm" class="space-y-4">
                 <input type="hidden" id="editSessionId">
-                
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">المقرر المستهدف</label>
-                    <select id="selectCurriculum" onchange="onCurriculumChange()" class="w-full border rounded-lg p-2.5 outline-none font-bold focus:border-emerald-500 bg-gray-50" required>
-                    </select>
+                    <select id="selectCurriculum" onchange="onCurriculumChange()" class="w-full border rounded-lg p-2.5 outline-none font-bold focus:border-emerald-500 bg-gray-50" required></select>
                 </div>
-
                 <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
                     <label class="block text-xs font-bold text-blue-800 mb-2">نطاق مقرر الحفظ المطلوب للحصة:</label>
                     <div class="grid grid-cols-2 gap-3">
@@ -122,7 +115,6 @@
                         <div><span class="text-xs text-gray-500">إلى صفحة:</span><input type="number" id="targetToPage" onchange="syncActualRange()" class="w-full border rounded p-2 text-sm font-bold bg-white outline-none focus:border-blue-500" required></div>
                     </div>
                 </div>
-
                 <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-200">
                     <label class="block text-xs font-bold text-emerald-800 mb-2">الحفظ الفعلي (الذي أتمه الطالب):</label>
                     <div class="grid grid-cols-2 gap-3">
@@ -130,12 +122,10 @@
                         <div><span class="text-xs text-gray-500">إلى صفحة:</span><input type="number" id="actualToPage" class="w-full border rounded p-2 text-sm font-bold bg-white outline-none focus:border-emerald-500"></div>
                     </div>
                 </div>
-
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">ملاحظات المعلم</label>
                     <textarea id="editNotes" rows="3" placeholder="اكتب ملاحظات وتوجيهاتك للطالب..." class="w-full border rounded-lg p-2.5 outline-none focus:border-emerald-500"></textarea>
                 </div>
-
                 <div class="flex space-x-2 space-x-reverse mt-4">
                     <button type="submit" id="saveSessionBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-lg font-bold transition">حفظ السجل</button>
                     <button type="button" onclick="document.getElementById('editSessionModal').classList.add('hidden')" class="w-full bg-gray-200 hover:bg-gray-300 p-3 rounded-lg font-bold transition">إلغاء</button>
@@ -175,17 +165,13 @@
 
         async function loadStudentData() {
             try {
-                // جلب API السور بحماية
                 try {
                     if(quranChapters.length === 0) {
                         const res = await fetch('https://api.quran.com/api/v4/chapters?language=ar');
                         quranChapters = (await res.json()).chapters || [];
                     }
-                } catch(e) {
-                    console.error("تعذر جلب بيانات السور:", e);
-                }
+                } catch(e) { console.error("تعذر جلب بيانات السور:", e); }
 
-                // جلب ملف الطالب مع التأكد من الربط
                 const { data: profile, error: profileError } = await window.supabase.from('student_profiles')
                     .select(`custom_plan_type, target_parts, target_surahs, users!student_profiles_user_id_fkey(full_name, email, phone)`)
                     .eq('user_id', studentId)
@@ -194,7 +180,6 @@
                 if (profileError) throw new Error("تعذر الوصول لبيانات الطالب الأساسية.");
 
                 if(profile) {
-                    // معالجة آمنة لبيانات المستخدم حتى لو كانت مصفوفة
                     const userData = Array.isArray(profile.users) ? profile.users[0] : (profile.users || {});
                     
                     document.getElementById('studentNameHeader').textContent = userData.full_name || 'طالب';
@@ -209,7 +194,6 @@
                         document.getElementById('studentPhoneDisplay').innerHTML = '';
                     }
 
-                    // معالجة آمنة للمقررات والخطط
                     try {
                         let targetPartsStr = String(profile.target_parts || '').trim();
                         if (targetPartsStr.startsWith('[')) {
@@ -232,7 +216,6 @@
                     }
                 }
 
-                // جلب سجل الحصص والمتابعة
                 const { data: sessions, error: sessErr } = await window.supabase.from('sessions')
                     .select('*').eq('student_id', studentId).order('session_date', {ascending: false}).order('start_time', {ascending: false});
 
@@ -275,7 +258,6 @@
                     tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 font-bold">لا توجد حصص مسجلة لهذا الطالب.</td></tr>';
                 }
 
-                // عرض المقررات وشرائط التقدم
                 const pCont = document.getElementById('plansListContainer');
                 pCont.innerHTML = '';
 
