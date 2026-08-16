@@ -34,8 +34,8 @@
                 <thead class="bg-gray-50 text-gray-600 border-b">
                     <tr>
                         <th class="px-6 py-4 font-bold">اسم الطالب وبياناته</th>
-                        <th class="px-6 py-4 font-bold">المقرر (الخطة)</th>
-                        <th class="px-6 py-4 font-bold text-center">الإجراءات</th>
+                        <th class="px-6 py-4 font-bold">حالة الخطة</th>
+                        <th class="px-6 py-4 font-bold text-center">الإجراءات والمتابعة</th>
                     </tr>
                 </thead>
                 <tbody id="myStudentsTable" class="divide-y divide-gray-100">
@@ -52,7 +52,7 @@
             if(!user) return window.location.href = 'login.html';
 
             const { data, error } = await window.supabase.from('student_profiles')
-                .select(`user_id, evaluation_status, custom_plan_type, target_parts, target_surahs, users!student_profiles_user_id_fkey(full_name, email, phone)`)
+                .select(`user_id, evaluation_status, users!student_profiles_user_id_fkey(full_name, email, phone)`)
                 .eq('teacher_id', user.id);
 
             const tbody = document.getElementById('myStudentsTable');
@@ -60,12 +60,7 @@
 
             if (data && data.length > 0) {
                 data.forEach(s => {
-                    let planText = '<span class="text-red-500 text-xs">بانتظار التقييم</span>';
-                    if (s.evaluation_status === 'completed') {
-                        if (s.custom_plan_type === 'parts') planText = `حفظ ${s.target_parts}`;
-                        else if (s.custom_plan_type === 'surahs') planText = `سورة: ${s.target_surahs}`;
-                    }
-
+                    const planText = s.evaluation_status === 'completed' ? '<span class="text-emerald-600 font-bold">تم تقييمه وتحديد خطته</span>' : '<span class="text-red-500 font-bold">بانتظار التقييم المبدئي</span>';
                     const phone = s.users.phone || 'غير متوفر';
                     const cleanPhone = phone !== 'غير متوفر' ? phone.replace(/\D/g, '') : '';
                     const waHtml = cleanPhone ? `<a href="https://wa.me/${cleanPhone}" target="_blank" class="text-green-600 hover:text-green-800 transition font-bold"><i class="fab fa-whatsapp ml-1"></i> ${phone}</a>` : `<span class="text-gray-400">${phone}</span>`;
@@ -79,10 +74,10 @@
                                 <div class="text-xs text-gray-500 mb-1">${s.users.email}</div>
                                 <div class="text-xs" dir="ltr" style="text-align: right;">${waHtml}</div>
                             </td>
-                            <td class="px-6 py-4 font-bold text-emerald-600">${planText}</td>
+                            <td class="px-6 py-4 text-sm">${planText}</td>
                             <td class="px-6 py-4 text-center">
-                                <a href="teacher_student_details.html?id=${s.user_id}" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-4 py-2 rounded-lg font-bold transition inline-flex items-center text-xs">
-                                    <i class="fas fa-user-edit ml-1"></i> ملف الطالب وسجل الحصص
+                                <a href="teacher_student_details.html?id=${s.user_id}" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-4 py-2 rounded-lg font-bold transition inline-flex items-center text-xs border border-emerald-200 shadow-sm">
+                                    <i class="fas fa-folder-open ml-1"></i> فتح ملف الطالب وسجل الحصص
                                 </a>
                             </td>
                         </tr>
