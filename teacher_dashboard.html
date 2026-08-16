@@ -56,11 +56,13 @@
             <div class="bg-white rounded-xl shadow-sm border p-6">
                 <div class="flex justify-between items-center mb-6 border-b pb-4">
                     <h3 class="font-bold text-lg text-emerald-700"><i class="fas fa-calendar-week ml-2"></i> الجدول الأسبوعي للحصص</h3>
-                    <div class="flex items-center bg-gray-100 rounded-lg p-1">
-                        <button onclick="changeWeek(1)" class="px-4 py-1 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition"><i class="fas fa-chevron-right"></i> التالي</button>
-                        <button onclick="resetToToday()" class="px-4 py-1 hover:bg-white rounded text-emerald-600 font-bold shadow-sm transition mx-1 border border-emerald-200 bg-emerald-50">اليوم</button>
-                        <span id="weekDisplay" class="px-4 font-bold text-emerald-700 text-sm hidden">الأسبوع الحالي</span>
-                        <button onclick="changeWeek(-1)" class="px-4 py-1 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition">السابق <i class="fas fa-chevron-left"></i></button>
+                    <div class="flex items-center bg-gray-100 rounded-lg p-1 space-x-1 space-x-reverse">
+                        <button onclick="changeWeek(1)" class="px-4 py-1.5 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition">التالي <i class="fas fa-chevron-left mr-1 text-xs"></i></button>
+                        
+                        <span id="weekDisplay" class="px-4 font-bold text-emerald-700 text-sm border-x border-gray-300">الأسبوع الحالي</span>
+                        <button onclick="resetToToday()" class="px-3 py-1.5 hover:bg-white rounded text-emerald-600 font-bold shadow-sm transition border border-emerald-200 bg-emerald-50">اليوم</button>
+                        
+                        <button onclick="changeWeek(-1)" class="px-4 py-1.5 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition"><i class="fas fa-chevron-right ml-1 text-xs"></i> السابق</button>
                     </div>
                 </div>
                 <div class="grid grid-cols-7 gap-3 min-w-[800px] overflow-x-auto" id="calendarGrid"></div>
@@ -100,7 +102,6 @@
             const today = new Date();
             const currentDay = today.getDay(); 
             
-            // تاريخ اليوم للتمييز البصري
             const actualToday = new Date();
             actualToday.setHours(0,0,0,0);
 
@@ -142,25 +143,22 @@
                     todaySessionsCount = daySessions.length;
                 }
                 
-                // تحديد ألوان العمود بناءً على الزمن (ماضي - حاضر - مستقبل)
+                // تحديد ألوان العمود بناءً على الزمن لمنع اقتطاع الحواف (تغيير border-2 لليوم الحالي)
                 let headerClass = 'bg-gray-200 text-gray-700';
-                let bodyClass = 'bg-gray-50';
+                let bodyClass = 'border border-gray-200 bg-gray-50';
                 
                 if (dayDate.getTime() === actualToday.getTime()) {
-                    // اليوم الحالي
                     headerClass = 'bg-emerald-500 text-white shadow-md border-b-4 border-emerald-700';
-                    bodyClass = 'bg-emerald-50 border-emerald-200 ring-2 ring-emerald-400';
+                    bodyClass = 'border-2 border-emerald-500 bg-emerald-50 shadow-md'; 
                 } else if (dayDate.getTime() < actualToday.getTime()) {
-                    // أيام ماضية
                     headerClass = 'bg-gray-100 text-gray-400';
-                    bodyClass = 'bg-gray-100 opacity-60';
+                    bodyClass = 'border border-gray-200 bg-gray-100 opacity-60'; 
                 } else {
-                    // أيام مستقبلية
                     headerClass = 'bg-blue-50 text-blue-800 border-b-2 border-blue-200';
-                    bodyClass = 'bg-white border-gray-200';
+                    bodyClass = 'border border-gray-200 bg-white';
                 }
 
-                let colHtml = `<div class="border rounded-xl overflow-hidden min-h-[350px] flex flex-col ${bodyClass} transition-all">
+                let colHtml = `<div class="rounded-xl overflow-hidden min-h-[350px] flex flex-col ${bodyClass} transition-all">
                                 <div class="text-center py-2 ${headerClass}">
                                     <h4 class="font-bold">${daysNames[i]}</h4>
                                     <span class="text-xs font-medium opacity-90">${dayDate.toLocaleDateString('ar-OM', {month:'numeric', day:'numeric'})}</span>
@@ -172,7 +170,6 @@
                         const sTime = sess.start_time.substring(0,5);
                         const eTime = sess.end_time.substring(0,5);
                         
-                        // تحديد الشارة واللون بناءً على حالة الحصة
                         let statusBadge = '';
                         let cardStyle = '';
                         
@@ -198,13 +195,13 @@
                                 cardStyle = 'bg-emerald-50 border-emerald-200';
                         }
                         
-                        // تم تغيير <a> إلى <div> لمنع الدخول للحصة من هنا
-                        colHtml += `<div class="${cardStyle} border p-2 rounded-lg text-sm relative transition hover:shadow-md">
-                            <div class="flex justify-between items-center mb-1.5 border-b border-gray-100 pb-1">
+                        // تصميم البطاقة: الاسم بالأعلى ثم التوقيت ثم الحالة
+                        colHtml += `<div class="${cardStyle} border p-2 rounded-lg text-sm relative transition hover:shadow-md flex flex-col gap-1.5">
+                            <div class="font-bold text-gray-800 text-xs">${sess.users.full_name}</div>
+                            <div class="flex justify-between items-center border-t border-gray-100 pt-1.5 mt-auto">
                                 <div class="font-bold text-gray-500 text-[11px]"><i class="far fa-clock"></i> ${sTime} - ${eTime}</div>
                                 ${statusBadge}
                             </div>
-                            <div class="font-bold text-gray-800 text-xs">${sess.users.full_name}</div>
                         </div>`;
                     });
                 } else {
