@@ -48,7 +48,7 @@
                 <table class="w-full text-right text-sm">
                     <thead class="bg-gray-50 text-gray-500 border-b">
                         <tr>
-                            <th class="px-6 py-4 font-bold">اسم المعلم والبريد</th>
+                            <th class="px-6 py-4 font-bold">بيانات المعلم (الاسم، البريد، الهاتف)</th>
                             <th class="px-6 py-4 font-bold text-center">الطلاب الموكلين</th>
                             <th class="px-6 py-4 font-bold text-center">الحصص الأسبوعية</th>
                             <th class="px-6 py-4 font-bold">الحالة</th>
@@ -64,8 +64,8 @@
     </main>
 
     <!-- نافذة إضافة معلم جديد -->
-    <div id="addTeacherModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 transition-opacity">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+    <div id="addTeacherModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 transition-opacity overflow-y-auto">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl my-8">
             <div class="flex justify-between items-center mb-4 border-b pb-3">
                 <h3 class="text-xl font-bold text-emerald-700">إضافة معلم جديد</h3>
                 <button onclick="closeModal('addTeacherModal')" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times text-xl"></i></button>
@@ -78,6 +78,10 @@
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">البريد الإلكتروني</label>
                     <input type="email" id="addEmail" class="w-full border rounded-lg p-3 focus:border-emerald-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">رقم الهاتف / الواتساب</label>
+                    <input type="tel" id="addPhone" placeholder="مثال: 96891234567+" dir="ltr" class="w-full border rounded-lg p-3 focus:border-emerald-500 outline-none text-right" required>
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">كلمة المرور</label>
@@ -96,8 +100,8 @@
     </div>
 
     <!-- نافذة تعديل بيانات المعلم -->
-    <div id="editTeacherModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 transition-opacity">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+    <div id="editTeacherModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 transition-opacity overflow-y-auto">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl my-8">
             <div class="flex justify-between items-center mb-4 border-b pb-3">
                 <h3 class="text-xl font-bold text-emerald-700">تعديل بيانات المعلم</h3>
                 <button onclick="closeModal('editTeacherModal')" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times text-xl"></i></button>
@@ -111,6 +115,10 @@
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">البريد الإلكتروني (للقراءة فقط)</label>
                     <input type="email" id="editTeacherEmail" class="w-full border rounded-lg p-3 bg-gray-100 text-gray-400 cursor-not-allowed" disabled>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">رقم الهاتف / الواتساب</label>
+                    <input type="tel" id="editTeacherPhone" dir="ltr" class="w-full border rounded-lg p-3 focus:border-emerald-500 outline-none text-right" required>
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">رابط Google Meet للحلقة</label>
@@ -132,17 +140,26 @@
         }
 
         async function loadTeachers() {
-            const { data, error } = await window.supabase.rpc('get_teachers_stats');
+            // جلب الإحصائيات من الدالة الخلفية
+            const { data: statsData, error: statsError } = await window.supabase.rpc('get_teachers_stats');
+            
+            // جلب الهواتف والروابط من جدول المستخدمين لدمجها مع الإحصائيات (لمنع الحاجة لتعديل الـ RPC)
+            const { data: usersData, error: usersError } = await window.supabase.from('users').select('id, phone, meet_link').eq('role', 'teacher');
+
             const tbody = document.getElementById('teachersTable');
             tbody.innerHTML = '';
             
-            if (error) {
-                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-red-500 font-bold">حدث خطأ: ${error.message}</td></tr>`;
+            if (statsError || usersError) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-red-500 font-bold">حدث خطأ أثناء جلب البيانات.</td></tr>`;
                 return;
             }
 
-            if(data && data.length > 0) {
-                data.forEach(teacher => {
+            if(statsData && statsData.length > 0) {
+                statsData.forEach(teacher => {
+                    // دمج البيانات
+                    const userDbInfo = usersData?.find(u => u.id === teacher.id) || {};
+                    const phone = userDbInfo.phone || 'غير متوفر';
+
                     const isActive = teacher.is_active !== false; 
                     const statusBadge = isActive 
                         ? `<span class="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full font-bold">نشط</span>` 
@@ -158,13 +175,18 @@
                                 <a href="admin_teacher_details.html?id=${teacher.id}" class="font-bold text-emerald-700 hover:underline flex items-center">
                                     ${teacher.full_name} <i class="fas fa-external-link-alt text-xs ml-2 opacity-70"></i>
                                 </a>
-                                <span class="text-xs text-gray-500 mt-1 block">${teacher.email}</span>
+                                <div class="text-xs text-gray-500 mt-2 space-y-1">
+                                    <div class="flex items-center"><i class="fas fa-envelope ml-2 text-gray-400"></i> ${teacher.email}</div>
+                                    <div class="flex items-center text-left" dir="ltr">
+                                        <span class="ml-auto flex items-center flex-row-reverse"><i class="fas fa-phone-alt ml-2 text-gray-400"></i> ${phone}</span>
+                                    </div>
+                                </div>
                             </td>
                             <td class="px-6 py-4"><div class="font-bold text-blue-700 bg-blue-50 text-center py-1 rounded-lg w-20 mx-auto">${teacher.students_count} طلاب</div></td>
                             <td class="px-6 py-4"><div class="font-bold text-purple-700 bg-purple-50 text-center py-1 rounded-lg w-20 mx-auto">${teacher.weekly_sessions} حلقات</div></td>
                             <td class="px-6 py-4">${statusBadge}</td>
                             <td class="px-6 py-4 flex space-x-2 space-x-reverse">
-                                <button onclick="openEditModal('${teacher.id}', '${teacher.full_name}', '${teacher.email}')" class="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-lg font-bold transition">
+                                <button onclick="openEditModal('${teacher.id}', '${teacher.full_name}', '${teacher.email}', '${phone}')" class="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-lg font-bold transition">
                                     <i class="fas fa-edit ml-1"></i> تعديل
                                 </button>
                                 ${actionButton}
@@ -190,10 +212,11 @@
             document.getElementById('addTeacherModal').classList.add('flex');
         }
 
-        async function openEditModal(id, name, email) {
+        async function openEditModal(id, name, email, phone) {
             document.getElementById('editTeacherId').value = id;
             document.getElementById('editTeacherName').value = name;
             document.getElementById('editTeacherEmail').value = email;
+            document.getElementById('editTeacherPhone').value = phone === 'غير متوفر' ? '' : phone;
             
             // جلب رابط ميت الفعلي من قاعدة البيانات
             const { data } = await window.supabase.from('users').select('meet_link').eq('id', id).single();
@@ -209,7 +232,7 @@
             document.getElementById(modalId).classList.remove('flex');
         }
 
-        // إضافة معلم جديد
+        // إضافة معلم جديد مع حقل رقم الهاتف
         document.getElementById('addTeacherForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('addBtn');
@@ -219,21 +242,22 @@
             const name = document.getElementById('addName').value;
             const email = document.getElementById('addEmail').value;
             const password = document.getElementById('addPassword').value;
+            const phone = document.getElementById('addPhone').value;
             const meetLink = document.getElementById('addMeetLink').value;
 
             try {
-                // إنشاء المستخدم وتمرير البيانات (الصلاحية ورابط ميت)
+                // إنشاء المستخدم وتمرير البيانات (الصلاحية ورقم الهاتف ورابط ميت)
                 const { data, error } = await window.supabase.auth.signUp({
                     email: email,
                     password: password,
-                    options: { data: { full_name: name, role: 'teacher', meet_link: meetLink } }
+                    options: { data: { full_name: name, role: 'teacher', phone: phone, meet_link: meetLink } }
                 });
 
                 if (error) throw error;
                 
-                // تحديث الحقل في جدول users بعد تسجيله
+                // تحديث الحقول في جدول users بعد تسجيله
                 if(data.user) {
-                    await window.supabase.from('users').update({ meet_link: meetLink }).eq('id', data.user.id);
+                    await window.supabase.from('users').update({ phone: phone, meet_link: meetLink }).eq('id', data.user.id);
                 }
 
                 msg.textContent = 'تم إضافة المعلم بنجاح! (ملاحظة: سيتم تسجيل خروجك الآن أمنياً لإتمام العملية، يرجى الدخول مجدداً)';
@@ -251,7 +275,7 @@
             }
         });
 
-        // تعديل بيانات المعلم
+        // تعديل بيانات المعلم وحفظ رقم الهاتف
         document.getElementById('editTeacherForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('editBtn');
@@ -260,11 +284,13 @@
 
             const id = document.getElementById('editTeacherId').value;
             const newName = document.getElementById('editTeacherName').value;
+            const newPhone = document.getElementById('editTeacherPhone').value;
             const newMeetLink = document.getElementById('editTeacherMeet').value;
 
-            // تحديث الاسم والرابط مباشرة في جدول المستخدمين
+            // تحديث الاسم والهاتف والرابط مباشرة في جدول المستخدمين
             const { error } = await window.supabase.from('users').update({ 
                 full_name: newName,
+                phone: newPhone,
                 meet_link: newMeetLink 
             }).eq('id', id);
 
