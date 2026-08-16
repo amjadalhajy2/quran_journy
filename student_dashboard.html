@@ -181,14 +181,14 @@
         }
 
         // تم إصلاح استعلام الجلب بالاعتماد على الاسم المستعار (Alias) لتجنب أخطاء قراءة الجداول المترابطة
-        async function loadStudentSchedule() {
+async function loadStudentSchedule() {
             try {
                 const { data: sessions, error } = await window.supabase
                     .from('sessions')
-                    // استخدام teacher كاسم مستعار لجلب الاسم بوضوح تام
+                    // جلب الحصص المجدولة فقط (بدون ongoing لتجنب خطأ قاعدة البيانات)
                     .select(`id, session_date, start_time, end_time, status, teacher_id, teacher:users!sessions_teacher_id_fkey(full_name)`)
                     .eq('student_id', studentUserId)
-                    .in('status', ['scheduled', 'ongoing'])
+                    .eq('status', 'scheduled') 
                     .order('session_date', { ascending: true })
                     .order('start_time', { ascending: true });
 
@@ -212,6 +212,14 @@
                     return;
                 }
 
+                // حساب الوقت الحالي لمعرفة ما إذا كانت الحصة جارية برمجياً
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const currentDateStr = `${year}-${month}-${day}`; // صيغة YYYY-MM-DD
+                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
                 // عرض الحصة القادمة
                 const nextSession = sessions[0];
                 const teacherName = nextSession.teacher?.full_name || "معلم القرآن";
@@ -231,8 +239,22 @@
                 sessions.forEach(session => {
                     const tName = session.teacher?.full_name || "معلم القرآن";
                     const sTime = session.start_time.substring(0, 5);
+                    const eTime = session.end_time.substring(0, 5);
                     
-                    const statusBadge = session.status === 'ongoing' 
+                    // تحديد ما إذا كانت الحصة جارية الآن برمجياً بدون الاعتماد على حالة الداتا بيز
+                    let isOngoing = false;
+                    if (session.session_date === currentDateStr) {
+                        const [startH, startM] = sTime.split(':').map(Number);
+                        const [endH, endM] = eTime.split(':').map(Number);
+                        const startTotal = startH * 60 + startM;
+                        const endTotal = endH * 60 + endM;
+                        
+                        if (currentMinutes >= startTotal && currentMinutes <= endTotal) {
+                            isOngoing = true;
+                        }
+                    }
+                    
+                    const statusBadge = isOngoing 
                         ? '<span class="bg-red-100 text-red-600 border border-red-200 px-3 py-1 rounded-full text-xs font-bold animate-pulse">جارية الآن</span>'
                         : '<span class="bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1 rounded-full text-xs font-bold">مجدولة</span>';
 
