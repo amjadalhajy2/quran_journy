@@ -138,12 +138,11 @@
 
     <script src="supabase.js"></script>
     <script>
-        let myMeetLink = ""; 
+let myMeetLink = ""; 
         let activeSessionId = null;
         let studentPlans = [];
         window.quranChapters = [];
 
-        // حدود الأجزاء
         const juzPageBounds = {
             1:[1,21], 2:[22,41], 3:[42,61], 4:[62,81], 5:[82,101], 6:[102,121], 7:[122,141], 8:[142,161], 9:[162,181], 10:[182,201],
             11:[202,221], 12:[222,241], 13:[242,261], 14:[262,281], 15:[282,301], 16:[302,321], 17:[322,341], 18:[342,361], 19:[362,381], 20:[382,401],
@@ -151,10 +150,7 @@
         };
 
         function openMeetPopup() {
-            if (!myMeetLink) {
-                alert("لم يتم العثور على رابط Google Meet مخصص لك في النظام. يرجى مراجعة إدارة المنصة.");
-                return;
-            }
+            if (!myMeetLink) return alert("لم يتم العثور على رابط Google Meet مخصص لك في النظام.");
             const width = 800; const height = 600;
             const left = (window.screen.width - width) / 2;
             const top = (window.screen.height - height) / 2;
@@ -180,19 +176,11 @@
         const bookContainer = document.getElementById('bookContainer');
         const loadingOverlay = document.getElementById('loadingOverlay');
 
-        function getImageUrl(pageNum) {
-            const fileNum = pageNum + 4;
-            const formattedNum = String(fileNum).padStart(3, '0');
-            return `quran-low/${formattedNum}.jpg`;
-        }
+        function getImageUrl(pageNum) { return `quran-low/${String(pageNum + 4).padStart(3, '0')}.jpg`; }
 
         function preloadImages(pageNum) {
-            const pagesToPreload = [pageNum - 2, pageNum - 1, pageNum + 2, pageNum + 3];
-            pagesToPreload.forEach(p => {
-                if (p >= 1 && p <= 604) {
-                    const img = new Image();
-                    img.src = getImageUrl(p);
-                }
+            [pageNum - 2, pageNum - 1, pageNum + 2, pageNum + 3].forEach(p => {
+                if (p >= 1 && p <= 604) { const img = new Image(); img.src = getImageUrl(p); }
             });
         }
 
@@ -205,9 +193,7 @@
             currentPage = pageNum;
             document.getElementById('pageNumberInput').value = currentPage;
 
-            if (currentPage !== oldPage) {
-                bookContainer.classList.add(currentPage > oldPage ? 'turning-next' : 'turning-prev');
-            }
+            if (currentPage !== oldPage) bookContainer.classList.add(currentPage > oldPage ? 'turning-next' : 'turning-prev');
 
             setTimeout(() => {
                 loadingOverlay.classList.remove('hidden'); 
@@ -221,25 +207,19 @@
                     }
                 };
 
-                rightImage.onload = onImageLoad;
-                rightImage.onerror = () => { rightImage.src = getImageUrl(currentPage); };
+                rightImage.onload = onImageLoad; rightImage.onerror = () => { rightImage.src = getImageUrl(currentPage); };
                 rightImage.src = getImageUrl(currentPage);
 
                 if (currentPage + 1 <= 604) {
-                    leftImage.onload = onImageLoad;
-                    leftImage.onerror = () => { leftImage.src = getImageUrl(currentPage + 1); };
+                    leftImage.onload = onImageLoad; leftImage.onerror = () => { leftImage.src = getImageUrl(currentPage + 1); };
                     leftImage.src = getImageUrl(currentPage + 1);
-                } else {
-                    leftImage.src = "";
-                    onImageLoad(); 
-                }
+                } else { leftImage.src = ""; onImageLoad(); }
             }, currentPage === oldPage ? 0 : 400); 
         }
 
         function changePage(direction) { updateQuranPage(currentPage + direction); }
         function jumpToPage(val) { if(val) updateQuranPage(parseInt(val)); }
 
-        // المتابعة والنطاقات
         function onCurriculumChange() {
             const sel = document.getElementById('selectCurriculum');
             if(!sel.value) return;
@@ -267,55 +247,67 @@
             const { data: { user } } = await window.supabase.auth.getUser();
             if(!user) return window.location.href = 'login.html';
 
-            const teacherName = user.user_metadata?.full_name || "معلم القرآن";
             const urlParams = new URLSearchParams(window.location.search);
             const studentId = urlParams.get('student_id');
             let studentName = "طالب (بدون تحديد)";
 
             const { data: teacherData } = await window.supabase.from('users').select('meet_link').eq('id', user.id).single();
-            if(teacherData) { myMeetLink = teacherData.meet_link || ""; }
+            if(teacherData) myMeetLink = teacherData.meet_link || "";
 
             if (studentId) {
-                // جلب بيانات وخطط الطالب
                 const { data: profile } = await window.supabase.from('student_profiles')
                     .select('target_parts, custom_plan_type, target_surahs, users!student_profiles_user_id_fkey(full_name)')
                     .eq('user_id', studentId).single();
                 
                 if(profile) {
-                    studentName = profile.users.full_name;
+                    studentName = profile.users?.full_name || studentName;
                     
-                    if(profile.target_parts && profile.target_parts.startsWith('[')) {
-                        studentPlans = JSON.parse(profile.target_parts);
-                    } else if(profile.target_parts || profile.target_surahs) {
-                        studentPlans = [{ id: 1, type: profile.custom_plan_type || 'parts', items: profile.custom_plan_type === 'parts' ? profile.target_parts.split('،').map(s=>s.trim()).filter(Boolean) : profile.target_surahs.split('،').map(s=>s.trim().replace(/^\d+\.\s*/, '')).filter(Boolean) }];
-                    }
+                    try {
+                        if (profile.target_parts && profile.target_parts.startsWith('[')) {
+                            studentPlans = JSON.parse(profile.target_parts);
+                        } else if (profile.target_parts || profile.target_surahs) {
+                            let pType = profile.custom_plan_type || (profile.target_parts ? 'parts' : 'surahs');
+                            let pItems = [];
+                            if (pType === 'parts' && profile.target_parts) {
+                                pItems = profile.target_parts.split(/[،,]/).map(s=>s.trim()).filter(Boolean);
+                            } else if (pType === 'surahs' && profile.target_surahs) {
+                                pItems = profile.target_surahs.split(/[،,]/).map(s=>s.trim().replace(/^\d+\.\s*/, '')).filter(Boolean);
+                            }
+                            studentPlans = [{ id: 1, type: pType, items: pItems }];
+                        }
+                    } catch(e) { console.error(e); }
 
                     const sel = document.getElementById('selectCurriculum');
                     sel.innerHTML = '<option value="">-- اختر من مقررات الطالب --</option>';
+                    let firstIncompletePlanId = null;
+
                     studentPlans.forEach(plan => {
+                        const itemsStr = plan.items.join('، ');
+                        let planMinPage = 604, planMaxPage = 1;
+                        
                         plan.items.forEach(item => {
-                            let b = [1, 604], lbl = '';
+                            let bounds = null;
                             if(plan.type === 'parts') {
-                                const jN = parseInt(item.replace(/\D/g,''));
-                                if(juzPageBounds[jN]) b = juzPageBounds[jN];
-                                lbl = `مقرر ${plan.id} - ${item}`;
+                                const jNum = parseInt(item.replace(/\D/g,''));
+                                bounds = juzPageBounds[jNum];
                             } else {
                                 const ch = window.quranChapters?.find(c => c.name_arabic === item);
-                                if(ch) b = ch.pages;
-                                lbl = `مقرر ${plan.id} - سورة ${item}`;
+                                if(ch) bounds = ch.pages;
                             }
-                            sel.innerHTML += `<option value="${item}" data-plan="مقرر ${plan.id}" data-min="${b[0]}" data-max="${b[1]}">${lbl} (ص ${b[0]}-${b[1]})</option>`;
+                            if(bounds) {
+                                planMinPage = Math.min(planMinPage, bounds[0]);
+                                planMaxPage = Math.max(planMaxPage, bounds[1]);
+                            }
                         });
+                        
+                        const lbl = `مقرر ${plan.id} (${itemsStr}) - ص ${planMinPage} إلى ${planMaxPage}`;
+                        sel.innerHTML += `<option value="${plan.id}" data-plan="مقرر ${plan.id}" data-min="${planMinPage}" data-max="${planMaxPage}">${lbl}</option>`;
+                        if(firstIncompletePlanId === null) firstIncompletePlanId = plan.id;
                     });
                 }
 
                 // الحصة الجارية
-                const now = new Date();
-                const y = now.getFullYear();
-                const m = String(now.getMonth() + 1).padStart(2, '0');
-                const d = String(now.getDate()).padStart(2, '0');
-                const todayStr = `${y}-${m}-${d}`;
-
+                const todayStr = new Date().toISOString().split('T')[0];
                 const { data: sessData } = await window.supabase.from('sessions')
                     .select('id, next_assignment')
                     .eq('student_id', studentId).eq('teacher_id', user.id).eq('session_date', todayStr)
@@ -325,26 +317,29 @@
                     activeSessionId = sessData.id;
                     await window.supabase.from('sessions').update({ status: 'ongoing' }).eq('id', activeSessionId);
                     
+                    const sel = document.getElementById('selectCurriculum');
                     if(sessData.next_assignment && sessData.next_assignment.includes('ص')) {
-                        const matchName = sessData.next_assignment.split(' - ')[1]?.split(' (')[0];
-                        if(matchName) document.getElementById('selectCurriculum').value = matchName;
+                        const matchName = sessData.next_assignment.match(/مقرر (\d+)/);
+                        if(matchName) sel.value = matchName[1];
                         onCurriculumChange();
-                        const nums = sessData.next_assignment.match(/\d+/g);
-                        if (nums && nums.length >= 3) {
+                        const nums = sessData.next_assignment.match(/ص (\d+) إلى (\d+)/);
+                        if (nums) {
                             document.getElementById('targetFrom').value = nums[1];
                             document.getElementById('targetTo').value = nums[2];
                         }
+                    } else if (sel.options.length > 1) {
+                        sel.selectedIndex = 1;
+                        onCurriculumChange();
                     }
                 }
             }
             
-            document.getElementById('teacherNameDisplay').textContent = `المعلم: ${teacherName}`;
+            document.getElementById('teacherNameDisplay').textContent = `المعلم: ${user.user_metadata?.full_name || "معلم"}`;
             document.getElementById('studentNameDisplay').textContent = `الطالب: ${studentName}`;
         }
 
         async function saveAndEndSession() {
             if(!activeSessionId) return alert("لا توجد حصة مجدولة لحفظ السجل فيها.");
-            
             const btn = document.getElementById('finishBtn');
             btn.disabled = true; btn.textContent = 'جاري الحفظ...';
 
@@ -358,7 +353,7 @@
 
             let targetStr = '', actualStr = '';
             if(sel.value) {
-                targetStr = `${opt.getAttribute('data-plan')} - ${sel.value} (ص ${tf} إلى ${tt})`;
+                targetStr = `${opt.getAttribute('data-plan')} - ص ${tf} إلى ${tt}`;
                 actualStr = `ص ${af} إلى ${at}`;
             }
 
