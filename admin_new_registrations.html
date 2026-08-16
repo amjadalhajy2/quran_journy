@@ -38,7 +38,7 @@
                     <thead class="bg-gray-50 text-gray-500 border-b">
                         <tr>
                             <th class="px-6 py-4 font-bold">تاريخ الطلب</th>
-                            <th class="px-6 py-4 font-bold">اسم الطالب</th>
+                            <th class="px-6 py-4 font-bold">بيانات الطالب</th>
                             <th class="px-6 py-4 font-bold">الباقة المطلوبة</th>
                             <th class="px-6 py-4 font-bold">الإيصال المالي</th>
                             <th class="px-6 py-4 font-bold text-center">القرار</th>
@@ -52,31 +52,31 @@
         </div>
 
         <!-- نافذة الاعتماد وتعيين المعلم -->
-    <div id="approveModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-xl p-6 w-full max-w-md">
-            <h3 class="text-xl font-bold mb-4 text-emerald-700">اعتماد الطالب وتعيين المعلم</h3>
-            <p class="text-sm text-gray-500 mb-4">يجب تعيين معلم للطالب قبل إتمام عملية الاعتماد ليتمكن من بدء خطته.</p>
-            <input type="hidden" id="pendingSubId">
-            <label class="block font-bold mb-2">اختر المعلم المشرف:</label>
-            <select id="teacherSelect" class="w-full border p-3 rounded-lg mb-6 font-bold"></select>
-            <div class="flex space-x-2 space-x-reverse">
-                <button onclick="confirmApprove()" class="w-full bg-emerald-600 text-white p-3 rounded-lg font-bold hover:bg-emerald-700">اعتماد وتعيين</button>
-                <button onclick="document.getElementById('approveModal').classList.add('hidden')" class="w-full bg-gray-200 p-3 rounded-lg font-bold hover:bg-gray-300">إلغاء</button>
+        <div id="approveModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
+            <div class="bg-white rounded-xl p-6 w-full max-w-md">
+                <h3 class="text-xl font-bold mb-4 text-emerald-700">اعتماد الطالب وتعيين المعلم</h3>
+                <p class="text-sm text-gray-500 mb-4">يجب تعيين معلم للطالب قبل إتمام عملية الاعتماد ليتمكن من بدء خطته.</p>
+                <input type="hidden" id="pendingSubId">
+                <label class="block font-bold mb-2">اختر المعلم المشرف:</label>
+                <select id="teacherSelect" class="w-full border p-3 rounded-lg mb-6 font-bold"></select>
+                <div class="flex space-x-2 space-x-reverse">
+                    <button onclick="confirmApprove()" class="w-full bg-emerald-600 text-white p-3 rounded-lg font-bold hover:bg-emerald-700">اعتماد وتعيين</button>
+                    <button onclick="document.getElementById('approveModal').classList.add('hidden')" class="w-full bg-gray-200 p-3 rounded-lg font-bold hover:bg-gray-300">إلغاء</button>
+                </div>
             </div>
         </div>
-    </div>
     </main>
 
     <script src="supabase.js"></script>
     <script>
-        // دالة جلب الطلبات المعلقة من جدول الاشتراكات
-// دالة جلب الطلبات المعلقة من جدول الاشتراكات
-// دالة جلب الطلبات المعلقة باستخدام الدالة الخلفية (RPC) الذكية
         async function loadPendingRequests() {
             const tbody = document.getElementById('requestsTable');
             
             // جلب البيانات من الدالة الجديدة وتجاوز كل مشاكل العلاقات (Joins)
             const { data, error } = await window.supabase.rpc('get_pending_registrations');
+            
+            // جلب أرقام الهواتف بشكل منفصل لدمجها (لأن الدالة القديمة قد لا تحتوي على الهاتف)
+            const { data: usersData } = await window.supabase.from('users').select('email, phone');
 
             tbody.innerHTML = '';
 
@@ -89,6 +89,13 @@
                 data.forEach(req => {
                     const date = new Date(req.created_at).toLocaleDateString('ar-OM', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                     
+                    // استخراج رقم الهاتف ومعالجة رابط الواتساب
+                    const matchedUser = usersData?.find(u => u.email === req.student_email);
+                    const phone = matchedUser?.phone || 'غير متوفر';
+                    const cleanPhone = phone !== 'غير متوفر' ? phone.replace(/\D/g, '') : '';
+                    const waLink = cleanPhone ? `https://wa.me/${cleanPhone}` : '#';
+                    const waHtml = cleanPhone ? `<a href="${waLink}" target="_blank" class="text-green-600 hover:text-green-800 transition inline-flex items-center"><i class="fab fa-whatsapp ml-1"></i> ${phone}</a>` : `<span class="text-gray-400">${phone}</span>`;
+
                     // توليد الرابط المباشر لصورة الإيصال
                     const { data: urlData } = window.supabase.storage.from('payment-receipts').getPublicUrl(req.receipt_url);
                     const receiptUrl = urlData.publicUrl;
@@ -98,7 +105,8 @@
                             <td class="px-6 py-4 text-gray-500 text-xs">${date}</td>
                             <td class="px-6 py-4">
                                 <div class="font-bold text-gray-800">${req.student_name}</div>
-                                <div class="text-xs text-gray-500 mt-1">${req.student_email}</div>
+                                <div class="text-xs text-gray-500 mt-1 mb-1">${req.student_email}</div>
+                                <div class="text-xs font-bold" dir="ltr" style="text-align: right;">${waHtml}</div>
                             </td>
                             <td class="px-6 py-4">
                                 <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold">${req.package_name}</span>
@@ -125,17 +133,13 @@
             }
         }
 
-        // دالة اعتماد الطلب
-// دالة اعتماد الطلب (باستخدام RPC لتجاوز حظر المتصفح)
-let availableTeachers = [];
-        // جلب المعلمين مرة واحدة عند التحميل
+        let availableTeachers = [];
         window.addEventListener('load', async () => {
             const { data } = await window.supabase.from('users').select('id, full_name').eq('role', 'teacher');
             availableTeachers = data || [];
             loadPendingRequests();
         });
 
-        // فتح نافذة اختيار المعلم
         function approveRequest(subId) {
             document.getElementById('pendingSubId').value = subId;
             const select = document.getElementById('teacherSelect');
@@ -146,7 +150,6 @@ let availableTeachers = [];
             document.getElementById('approveModal').classList.add('flex');
         }
 
-        // تنفيذ الاعتماد والربط
         async function confirmApprove() {
             const subId = document.getElementById('pendingSubId').value;
             const tId = document.getElementById('teacherSelect').value;
@@ -155,10 +158,7 @@ let availableTeachers = [];
             const btn = document.querySelector('#approveModal button');
             btn.disabled = true; btn.textContent = 'جاري الاعتماد...';
 
-            const { error } = await window.supabase.rpc('approve_student_with_teacher', {
-                p_sub_id: subId,
-                p_teacher_id: tId
-            });
+            const { error } = await window.supabase.rpc('approve_student_with_teacher', { p_sub_id: subId, p_teacher_id: tId });
 
             if (error) alert('خطأ: ' + error.message);
             else {
@@ -168,24 +168,12 @@ let availableTeachers = [];
             btn.disabled = false; btn.textContent = 'اعتماد وتعيين';
         }
 
-        // دالة رفض الطلب (باستخدام RPC لتجاوز حظر المتصفح)
         async function rejectRequest(subId) {
             if(!confirm('هل أنت متأكد من رفض هذا الطلب؟ (هذا الإجراء سيقوم بحذف الطلب من قائمة الانتظار)')) return;
-
-            const { error } = await window.supabase.rpc('update_subscription_status', {
-                p_sub_id: subId,
-                p_status: 'rejected'
-            });
-
-            if (error) {
-                alert('حدث خطأ أثناء الرفض: ' + error.message);
-            } else {
-                loadPendingRequests();
-            }
+            const { error } = await window.supabase.rpc('update_subscription_status', { p_sub_id: subId, p_status: 'rejected' });
+            if (error) alert('حدث خطأ أثناء الرفض: ' + error.message);
+            else loadPendingRequests();
         }
-
-        // تشغيل الدالة عند تحميل الصفحة
-        window.addEventListener('load', loadPendingRequests);
     </script>
 </body>
 </html>
