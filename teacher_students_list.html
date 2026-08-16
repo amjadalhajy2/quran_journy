@@ -33,7 +33,7 @@
             <table class="w-full text-right text-sm">
                 <thead class="bg-gray-50 text-gray-600 border-b">
                     <tr>
-                        <th class="px-6 py-4 font-bold">اسم الطالب</th>
+                        <th class="px-6 py-4 font-bold">اسم الطالب وبياناته</th>
                         <th class="px-6 py-4 font-bold">المقرر (الخطة)</th>
                         <th class="px-6 py-4 font-bold text-center">مستوى الإنجاز</th>
                         <th class="px-6 py-4 font-bold">الإجراءات</th>
@@ -48,14 +48,12 @@
 
     <script src="supabase.js"></script>
     <script>
-
         window.addEventListener('load', async () => {
             const { data: { user } } = await window.supabase.auth.getUser();
             if(!user) return window.location.href = 'login.html';
 
-            // جلب طلاب المعلم وقراءة بيانات الخطة المخصصة
             const { data, error } = await window.supabase.from('student_profiles')
-                .select(`user_id, evaluation_status, custom_plan_type, target_parts, target_surahs, users!student_profiles_user_id_fkey(full_name, email)`)
+                .select(`user_id, evaluation_status, custom_plan_type, target_parts, target_surahs, users!student_profiles_user_id_fkey(full_name, email, phone)`)
                 .eq('teacher_id', user.id);
 
             const tbody = document.getElementById('myStudentsTable');
@@ -63,18 +61,24 @@
 
             if (data && data.length > 0) {
                 data.forEach(s => {
-                    // تحديد شكل الخطة للعرض
                     let planText = '<span class="text-red-500 text-xs">بانتظار التقييم</span>';
                     if (s.evaluation_status === 'completed') {
-                        if (s.custom_plan_type === 'parts') planText = `حفظ ${s.target_parts} أجزاء`;
-                        else if (s.custom_plan_type === 'surahs') planText = `حفظ سور: ${s.target_surahs}`;
+                        if (s.custom_plan_type === 'parts') planText = `حفظ ${s.target_parts}`;
+                        else if (s.custom_plan_type === 'surahs') planText = `سورة: ${s.target_surahs}`;
                     }
+
+                    const phone = s.users.phone || 'غير متوفر';
+                    const cleanPhone = phone !== 'غير متوفر' ? phone.replace(/\D/g, '') : '';
+                    const waHtml = cleanPhone ? `<a href="https://wa.me/${cleanPhone}" target="_blank" class="text-green-600 hover:text-green-800 transition font-bold"><i class="fab fa-whatsapp ml-1"></i> ${phone}</a>` : `<span class="text-gray-400">${phone}</span>`;
 
                     tbody.innerHTML += `
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4">
-                                <div class="font-bold text-gray-800">${s.users.full_name}</div>
-                                <div class="text-xs text-gray-500 mt-1">${s.users.email}</div>
+                                <a href="teacher_student_details.html?id=${s.user_id}" class="font-bold text-emerald-700 hover:underline flex items-center mb-1 text-lg">
+                                    ${s.users.full_name} <i class="fas fa-external-link-alt text-xs ml-2 opacity-70"></i>
+                                </a>
+                                <div class="text-xs text-gray-500 mb-1">${s.users.email}</div>
+                                <div class="text-xs" dir="ltr" style="text-align: right;">${waHtml}</div>
                             </td>
                             <td class="px-6 py-4 font-bold text-emerald-600">${planText}</td>
                             <td class="px-6 py-4">
