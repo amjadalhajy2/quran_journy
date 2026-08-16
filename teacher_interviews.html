@@ -20,21 +20,69 @@
     </aside>
 
     <main class="flex-1 overflow-y-auto p-8 bg-gray-50">
-        <h2 class="text-2xl font-bold text-gray-700 mb-6">إجراء تقييم وتحديد مستوى</h2>
+        <h2 class="text-2xl font-bold text-gray-700 mb-6">إدارة وتقييم الطلاب الجدد</h2>
         
-        <div class="bg-white p-8 rounded-xl shadow-sm border max-w-4xl">
-            <form id="evaluationForm" class="space-y-8">
+        <!-- أزرار التنقل بين التبويبات -->
+        <div class="flex space-x-4 space-x-reverse mb-6">
+            <button id="btnTab1" onclick="switchTab('tab1')" class="bg-emerald-600 text-white px-6 py-3 rounded-lg font-bold shadow transition flex items-center">
+                <i class="fas fa-calendar-plus ml-2"></i> تعيين حصة التقييم المبدئي
+            </button>
+            <button id="btnTab2" onclick="switchTab('tab2')" class="bg-white text-gray-600 border border-gray-300 px-6 py-3 rounded-lg font-bold shadow-sm hover:bg-gray-50 transition flex items-center">
+                <i class="fas fa-clipboard-check ml-2"></i> التقييم الدوري واعتماد الخطة
+            </button>
+        </div>
+
+        <!-- التبويب الأول: جدولة حصة التقييم المبدئي -->
+        <div id="tab1" class="bg-white p-8 rounded-xl shadow-sm border max-w-4xl">
+            <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg text-sm text-blue-800 font-bold mb-6">
+                <i class="fas fa-info-circle ml-1"></i> استخدم هذه الواجهة لتحديد موعد حصة واحدة للتعرف على الطالب الجديد وتقييم مستواه قبل اعتماد خطته الدائمة.
+            </div>
+            
+            <form id="scheduleEvalForm" class="space-y-6">
+                <div>
+                    <label class="block font-bold text-sm mb-2 text-gray-700">اختر الطالب (الجديد)</label>
+                    <select id="evalStudentSelect" class="w-full border rounded-lg p-3 bg-gray-50 focus:border-emerald-500 font-bold outline-none" required>
+                        <option value="">جاري تحميل الطلاب...</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block font-bold text-sm mb-2 text-gray-700">تاريخ الحصة</label>
+                        <input type="date" id="evalDate" class="w-full border rounded-lg p-3 bg-white focus:border-emerald-500 font-bold outline-none" required>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-sm mb-2 text-gray-700">وقت البدء</label>
+                        <input type="time" id="evalTime" class="w-full border rounded-lg p-3 bg-white focus:border-emerald-500 font-bold outline-none" required>
+                    </div>
+                </div>
                 
+                <div id="evalScheduleMsg" class="hidden text-center p-3 rounded font-bold mt-4"></div>
+
+                <div class="flex justify-end pt-4">
+                    <button type="submit" id="saveEvalScheduleBtn" class="bg-emerald-600 text-white px-8 py-3 rounded-lg font-bold shadow hover:bg-emerald-700 transition">
+                        <i class="fas fa-calendar-check ml-2"></i> إدراج الحصة في الجدول
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- التبويب الثاني: إجراء التقييم واعتماد الخطة (المحتوى السابق) -->
+        <div id="tab2" class="bg-white p-8 rounded-xl shadow-sm border max-w-4xl hidden">
+            <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-lg text-sm text-emerald-800 font-bold mb-6">
+                <i class="fas fa-info-circle ml-1"></i> استخدم هذه الواجهة بعد الانتهاء من مقابلة الطالب لتسجيل نتيجته، وتحديد المقررات، وجدولة حصصه الدائمة للشهر القادم.
+            </div>
+
+            <form id="evaluationForm" class="space-y-8">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-b pb-6">
                     <div>
                         <label class="block font-bold text-sm mb-2 text-gray-700">اختر الطالب (بانتظار التقييم)</label>
-                        <select id="studentSelect" onchange="handleStudentSelection()" class="w-full border rounded-lg p-3 bg-gray-50 focus:border-emerald-500 font-bold" required>
+                        <select id="studentSelect" onchange="handleStudentSelection()" class="w-full border rounded-lg p-3 bg-gray-50 focus:border-emerald-500 font-bold outline-none" required>
                             <option value="">جاري تحميل الطلاب...</option>
                         </select>
                     </div>
                     <div>
                         <label class="block font-bold text-sm mb-2 text-gray-700">مستوى الطالب (نتيجة التقييم)</label>
-                        <select id="levelSelect" class="w-full border rounded-lg p-3 bg-white focus:border-emerald-500 font-bold" required>
+                        <select id="levelSelect" class="w-full border rounded-lg p-3 bg-white focus:border-emerald-500 font-bold outline-none" required>
                             <option value="مبتدئ">مبتدئ (تأسيس وتلقين)</option>
                             <option value="متوسط">متوسط (تلاوة وأحكام)</option>
                             <option value="متقدم">متقدم (حفظ وإتقان)</option>
@@ -45,13 +93,9 @@
                 <!-- قسم جدولة الحصص الديناميكي -->
                 <div id="scheduleSection" class="border-b pb-6 hidden">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-emerald-700"><i class="far fa-calendar-alt ml-2"></i> جدولة الحصص الأسبوعية</h3>
+                        <h3 class="font-bold text-emerald-700"><i class="far fa-calendar-alt ml-2"></i> جدولة الحصص الأسبوعية الدائمة</h3>
                         <span id="packageInfoBadge" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold"></span>
                     </div>
-                    <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg text-sm text-blue-800 font-bold mb-4">
-                        <i class="fas fa-info-circle ml-1"></i> بناءً على باقة الطالب، قم بتحديد أيام وأوقات الحصص. سيقوم النظام بجدولتها لمدة شهر كامل للأمام تلقائياً.
-                    </div>
-                    
                     <!-- سيتم توليد حقول الأيام والأوقات هنا -->
                     <div id="scheduleInputsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                 </div>
@@ -89,7 +133,7 @@
                     </div>
                     <div>
                         <label class="block font-bold text-sm mb-2 text-gray-700">ملاحظات المعلم وتوصياته للطالب</label>
-                        <textarea id="evalNotes" rows="3" class="w-full border rounded-lg p-3 focus:border-emerald-500" required></textarea>
+                        <textarea id="evalNotes" rows="3" class="w-full border rounded-lg p-3 focus:border-emerald-500 outline-none" required></textarea>
                     </div>
                 </div>
                 
@@ -97,7 +141,7 @@
 
                 <div class="flex justify-end pt-4">
                     <button type="submit" id="saveEvalBtn" class="bg-emerald-600 text-white px-8 py-3 rounded-lg font-bold shadow hover:bg-emerald-700 transition">
-                        <i class="fas fa-save ml-2"></i> اعتماد التقييم والجدول
+                        <i class="fas fa-save ml-2"></i> اعتماد التقييم والخطة والجدول
                     </button>
                 </div>
             </form>
@@ -107,7 +151,20 @@
     <script src="supabase.js"></script>
     <script>
         let currentUserId = null;
-        let pendingStudentsData = []; // لحفظ تفاصيل الباقات للطلاب
+        let pendingStudentsData = []; 
+
+        // دالة التبديل بين التبويبات
+        function switchTab(tabId) {
+            document.getElementById('tab1').classList.add('hidden');
+            document.getElementById('tab2').classList.add('hidden');
+            document.getElementById(tabId).classList.remove('hidden');
+
+            const activeClass = 'bg-emerald-600 text-white px-6 py-3 rounded-lg font-bold shadow transition flex items-center';
+            const inactiveClass = 'bg-white text-gray-600 border border-gray-300 px-6 py-3 rounded-lg font-bold shadow-sm hover:bg-gray-50 transition flex items-center';
+
+            document.getElementById('btnTab1').className = tabId === 'tab1' ? activeClass : inactiveClass;
+            document.getElementById('btnTab2').className = tabId === 'tab2' ? activeClass : inactiveClass;
+        }
 
         // توليد قوائم الأجزاء والسور
         const juzContainer = document.getElementById('juzContainer');
@@ -136,21 +193,78 @@
             if(!user) return window.location.href = 'login.html';
             currentUserId = user.id;
             
-            // جلب الطلاب بانتظار التقييم مع تفاصيل باقاتهم باستخدام الدالة الذكية
+            // جلب الطلاب بانتظار التقييم
             const { data: students, error } = await window.supabase.rpc('get_pending_eval_students', { p_teacher_id: currentUserId });
             
-            const sSelect = document.getElementById('studentSelect');
-            sSelect.innerHTML = '<option value="">-- اختر طالباً --</option>';
+            const sSelect1 = document.getElementById('evalStudentSelect'); // التبويب 1
+            const sSelect2 = document.getElementById('studentSelect');     // التبويب 2
+            
+            sSelect1.innerHTML = '<option value="">-- اختر طالباً --</option>';
+            sSelect2.innerHTML = '<option value="">-- اختر طالباً --</option>';
             
             if(students && students.length > 0) {
                 pendingStudentsData = students;
-                students.forEach(s => sSelect.innerHTML += `<option value="${s.user_id}">${s.full_name}</option>`);
+                students.forEach(s => {
+                    const opt = `<option value="${s.user_id}">${s.full_name}</option>`;
+                    sSelect1.innerHTML += opt;
+                    sSelect2.innerHTML += opt;
+                });
             } else {
-                sSelect.innerHTML = '<option value="">لا يوجد طلاب بانتظار التقييم حالياً</option>';
+                sSelect1.innerHTML = '<option value="">لا يوجد طلاب بانتظار التقييم</option>';
+                sSelect2.innerHTML = '<option value="">لا يوجد طلاب بانتظار التقييم</option>';
             }
         });
 
-        // دالة توليد حقول الأوقات عند اختيار الطالب
+        // ==========================================
+        // وظائف التبويب الأول (جدولة حصة التقييم)
+        // ==========================================
+        document.getElementById('scheduleEvalForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveEvalScheduleBtn');
+            const msg = document.getElementById('evalScheduleMsg');
+            const stuId = document.getElementById('evalStudentSelect').value;
+            const eDate = document.getElementById('evalDate').value;
+            const eTime = document.getElementById('evalTime').value;
+
+            btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+
+            const studentData = pendingStudentsData.find(s => s.user_id === stuId);
+            const durationMins = studentData ? studentData.session_duration : 30;
+
+            // حساب وقت الانتهاء
+            let [hours, mins] = eTime.split(':').map(Number);
+            let totalMins = hours * 60 + mins + durationMins;
+            let endH = Math.floor(totalMins / 60) % 24;
+            let endM = totalMins % 60;
+            let endTimeStr = String(endH).padStart(2, '0') + ':' + String(endM).padStart(2, '0');
+
+            // إدراج الحصة كحصة تقييم مبدئي في جدول sessions
+            const { error } = await window.supabase.from('sessions').insert({
+                teacher_id: currentUserId,
+                student_id: stuId,
+                session_date: eDate,
+                start_time: eTime + ':00',
+                end_time: endTimeStr + ':00',
+                status: 'scheduled',
+                teacher_notes: 'حصة تقييم مبدئي للطالب الجديد'
+            });
+
+            msg.classList.remove('hidden');
+            if (error) {
+                msg.textContent = 'حدث خطأ: ' + error.message;
+                msg.className = 'text-center p-3 rounded font-bold mt-4 bg-red-100 text-red-700 block';
+            } else {
+                msg.textContent = 'تم إدراج حصة التقييم المبدئي في جدولك بنجاح!';
+                msg.className = 'text-center p-3 rounded font-bold mt-4 bg-emerald-100 text-emerald-700 block';
+                document.getElementById('scheduleEvalForm').reset();
+            }
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-calendar-check ml-2"></i> إدراج الحصة في الجدول';
+        });
+
+
+        // ==========================================
+        // وظائف التبويب الثاني (التقييم واعتماد الخطة)
+        // ==========================================
         function handleStudentSelection() {
             const studentId = document.getElementById('studentSelect').value;
             const scheduleSection = document.getElementById('scheduleSection');
@@ -165,7 +279,6 @@
             document.getElementById('packageInfoBadge').textContent = `الاستحقاق: ${studentData.sessions_per_week} حصص | مدة الحصة: ${studentData.session_duration} دقيقة`;
             
             container.innerHTML = '';
-            // توليد الحقول بناءً على عدد الحصص المستحقة
             for(let i=0; i<studentData.sessions_per_week; i++) {
                 container.innerHTML += `
                     <div class="bg-white border p-4 rounded-lg flex space-x-4 space-x-reverse">
@@ -187,13 +300,11 @@
             scheduleSection.classList.remove('hidden');
         }
 
-        // دالة تحويل أوقات البدء إلى تواريخ وجلسات فعلية لمدة 4 أسابيع
         function generateSessionsArray(studentId, durationMins) {
             const daysSelects = document.querySelectorAll('.schedule-day');
             const timesInputs = document.querySelectorAll('.schedule-time');
             let weeklySchedule = [];
             
-            // جمع اختيارات المعلم
             for(let i=0; i<daysSelects.length; i++) {
                 weeklySchedule.push({ day: parseInt(daysSelects[i].value), time: timesInputs[i].value });
             }
@@ -201,31 +312,28 @@
             let sessionsToInsert = [];
             let today = new Date();
             
-            // توليد التواريخ لـ 28 يوم قادم (4 أسابيع)
             for(let i=0; i<28; i++) {
                 let currentDate = new Date(today);
                 currentDate.setDate(today.getDate() + i);
-                let currentDayNum = currentDate.getDay(); // 0-6
+                let currentDayNum = currentDate.getDay(); 
 
-                // هل هذا اليوم ضمن جدول الطالب؟
                 let matchedSchedule = weeklySchedule.find(s => s.day === currentDayNum);
                 if(matchedSchedule) {
                     const dateStr = currentDate.toISOString().split('T')[0];
                     const startTimeStr = matchedSchedule.time;
                     
-                    // حساب وقت الانتهاء بزيادة دقائق الباقة
                     let [hours, mins] = startTimeStr.split(':').map(Number);
                     let endDate = new Date(currentDate);
                     endDate.setHours(hours, mins + durationMins, 0, 0);
-                    const endTimeStr = endDate.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
+                    const endTimeStr = endDate.toTimeString().split(' ')[0].substring(0, 5); 
 
-sessionsToInsert.push({
+                    sessionsToInsert.push({
                         teacher_id: currentUserId,
                         student_id: studentId,
                         session_date: dateStr,
                         start_time: startTimeStr + ':00',
                         end_time: endTimeStr + ':00',
-                        status: 'scheduled',  // <--- الفاصلة هنا كانت مفقودة
+                        status: 'scheduled',
                         scheduled_at: new Date().toISOString()
                     });
                 }
@@ -233,7 +341,6 @@ sessionsToInsert.push({
             return sessionsToInsert;
         }
 
-        // حفظ التقييم والخطة والحصص
         document.getElementById('evaluationForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('saveEvalBtn');
@@ -256,19 +363,16 @@ sessionsToInsert.push({
             btn.disabled = true; btn.textContent = 'جاري الاعتماد...';
             msg.classList.add('hidden');
 
-            // 1. استخراج الحصص المجدولة
             const studentData = pendingStudentsData.find(s => s.user_id === studentId);
             const generatedSessions = generateSessionsArray(studentId, studentData.session_duration);
 
-            // 2. إدخال الحصص في جدول الحصص دفعة واحدة
             const { error: sessionError } = await window.supabase.from('sessions').insert(generatedSessions);
             if(sessionError) {
                 alert('حدث خطأ أثناء جدولة الحصص: ' + sessionError.message);
-                btn.disabled = false; btn.textContent = 'اعتماد التقييم والجدول';
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-save ml-2"></i> اعتماد التقييم والخطة والجدول';
                 return;
             }
 
-            // 3. تحديث ملف الطالب لإنهاء حالة التقييم
             const { error } = await window.supabase.from('student_profiles')
                 .update({ 
                     evaluation_status: 'completed', 
@@ -282,11 +386,11 @@ sessionsToInsert.push({
             if(error) {
                 msg.textContent = 'تم جدولة الحصص ولكن حدث خطأ بملف الطالب: ' + error.message;
                 msg.className = 'text-center p-3 rounded font-bold mt-4 bg-orange-100 text-orange-700 block';
-                btn.disabled = false; btn.textContent = 'اعتماد التقييم والجدول';
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-save ml-2"></i> اعتماد التقييم والخطة والجدول';
             } else {
-                msg.textContent = 'تم إنجاز التقييم، وتحديد الخطة، وجدولة حصص الشهر كاملة بنجاح!';
+                msg.textContent = 'تم إنجاز التقييم، وتحديد الخطة، وجدولة الحصص بنجاح!';
                 msg.className = 'text-center p-3 rounded font-bold mt-4 bg-emerald-100 text-emerald-700 block';
-                setTimeout(() => window.location.href = 'teacher_dashboard.html', 3000);
+                setTimeout(() => window.location.href = 'teacher_dashboard.html', 2000);
             }
         });
     </script>
