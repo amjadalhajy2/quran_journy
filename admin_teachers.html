@@ -33,13 +33,17 @@
     <main class="flex-1 flex flex-col overflow-y-auto bg-gray-50">
         <header class="bg-white shadow-sm p-4 flex justify-between items-center border-b z-10 sticky top-0">
             <h2 class="text-2xl font-bold text-gray-700">إدارة المعلمين</h2>
-            <button onclick="logout()" class="text-red-500 hover:text-red-700 font-bold px-4 py-2 bg-red-50 hover:bg-red-100 rounded-lg transition">
-                <i class="fas fa-sign-out-alt ml-2"></i>تسجيل الخروج
-            </button>
+            <div class="flex space-x-2 space-x-reverse">
+                <button onclick="openAddModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center">
+                    <i class="fas fa-plus ml-2"></i> إضافة معلم جديد
+                </button>
+                <button onclick="logout()" class="text-red-500 hover:text-red-700 font-bold px-4 py-2 bg-red-50 hover:bg-red-100 rounded-lg transition">
+                    <i class="fas fa-sign-out-alt ml-2"></i>تسجيل الخروج
+                </button>
+            </div>
         </header>
 
         <div class="p-8">
-            <!-- جدول المعلمين -->
             <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
                 <table class="w-full text-right text-sm">
                     <thead class="bg-gray-50 text-gray-500 border-b">
@@ -59,7 +63,39 @@
         </div>
     </main>
 
-    <!-- نافذة تعديل بيانات المعلم المنبثقة -->
+    <!-- نافذة إضافة معلم جديد -->
+    <div id="addTeacherModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 transition-opacity">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 class="text-xl font-bold text-emerald-700">إضافة معلم جديد</h3>
+                <button onclick="closeModal('addTeacherModal')" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <form id="addTeacherForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">اسم المعلم</label>
+                    <input type="text" id="addName" class="w-full border rounded-lg p-3 focus:border-emerald-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">البريد الإلكتروني</label>
+                    <input type="email" id="addEmail" class="w-full border rounded-lg p-3 focus:border-emerald-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">كلمة المرور</label>
+                    <input type="password" id="addPassword" minlength="6" class="w-full border rounded-lg p-3 focus:border-emerald-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">رابط Google Meet للحلقة</label>
+                    <input type="url" id="addMeetLink" placeholder="https://meet.google.com/..." class="w-full border rounded-lg p-3 focus:border-emerald-500 outline-none" required>
+                </div>
+                <div id="addMsg" class="hidden text-sm font-bold p-2 rounded text-center"></div>
+                <button type="submit" id="addBtn" class="w-full bg-emerald-600 text-white font-bold p-3 rounded-lg shadow hover:bg-emerald-700 transition mt-2">
+                    إنشاء حساب المعلم
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة تعديل بيانات المعلم -->
     <div id="editTeacherModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 transition-opacity">
         <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <div class="flex justify-between items-center mb-4 border-b pb-3">
@@ -70,13 +106,17 @@
                 <input type="hidden" id="editTeacherId">
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">اسم المعلم</label>
-                    <input type="text" id="editTeacherName" class="w-full border border-gray-300 rounded-lg p-3 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" required>
+                    <input type="text" id="editTeacherName" class="w-full border rounded-lg p-3 focus:border-emerald-500 outline-none" required>
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">البريد الإلكتروني (للقراءة فقط)</label>
-                    <input type="email" id="editTeacherEmail" class="w-full border border-gray-200 rounded-lg p-3 bg-gray-100 text-gray-400 cursor-not-allowed" disabled>
+                    <input type="email" id="editTeacherEmail" class="w-full border rounded-lg p-3 bg-gray-100 text-gray-400 cursor-not-allowed" disabled>
                 </div>
-                <div id="editMsg" class="hidden"></div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">رابط Google Meet للحلقة</label>
+                    <input type="url" id="editTeacherMeet" placeholder="https://meet.google.com/..." class="w-full border rounded-lg p-3 focus:border-emerald-500 outline-none" required>
+                </div>
+                <div id="editMsg" class="hidden text-sm font-bold p-2 rounded text-center"></div>
                 <button type="submit" id="editBtn" class="w-full bg-emerald-600 text-white font-bold p-3 rounded-lg shadow hover:bg-emerald-700 transition mt-2">
                     حفظ التعديلات
                 </button>
@@ -84,21 +124,15 @@
         </div>
     </div>
 
-    <!-- استدعاء ملف Supabase -->
     <script src="supabase.js"></script>
-    
     <script>
-        // دالة تسجيل الخروج
         async function logout() {
             await window.supabase.auth.signOut();
             window.location.href = 'login.html';
         }
 
-        // جلب قائمة المعلمين بإحصائياتهم
         async function loadTeachers() {
-            // استخدام الدالة الخلفية التي تقوم بحساب الطلاب والحلقات
             const { data, error } = await window.supabase.rpc('get_teachers_stats');
-            
             const tbody = document.getElementById('teachersTable');
             tbody.innerHTML = '';
             
@@ -121,17 +155,13 @@
                     tbody.innerHTML += `
                         <tr class="hover:bg-gray-50 transition border-b">
                             <td class="px-6 py-4">
-                                <a href="admin_teacher_details.html?id=${teacher.id}" class="font-bold text-emerald-700 hover:underline hover:text-emerald-900 flex items-center">
-                                    ${teacher.full_name} <i class="fas fa-external-link-alt text-xs ml-2 text-emerald-500 opacity-70"></i>
+                                <a href="admin_teacher_details.html?id=${teacher.id}" class="font-bold text-emerald-700 hover:underline flex items-center">
+                                    ${teacher.full_name} <i class="fas fa-external-link-alt text-xs ml-2 opacity-70"></i>
                                 </a>
                                 <span class="text-xs text-gray-500 mt-1 block">${teacher.email}</span>
                             </td>
-                            <td class="px-6 py-4">
-                                <div class="font-bold text-blue-700 bg-blue-50 text-center py-1 rounded-lg w-20 mx-auto">${teacher.students_count} طلاب</div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="font-bold text-purple-700 bg-purple-50 text-center py-1 rounded-lg w-20 mx-auto">${teacher.weekly_sessions} حلقات</div>
-                            </td>
+                            <td class="px-6 py-4"><div class="font-bold text-blue-700 bg-blue-50 text-center py-1 rounded-lg w-20 mx-auto">${teacher.students_count} طلاب</div></td>
+                            <td class="px-6 py-4"><div class="font-bold text-purple-700 bg-purple-50 text-center py-1 rounded-lg w-20 mx-auto">${teacher.weekly_sessions} حلقات</div></td>
                             <td class="px-6 py-4">${statusBadge}</td>
                             <td class="px-6 py-4 flex space-x-2 space-x-reverse">
                                 <button onclick="openEditModal('${teacher.id}', '${teacher.full_name}', '${teacher.email}')" class="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-lg font-bold transition">
@@ -143,77 +173,114 @@
                     `;
                 });
             } else {
-                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400 font-bold"><i class="fas fa-chalkboard-teacher text-4xl mb-4 block"></i>لا يوجد معلمين مسجلين في المنصة حالياً.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400 font-bold">لا يوجد معلمين مسجلين.</td></tr>';
             }
         }
 
-        // إيقاف أو تفعيل المعلم (عبر RPC)
         async function toggleStatus(id, newStatus) {
-            const confirmMsg = newStatus ? 'هل أنت متأكد من تفعيل حساب هذا المعلم؟' : 'هل أنت متأكد من إيقاف هذا المعلم؟ (لن يتمكن من الدخول للمنصة وسيتم إيقاف صلاحياته)';
-            if(!confirm(confirmMsg)) return;
-
-            const { error } = await window.supabase.rpc('update_teacher_status', {
-                p_user_id: id,
-                p_is_active: newStatus
-            });
-
-            if (error) alert('خطأ من السيرفر: ' + error.message);
-            else loadTeachers(); // تحديث الجدول مباشرة
+            if(!confirm(newStatus ? 'تفعيل حساب المعلم؟' : 'إيقاف هذا المعلم؟')) return;
+            await window.supabase.rpc('update_teacher_status', { p_user_id: id, p_is_active: newStatus });
+            loadTeachers();
         }
 
-        // فتح نافذة التعديل
-        function openEditModal(id, name, email) {
+        function openAddModal() {
+            document.getElementById('addTeacherForm').reset();
+            document.getElementById('addMsg').classList.add('hidden');
+            document.getElementById('addTeacherModal').classList.remove('hidden');
+            document.getElementById('addTeacherModal').classList.add('flex');
+        }
+
+        async function openEditModal(id, name, email) {
             document.getElementById('editTeacherId').value = id;
             document.getElementById('editTeacherName').value = name;
             document.getElementById('editTeacherEmail').value = email;
             
-            const msg = document.getElementById('editMsg');
-            msg.classList.add('hidden');
-            msg.textContent = '';
-            
+            // جلب رابط ميت الفعلي من قاعدة البيانات
+            const { data } = await window.supabase.from('users').select('meet_link').eq('id', id).single();
+            document.getElementById('editTeacherMeet').value = data?.meet_link || '';
+
+            document.getElementById('editMsg').classList.add('hidden');
             document.getElementById('editTeacherModal').classList.remove('hidden');
             document.getElementById('editTeacherModal').classList.add('flex');
         }
 
-        // إغلاق النافذة
         function closeModal(modalId) {
             document.getElementById(modalId).classList.add('hidden');
             document.getElementById(modalId).classList.remove('flex');
         }
 
-        // حفظ تعديل بيانات المعلم (عبر RPC)
+        // إضافة معلم جديد
+        document.getElementById('addTeacherForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('addBtn');
+            const msg = document.getElementById('addMsg');
+            btn.disabled = true; btn.textContent = 'جاري الإنشاء...';
+
+            const name = document.getElementById('addName').value;
+            const email = document.getElementById('addEmail').value;
+            const password = document.getElementById('addPassword').value;
+            const meetLink = document.getElementById('addMeetLink').value;
+
+            try {
+                // إنشاء المستخدم وتمرير البيانات (الصلاحية ورابط ميت)
+                const { data, error } = await window.supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: { data: { full_name: name, role: 'teacher', meet_link: meetLink } }
+                });
+
+                if (error) throw error;
+                
+                // تحديث الحقل في جدول users بعد تسجيله
+                if(data.user) {
+                    await window.supabase.from('users').update({ meet_link: meetLink }).eq('id', data.user.id);
+                }
+
+                msg.textContent = 'تم إضافة المعلم بنجاح! (ملاحظة: سيتم تسجيل خروجك الآن أمنياً لإتمام العملية، يرجى الدخول مجدداً)';
+                msg.className = 'text-sm font-bold p-2 rounded text-center bg-green-50 text-green-600 block mt-2';
+                
+                setTimeout(async () => {
+                    await window.supabase.auth.signOut();
+                    window.location.href = 'login.html';
+                }, 3000);
+
+            } catch (err) {
+                msg.textContent = err.message;
+                msg.className = 'text-sm font-bold p-2 rounded text-center bg-red-50 text-red-600 block mt-2';
+                btn.disabled = false; btn.textContent = 'إنشاء حساب المعلم';
+            }
+        });
+
+        // تعديل بيانات المعلم
         document.getElementById('editTeacherForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('editBtn');
             const msg = document.getElementById('editMsg');
-            
-            btn.disabled = true; 
-            btn.textContent = 'جاري الحفظ...';
+            btn.disabled = true; btn.textContent = 'جاري الحفظ...';
 
             const id = document.getElementById('editTeacherId').value;
             const newName = document.getElementById('editTeacherName').value;
+            const newMeetLink = document.getElementById('editTeacherMeet').value;
 
-            const { error } = await window.supabase.rpc('update_teacher_name', {
-                p_user_id: id,
-                p_full_name: newName
-            });
+            // تحديث الاسم والرابط مباشرة في جدول المستخدمين
+            const { error } = await window.supabase.from('users').update({ 
+                full_name: newName,
+                meet_link: newMeetLink 
+            }).eq('id', id);
 
             msg.classList.remove('hidden');
             if (error) {
                 msg.textContent = 'حدث خطأ: ' + error.message;
-                msg.className = 'text-sm text-center font-bold p-2 rounded bg-red-50 text-red-600 mt-2 block';
+                msg.className = 'text-sm font-bold p-2 rounded text-center bg-red-50 text-red-600 block mt-2';
             } else {
                 msg.textContent = 'تم حفظ التعديلات بنجاح!';
-                msg.className = 'text-sm text-center font-bold p-2 rounded bg-green-50 text-green-600 mt-2 block';
-                loadTeachers(); // تحديث الجدول لظهور الاسم الجديد
+                msg.className = 'text-sm font-bold p-2 rounded text-center bg-green-50 text-green-600 block mt-2';
+                loadTeachers();
                 setTimeout(() => closeModal('editTeacherModal'), 1500);
             }
-            
-            btn.disabled = false; 
-            btn.textContent = 'حفظ التعديلات';
+            btn.disabled = false; btn.textContent = 'حفظ التعديلات';
         });
 
-        // تشغيل الجلب التلقائي عند فتح الصفحة
         window.addEventListener('load', loadTeachers);
     </script>
 </body>
