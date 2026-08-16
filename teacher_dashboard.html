@@ -143,7 +143,6 @@
                     todaySessionsCount = daySessions.length;
                 }
                 
-                // تحديد ألوان العمود بناءً على الزمن لمنع اقتطاع الحواف (تغيير border-2 لليوم الحالي)
                 let headerClass = 'bg-gray-200 text-gray-700';
                 let bodyClass = 'border border-gray-200 bg-gray-50';
                 
@@ -173,33 +172,38 @@
                         let statusBadge = '';
                         let cardStyle = '';
                         
+                        // تمت إزالة border-r-4 والخطوط الجانبية
                         switch(sess.status) {
                             case 'scheduled': 
-                                statusBadge = '<span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-bold">مجدولة</span>'; 
-                                cardStyle = 'bg-white border-blue-200 shadow-sm border-r-4 border-r-blue-500';
+                                statusBadge = '<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">مجدولة</span>'; 
+                                cardStyle = 'bg-white border-blue-200 shadow-sm';
                                 break;
                             case 'ongoing': 
-                                statusBadge = '<span class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded text-[10px] font-bold animate-pulse">جارية</span>'; 
-                                cardStyle = 'bg-red-50 border-red-300 shadow-md border-r-4 border-r-red-500 ring-1 ring-red-200';
+                                statusBadge = '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold animate-pulse">جارية الآن</span>'; 
+                                cardStyle = 'bg-red-50 border-red-300 shadow-md ring-1 ring-red-200';
                                 break;
                             case 'completed': 
-                                statusBadge = '<span class="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-[10px] font-bold">انتهت</span>'; 
-                                cardStyle = 'bg-gray-50 border-green-200 opacity-80 border-r-4 border-r-green-500';
+                                statusBadge = '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-[10px] font-bold">انتهت</span>'; 
+                                cardStyle = 'bg-gray-50 border-green-200 opacity-80';
                                 break;
                             case 'cancelled': 
-                                statusBadge = '<span class="bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded text-[10px] font-bold line-through">ملغية</span>'; 
+                                statusBadge = '<span class="bg-gray-200 text-gray-500 px-2 py-0.5 rounded text-[10px] font-bold line-through">ملغية</span>'; 
                                 cardStyle = 'bg-gray-100 border-gray-200 opacity-60 grayscale';
                                 break;
                             default:
-                                statusBadge = `<span class="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded text-[10px] font-bold">${sess.status}</span>`; 
+                                statusBadge = `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">${sess.status}</span>`; 
                                 cardStyle = 'bg-emerald-50 border-emerald-200';
                         }
                         
-                        // تصميم البطاقة: الاسم بالأعلى ثم التوقيت ثم الحالة
-                        colHtml += `<div class="${cardStyle} border p-2 rounded-lg text-sm relative transition hover:shadow-md flex flex-col gap-1.5">
-                            <div class="font-bold text-gray-800 text-xs">${sess.users.full_name}</div>
-                            <div class="flex justify-between items-center border-t border-gray-100 pt-1.5 mt-auto">
-                                <div class="font-bold text-gray-500 text-[11px]"><i class="far fa-clock"></i> ${sTime} - ${eTime}</div>
+                        // تصميم البطاقة: الاسم > خط وتوقيت > خط وحالة
+                        colHtml += `<div class="${cardStyle} border p-2 rounded-lg text-sm relative transition hover:shadow-md flex flex-col">
+                            <div class="font-bold text-gray-800 text-xs mb-1.5 text-center">${sess.users.full_name}</div>
+                            
+                            <div class="border-t border-gray-200/60 pt-1.5 pb-1.5 text-center w-full whitespace-nowrap">
+                                <span class="font-bold text-gray-500 text-[11px] inline-block"><i class="far fa-clock ml-1"></i>${sTime} - ${eTime}</span>
+                            </div>
+                            
+                            <div class="border-t border-gray-200/60 pt-1.5 mt-auto text-center w-full">
                                 ${statusBadge}
                             </div>
                         </div>`;
