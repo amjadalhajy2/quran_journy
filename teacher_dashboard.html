@@ -39,7 +39,7 @@
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-blue-100 flex items-center justify-between">
                     <div>
-                        <p class="text-gray-500 text-sm font-bold mb-1">حصصك لليوم (الفعلي)</p>
+                        <p class="text-gray-500 text-sm font-bold mb-1">حصصك لهذا اليوم</p>
                         <h3 class="text-3xl font-black text-blue-600" id="statSessionsToday">0</h3>
                     </div>
                     <div class="bg-blue-50 p-4 rounded-full text-blue-500 text-2xl"><i class="fas fa-calendar-day"></i></div>
@@ -55,11 +55,12 @@
 
             <div class="bg-white rounded-xl shadow-sm border p-6">
                 <div class="flex justify-between items-center mb-6 border-b pb-4">
-                    <h3 class="font-bold text-lg text-emerald-700"><i class="fas fa-calendar-week ml-2"></i> الجدول الأسبوعي للحلقات</h3>
+                    <h3 class="font-bold text-lg text-emerald-700"><i class="fas fa-calendar-week ml-2"></i> الجدول الأسبوعي للحصص</h3>
                     <div class="flex items-center bg-gray-100 rounded-lg p-1">
-                        <button onclick="changeWeek(1)" class="px-4 py-1 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition"><i class="fas fa-chevron-right"></i> الأسبوع القادم</button>
-                        <span id="weekDisplay" class="px-4 font-bold text-emerald-700 text-sm">الأسبوع الحالي</span>
-                        <button onclick="changeWeek(-1)" class="px-4 py-1 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition">الأسبوع السابق <i class="fas fa-chevron-left"></i></button>
+                        <button onclick="changeWeek(1)" class="px-4 py-1 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition"><i class="fas fa-chevron-right"></i> التالي</button>
+                        <button onclick="resetToToday()" class="px-4 py-1 hover:bg-white rounded text-emerald-600 font-bold shadow-sm transition mx-1 border border-emerald-200 bg-emerald-50">اليوم</button>
+                        <span id="weekDisplay" class="px-4 font-bold text-emerald-700 text-sm hidden">الأسبوع الحالي</span>
+                        <button onclick="changeWeek(-1)" class="px-4 py-1 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition">السابق <i class="fas fa-chevron-left"></i></button>
                     </div>
                 </div>
                 <div class="grid grid-cols-7 gap-3 min-w-[800px] overflow-x-auto" id="calendarGrid"></div>
@@ -72,7 +73,6 @@
         let currentUserId = null;
         let currentWeekOffset = 0; 
 
-        // دالة مساعدة لاستخراج التاريخ المحلي بدقة متناهية بعيداً عن أخطاء التوقيت العالمي (UTC)
         function getLocalDateString(date) {
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -99,6 +99,11 @@
         async function loadCalendar() {
             const today = new Date();
             const currentDay = today.getDay(); 
+            
+            // تاريخ اليوم للتمييز البصري
+            const actualToday = new Date();
+            actualToday.setHours(0,0,0,0);
+
             const startOfWeek = new Date(today);
             startOfWeek.setDate(today.getDate() - currentDay + (currentWeekOffset * 7));
             startOfWeek.setHours(0,0,0,0);
@@ -128,18 +133,37 @@
             for(let i=0; i<7; i++) {
                 const dayDate = new Date(startOfWeek);
                 dayDate.setDate(startOfWeek.getDate() + i);
-                const dateString = getLocalDateString(dayDate);
+                dayDate.setHours(0,0,0,0);
                 
+                const dateString = getLocalDateString(dayDate);
                 const daySessions = (sessions || []).filter(s => s.session_date === dateString);
                 
                 if(dateString === actualTodayString) {
                     todaySessionsCount = daySessions.length;
                 }
                 
-                let colHtml = `<div class="bg-gray-50 border rounded-xl overflow-hidden min-h-[300px] flex flex-col">
-                                <div class="bg-gray-200 text-center py-2 border-b">
-                                    <h4 class="font-bold text-gray-700">${daysNames[i]}</h4>
-                                    <span class="text-xs text-gray-500">${dayDate.toLocaleDateString('ar-OM', {month:'numeric', day:'numeric'})}</span>
+                // تحديد ألوان العمود بناءً على الزمن (ماضي - حاضر - مستقبل)
+                let headerClass = 'bg-gray-200 text-gray-700';
+                let bodyClass = 'bg-gray-50';
+                
+                if (dayDate.getTime() === actualToday.getTime()) {
+                    // اليوم الحالي
+                    headerClass = 'bg-emerald-500 text-white shadow-md border-b-4 border-emerald-700';
+                    bodyClass = 'bg-emerald-50 border-emerald-200 ring-2 ring-emerald-400';
+                } else if (dayDate.getTime() < actualToday.getTime()) {
+                    // أيام ماضية
+                    headerClass = 'bg-gray-100 text-gray-400';
+                    bodyClass = 'bg-gray-100 opacity-60';
+                } else {
+                    // أيام مستقبلية
+                    headerClass = 'bg-blue-50 text-blue-800 border-b-2 border-blue-200';
+                    bodyClass = 'bg-white border-gray-200';
+                }
+
+                let colHtml = `<div class="border rounded-xl overflow-hidden min-h-[350px] flex flex-col ${bodyClass} transition-all">
+                                <div class="text-center py-2 ${headerClass}">
+                                    <h4 class="font-bold">${daysNames[i]}</h4>
+                                    <span class="text-xs font-medium opacity-90">${dayDate.toLocaleDateString('ar-OM', {month:'numeric', day:'numeric'})}</span>
                                 </div>
                                 <div class="p-2 space-y-2 flex-1">`;
                 
@@ -148,17 +172,46 @@
                         const sTime = sess.start_time.substring(0,5);
                         const eTime = sess.end_time.substring(0,5);
                         
-                        colHtml += `<a href="teacher_virtual_session.html?student_id=${sess.student_id}" class="block bg-emerald-100 border border-emerald-300 p-2 rounded text-sm relative transition cursor-pointer hover:bg-emerald-200 hover:shadow-md group">
-                            <div class="font-bold text-emerald-800 text-xs mb-1 flex justify-between items-center">
-                                <span><i class="far fa-clock"></i> ${sTime} - ${eTime}</span>
-                                <i class="fas fa-video opacity-0 group-hover:opacity-100 text-emerald-700 transition"></i>
+                        // تحديد الشارة واللون بناءً على حالة الحصة
+                        let statusBadge = '';
+                        let cardStyle = '';
+                        
+                        switch(sess.status) {
+                            case 'scheduled': 
+                                statusBadge = '<span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-bold">مجدولة</span>'; 
+                                cardStyle = 'bg-white border-blue-200 shadow-sm border-r-4 border-r-blue-500';
+                                break;
+                            case 'ongoing': 
+                                statusBadge = '<span class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded text-[10px] font-bold animate-pulse">جارية</span>'; 
+                                cardStyle = 'bg-red-50 border-red-300 shadow-md border-r-4 border-r-red-500 ring-1 ring-red-200';
+                                break;
+                            case 'completed': 
+                                statusBadge = '<span class="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-[10px] font-bold">انتهت</span>'; 
+                                cardStyle = 'bg-gray-50 border-green-200 opacity-80 border-r-4 border-r-green-500';
+                                break;
+                            case 'cancelled': 
+                                statusBadge = '<span class="bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded text-[10px] font-bold line-through">ملغية</span>'; 
+                                cardStyle = 'bg-gray-100 border-gray-200 opacity-60 grayscale';
+                                break;
+                            default:
+                                statusBadge = `<span class="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded text-[10px] font-bold">${sess.status}</span>`; 
+                                cardStyle = 'bg-emerald-50 border-emerald-200';
+                        }
+                        
+                        // تم تغيير <a> إلى <div> لمنع الدخول للحصة من هنا
+                        colHtml += `<div class="${cardStyle} border p-2 rounded-lg text-sm relative transition hover:shadow-md">
+                            <div class="flex justify-between items-center mb-1.5 border-b border-gray-100 pb-1">
+                                <div class="font-bold text-gray-500 text-[11px]"><i class="far fa-clock"></i> ${sTime} - ${eTime}</div>
+                                ${statusBadge}
                             </div>
-                            <div class="font-bold text-gray-800">${sess.users.full_name}</div>
-                            <div class="text-[10px] text-emerald-600 mt-1 font-bold">بدء الحصة <i class="fas fa-arrow-left"></i></div>
-                        </a>`;
+                            <div class="font-bold text-gray-800 text-xs">${sess.users.full_name}</div>
+                        </div>`;
                     });
                 } else {
-                    colHtml += `<div class="text-center text-gray-400 text-xs mt-4">لا توجد حلقات</div>`;
+                    colHtml += `<div class="text-center text-gray-400 font-bold text-xs mt-6 flex flex-col items-center">
+                        <i class="far fa-calendar-times text-2xl mb-2 opacity-50"></i>
+                        لا توجد حصص
+                    </div>`;
                 }
 
                 colHtml += `</div></div>`;
@@ -170,6 +223,11 @@
 
         function changeWeek(direction) {
             currentWeekOffset += direction;
+            loadCalendar();
+        }
+
+        function resetToToday() {
+            currentWeekOffset = 0;
             loadCalendar();
         }
 
