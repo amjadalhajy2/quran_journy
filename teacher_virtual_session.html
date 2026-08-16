@@ -76,7 +76,8 @@
         </div>
 
         <!-- قسم الفيديو والملاحظات -->
-        <div class="w-full lg:w-[500px] xl:w-[600px] bg-gray-900 flex flex-col shadow-2xl z-20">
+<!-- قسم الفيديو والملاحظات (محدث) -->
+        <div class="w-full lg:w-[450px] xl:w-[500px] bg-gray-900 flex flex-col shadow-2xl z-20">
             <div class="p-4 border-b border-gray-800 bg-gray-900">
                 <div class="flex justify-between items-center">
                     <div>
@@ -89,22 +90,43 @@
                 </div>
             </div>
 
-            <div id="meet-container" class="w-full h-[60vh] bg-gray-900 relative shadow-inner border-b border-gray-800 flex flex-col items-center justify-center p-6 text-center">
-                <div class="bg-gray-800 p-8 rounded-2xl border border-gray-700 shadow-xl max-w-sm w-full">
-                    <i class="fas fa-video text-6xl text-blue-500 mb-4 animate-pulse"></i>
-                    <h4 class="text-xl font-bold text-white mb-2">غرفة الاتصال المرئي</h4>
-                    <p class="text-sm text-gray-400 mb-6">انقر أدناه لفتح Google Meet في نافذة عائمة لتبقى صفحة المصحف مفتوحة أمامك.</p>
-                    
-                    <button onclick="openMeetPopup()" id="joinMeetBtn" disabled class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition w-full shadow-lg flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fas fa-spinner fa-spin ml-2" id="meetBtnIcon"></i> <span id="meetBtnText">جاري تهيئة الغرفة...</span>
+            <!-- زر جوجل ميت -->
+            <div id="meet-container" class="w-full h-auto bg-gray-900 relative shadow-inner border-b border-gray-800 flex flex-col items-center justify-center p-6 text-center">
+                <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl w-full">
+                    <i class="fas fa-video text-4xl text-blue-500 mb-3 animate-pulse"></i>
+                    <h4 class="text-lg font-bold text-white mb-2">غرفة الاتصال المرئي</h4>
+                    <button onclick="openMeetPopup()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition w-full shadow-lg flex items-center justify-center cursor-pointer text-sm">
+                        <i class="fas fa-external-link-square-alt ml-2"></i> فتح الكاميرا (Meet)
                     </button>
                 </div>
             </div>
 
-            <div class="flex-1 p-4 bg-gray-800 flex flex-col">
-                <textarea class="flex-1 w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm text-gray-200 outline-none focus:border-emerald-500 resize-none" placeholder="ملاحظات الحصة..."></textarea>
-                <button class="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition w-full shadow-lg">
-                    حفظ وإنهاء
+            <!-- حقول التقييم والتسجيل للحصة -->
+            <div class="flex-1 p-4 bg-gray-800 flex flex-col overflow-y-auto space-y-3">
+                <h4 class="font-bold text-emerald-400 border-b border-gray-700 pb-2 mb-2"><i class="fas fa-clipboard-check ml-1"></i> سجل الحصة</h4>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1">مقرر الحفظ المطلوب</label>
+                    <input type="text" id="sessionTarget" placeholder="مثال: البقرة 1-20" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white outline-none focus:border-emerald-500">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1">ما تم تسميعه (الحفظ الفعلي)</label>
+                    <input type="text" id="sessionActual" placeholder="مثال: البقرة 1-15" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white outline-none focus:border-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1">تقييم الأداء (من 10)</label>
+                    <input type="number" id="sessionGrade" min="1" max="10" placeholder="10" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white outline-none focus:border-emerald-500">
+                </div>
+
+                <div class="flex-1 flex flex-col min-h-[100px]">
+                    <label class="block text-xs font-bold text-gray-400 mb-1">ملاحظات المعلم والتوجيهات</label>
+                    <textarea id="sessionNotes" class="flex-1 w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white outline-none focus:border-emerald-500 resize-none" placeholder="اكتب ملاحظاتك هنا..."></textarea>
+                </div>
+
+                <button onclick="saveAndEndSession()" id="finishBtn" class="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition w-full shadow-lg">
+                    حفظ السجل وإنهاء الحصة
                 </button>
             </div>
         </div>
@@ -250,6 +272,77 @@
             updateQuranPage(1);
             initializeRoom();  
         });
+
+        let activeSessionId = null;
+
+        // تعديل دالة initializeRoom لجلب الـ session_id لحصة اليوم
+        async function initializeRoom() {
+            const { data: { user } } = await window.supabase.auth.getUser();
+            if(!user) return window.location.href = 'login.html';
+
+            const teacherName = user.user_metadata?.full_name || "معلم القرآن";
+            const urlParams = new URLSearchParams(window.location.search);
+            const studentId = urlParams.get('student_id');
+            let studentName = "طالب (بدون تحديد)";
+
+            if (studentId) {
+                const { data: studentData } = await window.supabase.from('users').select('full_name').eq('id', studentId).single();
+                if (studentData) { studentName = studentData.full_name; }
+
+                // محاولة إيجاد الحصة المجدولة لهذا اليوم لربط التحديث بها
+                const todayStr = new Date().toISOString().split('T')[0];
+                const { data: sessData } = await window.supabase.from('sessions')
+                    .select('id, next_assignment')
+                    .eq('student_id', studentId)
+                    .eq('teacher_id', user.id)
+                    .eq('session_date', todayStr)
+                    .in('status', ['scheduled', 'ongoing'])
+                    .limit(1).single();
+                
+                if(sessData) {
+                    activeSessionId = sessData.id;
+                    // تحديث الحالة إلى جارية
+                    await window.supabase.from('sessions').update({ status: 'ongoing' }).eq('id', activeSessionId);
+                    // تعبئة المقرر إن كان مكتوباً مسبقاً
+                    if(sessData.next_assignment) document.getElementById('sessionTarget').value = sessData.next_assignment;
+                }
+            }
+            
+            document.getElementById('teacherNameDisplay').textContent = `المعلم: ${teacherName}`;
+            document.getElementById('studentNameDisplay').textContent = `الطالب: ${studentName}`;
+        }
+
+        // دالة حفظ البيانات وإنهاء الحصة
+        async function saveAndEndSession() {
+            if(!activeSessionId) {
+                alert("لم يتم العثور على حصة مجدولة لهذا الطالب اليوم في النظام لحفظ السجل فيها. يمكنك كتابة الملاحظات في تفاصيل الطالب لاحقاً.");
+                window.location.href = 'teacher_dashboard.html';
+                return;
+            }
+
+            const btn = document.getElementById('finishBtn');
+            btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+
+            const target = document.getElementById('sessionTarget').value;
+            const actual = document.getElementById('sessionActual').value;
+            const grade = document.getElementById('sessionGrade').value;
+            const notes = document.getElementById('sessionNotes').value;
+
+            const { error } = await window.supabase.from('sessions').update({
+                next_assignment: target,
+                memorized_from: actual,
+                evaluation: grade ? parseInt(grade) : null,
+                teacher_notes: notes,
+                status: 'completed' // إنهاء الحصة
+            }).eq('id', activeSessionId);
+
+            if(error) {
+                alert("حدث خطأ أثناء الحفظ: " + error.message);
+                btn.disabled = false; btn.textContent = 'حفظ السجل وإنهاء الحصة';
+            } else {
+                window.location.href = 'teacher_dashboard.html';
+            }
+        }
     </script>
 </body>
 </html>
