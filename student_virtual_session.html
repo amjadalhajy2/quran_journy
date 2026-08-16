@@ -89,7 +89,6 @@
                 </div>
             </div>
 
-            <!-- حاوية زر النافذة المنبثقة (نفس تصميم المعلم) -->
             <div id="meet-container" class="w-full h-[60vh] bg-gray-900 relative shadow-inner border-b border-gray-800 flex flex-col items-center justify-center p-6 text-center">
                 <div class="bg-gray-800 p-8 rounded-2xl border border-gray-700 shadow-xl max-w-sm w-full">
                     <i class="fas fa-video text-6xl text-blue-500 mb-4 animate-pulse"></i>
@@ -110,25 +109,18 @@
 
     <script src="supabase.js"></script>
     <script>
-        let teacherMeetLink = ""; // متغير لتخزين رابط المعلم المخصص
+        let teacherMeetLink = "";
 
-        // دالة فتح النافذة المنبثقة
         function openMeetPopup() {
             if (!teacherMeetLink) {
                 alert("لم يقم مدير النظام بتعيين رابط Google Meet لهذا المعلم حتى الآن. يرجى التواصل مع الإدارة.");
                 return;
             }
-
-            const width = 800;
-            const height = 600;
+            const width = 800; const height = 600;
             const left = (window.screen.width - width) / 2;
             const top = (window.screen.height - height) / 2;
             
-            window.open(
-                teacherMeetLink,
-                "GoogleMeetWindow",
-                `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`
-            );
+            window.open(teacherMeetLink, "GoogleMeetWindow", `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`);
         }
 
         async function loadSurahsIndex() {
@@ -149,9 +141,22 @@
         const bookContainer = document.getElementById('bookContainer');
         const loadingOverlay = document.getElementById('loadingOverlay');
 
+        // جلب مسار الصورة من المجلد المحلي (quran-low) بصيغة jpg
         function getImageUrl(pageNum) {
-            const formattedNum = String(pageNum).padStart(3, '0');
-            return `https://cdn.jsdelivr.net/gh/adelpro/open-mushaf-native@master/assets/mushaf-data/mushaf-elmadina-hafs-assim/${formattedNum}.png`;
+            const fileNum = pageNum + 4;
+            const formattedNum = String(fileNum).padStart(3, '0');
+            return `quran-low/${formattedNum}.jpg`; 
+        }
+
+        // دالة التحميل المسبق (Preloading)
+        function preloadImages(pageNum) {
+            const pagesToPreload = [pageNum - 2, pageNum - 1, pageNum + 2, pageNum + 3];
+            pagesToPreload.forEach(p => {
+                if (p >= 1 && p <= 604) {
+                    const img = new Image();
+                    img.src = getImageUrl(p);
+                }
+            });
         }
 
         function updateQuranPage(pageNum) {
@@ -175,6 +180,9 @@
                     if (loaded === 2) {
                         loadingOverlay.classList.add('hidden');
                         bookContainer.classList.remove('turning-next', 'turning-prev');
+                        
+                        // التحميل المسبق
+                        preloadImages(currentPage);
                     }
                 };
 
@@ -196,7 +204,6 @@
         function changePage(direction) { updateQuranPage(currentPage + direction); }
         function jumpToPage(val) { if(val) updateQuranPage(parseInt(val)); }
 
-        // تهيئة الغرفة وجلب الرابط الخاص بالمعلم من قاعدة البيانات
         async function initializeRoom() {
             const { data: { user } } = await window.supabase.auth.getUser();
             if(!user) return window.location.href = 'login.html';
@@ -208,7 +215,6 @@
             let teacherName = "جاري جلب الاسم...";
 
             if (teacherId) {
-                // جلب اسم المعلم ورابط جوجل ميت الخاص به من جدول users
                 const { data: teacherData } = await window.supabase.from('users')
                     .select('full_name, meet_link')
                     .eq('id', teacherId)
@@ -216,16 +222,13 @@
                     
                 if (teacherData) {
                     teacherName = teacherData.full_name;
-                    teacherMeetLink = teacherData.meet_link || ""; // حفظ الرابط المسترجع
+                    teacherMeetLink = teacherData.meet_link || ""; 
                 }
-            } else {
-                alert("تنبيه: لا يوجد معرف للمعلم في الرابط!");
             }
             
             document.getElementById('teacherNameDisplay').textContent = `المعلم: ${teacherName}`;
             document.getElementById('studentNameDisplay').textContent = `الطالب: ${studentName}`;
 
-            // تفعيل الزر بعد اكتمال جلب الرابط
             const joinBtn = document.getElementById('joinMeetBtn');
             const icon = document.getElementById('meetBtnIcon');
             const text = document.getElementById('meetBtnText');
