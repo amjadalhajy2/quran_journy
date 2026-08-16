@@ -109,7 +109,7 @@
 
     <script src="supabase.js"></script>
     <script>
-        let teacherMeetLink = "";
+        let teacherMeetLink = ""; // متغير لرابط المعلم
 
         function openMeetPopup() {
             if (!teacherMeetLink) {
@@ -125,7 +125,6 @@
 
         async function loadSurahsIndex() {
             try {
-                // استخدام API دقيق يوفر أرقام صفحات بداية السور (pages[0])
                 const response = await fetch('https://api.quran.com/api/v4/chapters?language=ar');
                 const data = await response.json();
                 const select = document.getElementById('surahIndexSelect');
@@ -142,7 +141,6 @@
         const bookContainer = document.getElementById('bookContainer');
         const loadingOverlay = document.getElementById('loadingOverlay');
 
-        // جلب مسار الصورة من المجلد المحلي (quran-low)
         function getImageUrl(pageNum) {
             const fileNum = pageNum + 4;
             const formattedNum = String(fileNum).padStart(3, '0');
@@ -212,6 +210,7 @@
             
             let teacherName = "جاري جلب الاسم...";
 
+            // 1. جلب بيانات المعلم ورابط Google Meet الخاص به من خلال teacher_id الممرر
             if (teacherId) {
                 const { data: teacherData } = await window.supabase.from('users')
                     .select('full_name, meet_link')
@@ -220,13 +219,16 @@
                     
                 if (teacherData) {
                     teacherName = teacherData.full_name;
-                    teacherMeetLink = teacherData.meet_link || ""; 
+                    teacherMeetLink = teacherData.meet_link || ""; // تخزين الرابط
                 }
+            } else {
+                alert("تنبيه: لا يوجد معرف للمعلم في الرابط!");
             }
             
             document.getElementById('teacherNameDisplay').textContent = `المعلم: ${teacherName}`;
             document.getElementById('studentNameDisplay').textContent = `الطالب: ${studentName}`;
 
+            // 2. تحديث واجهة الزر بناءً على توفر الرابط
             const joinBtn = document.getElementById('joinMeetBtn');
             const icon = document.getElementById('meetBtnIcon');
             const text = document.getElementById('meetBtnText');
