@@ -18,7 +18,6 @@
 
     <main class="flex-1 overflow-y-auto p-6 space-y-6">
         
-        <!-- بطاقة بيانات الطالب الأساسية -->
         <div class="bg-white rounded-xl shadow-sm border p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <h2 class="text-2xl font-black text-emerald-800 mb-2" id="studentNameDisplay">جاري التحميل...</h2>
@@ -29,7 +28,6 @@
             <div id="studentPhoneDisplay" class="text-left" dir="ltr"></div>
         </div>
 
-        <!-- مقررات الحفظ وشريط التقدم لكل مقرر -->
         <div class="bg-white rounded-xl shadow-sm border p-6">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 pb-4 border-b">
                 <h3 class="font-bold text-emerald-700 text-lg"><i class="fas fa-book-open ml-2"></i> مقررات الحفظ للطالب</h3>
@@ -38,12 +36,9 @@
                 </button>
             </div>
             
-            <div id="plansListContainer" class="space-y-4">
-                <!-- سيتم توليد المقررات وشرائط التقدم التابعة لها هنا -->
-            </div>
+            <div id="plansListContainer" class="space-y-4"></div>
         </div>
 
-        <!-- السجل الشامل للحصص -->
         <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
             <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
                 <h3 class="font-bold text-gray-800"><i class="fas fa-list-ul text-emerald-600 ml-2"></i> سجل الحصص والمتابعة</h3>
@@ -66,7 +61,6 @@
         </div>
     </main>
 
-    <!-- نافذة إدارة المقررات (إضافة وتعديل) -->
     <div id="planModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl">
             <h3 class="text-xl font-bold text-emerald-700 mb-4 border-b pb-2" id="planModalTitle">إدارة المقرر</h3>
@@ -99,7 +93,6 @@
         </div>
     </div>
 
-    <!-- نافذة تحديث سجل الحصة -->
     <div id="editSessionModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl">
             <h3 class="text-xl font-bold text-emerald-700 mb-4 border-b pb-2">تحديث سجل الحصة</h3>
@@ -159,7 +152,6 @@
 
         const surahsList = ['الفاتحة', 'البقرة', 'آل عمران', 'النساء', 'المائدة', 'الأنعام', 'الأعراف', 'الأنفال', 'التوبة', 'يونس', 'هود', 'يوسف', 'الرعد', 'إبراهيم', 'الحجر', 'النحل', 'الإسراء', 'الكهف', 'مريم', 'طه', 'الأنبياء', 'الحج', 'المؤمنون', 'النور', 'الفرقان', 'الشعراء', 'النمل', 'القصص', 'العنكبوت', 'الروم', 'لقمان', 'السجدة', 'الأحزاب', 'سبأ', 'فاطر', 'يس', 'الصافات', 'ص', 'الزمر', 'غافر', 'فصلت', 'الشورى', 'الزخرف', 'الدخان', 'الجاثية', 'الأحقاف', 'محمد', 'الفتح', 'الحجرات', 'ق', 'الذاريات', 'الطور', 'النجم', 'القمر', 'الرحمن', 'الواقعة', 'الحديد', 'المجادلة', 'الحشر', 'الممتحنة', 'الصف', 'الجمعة', 'المنافقون', 'التغابن', 'الطلاق', 'التحريم', 'الملك', 'القلم', 'الحاقة', 'المعارج', 'نوح', 'الجن', 'المزمل', 'المدثر', 'القيامة', 'الإنسان', 'المرسلات', 'النبأ', 'النازعات', 'عبس', 'التكوير', 'الانفطار', 'المطففين', 'الانشقاق', 'البروج', 'الطارق', 'الأعلى', 'الغاشية', 'الفجر', 'البلد', 'الشمس', 'الليل', 'الضحى', 'الشرح', 'التين', 'العلق', 'القدر', 'البينة', 'الزلزلة', 'العاديات', 'القارعة', 'التكاثر', 'العصر', 'الهمزة', 'الفيل', 'قريش', 'الماعون', 'الكوثر', 'الكافرون', 'النصر', 'المسد', 'الإخلاص', 'الفلق', 'الناس'];
 
-        // بناء قوائم التحديد
         const juzC = document.getElementById('juzContainer');
         for(let i=1; i<=30; i++) juzC.innerHTML += `<label class="flex items-center space-x-2 space-x-reverse cursor-pointer p-1"><input type="checkbox" name="juz_check" value="الجزء ${i}" class="w-4 h-4"><span class="text-sm">الجزء ${i}</span></label>`;
         const surahC = document.getElementById('surahsContainer');
@@ -172,36 +164,51 @@
         }
 
         async function loadStudentData() {
-            // تحميل السور من الـ API
-            if(quranChapters.length === 0) {
-                const res = await fetch('https://api.quran.com/api/v4/chapters?language=ar');
-                quranChapters = (await res.json()).chapters;
+            try {
+                if(quranChapters.length === 0) {
+                    const res = await fetch('https://api.quran.com/api/v4/chapters?language=ar');
+                    quranChapters = (await res.json()).chapters;
+                }
+            } catch(e) {
+                console.error("تعذر جلب بيانات السور:", e);
+                quranChapters = [];
             }
 
-            // جلب ملف الطالب
             const { data: profile } = await window.supabase.from('student_profiles')
                 .select(`custom_plan_type, target_parts, target_surahs, users!student_profiles_user_id_fkey(full_name, email, phone)`)
                 .eq('user_id', studentId).single();
                 
             if(profile) {
-                document.getElementById('studentNameHeader').textContent = profile.users.full_name;
-                document.getElementById('studentNameDisplay').textContent = profile.users.full_name;
-                document.getElementById('studentEmailDisplay').innerHTML = `<i class="fas fa-envelope ml-1 text-gray-400"></i> ${profile.users.email}`;
+                document.getElementById('studentNameHeader').textContent = profile.users?.full_name || 'طالب';
+                document.getElementById('studentNameDisplay').textContent = profile.users?.full_name || 'طالب';
+                document.getElementById('studentEmailDisplay').innerHTML = `<i class="fas fa-envelope ml-1 text-gray-400"></i> ${profile.users?.email || ''}`;
 
-                const phone = profile.users.phone || 'غير متوفر';
+                const phone = profile.users?.phone || '';
                 const cleanPhone = phone.replace(/\D/g, '');
                 if(cleanPhone) document.getElementById('studentPhoneDisplay').innerHTML = `<a href="https://wa.me/${cleanPhone}" target="_blank" class="text-green-600 hover:text-green-800 font-bold bg-green-50 px-5 py-3 rounded-lg border border-green-200 inline-flex items-center shadow-sm text-sm"><i class="fab fa-whatsapp ml-2 text-xl"></i> تواصل بالواتساب</a>`;
 
-                if(profile.target_parts && profile.target_parts.startsWith('[')) {
-                    studentPlans = JSON.parse(profile.target_parts);
-                } else if(profile.target_parts || profile.target_surahs) {
-                    studentPlans = [{ id: 1, type: profile.custom_plan_type || 'parts', items: profile.custom_plan_type === 'parts' ? profile.target_parts.split('،').map(s=>s.trim()).filter(Boolean) : profile.target_surahs.split('،').map(s=>s.trim().replace(/^\d+\.\s*/, '')).filter(Boolean) }];
-                } else {
+                // حماية Parsing للخطط
+                try {
+                    if (profile.target_parts && profile.target_parts.startsWith('[')) {
+                        studentPlans = JSON.parse(profile.target_parts);
+                    } else if (profile.target_parts || profile.target_surahs) {
+                        let pType = profile.custom_plan_type || (profile.target_parts ? 'parts' : 'surahs');
+                        let pItems = [];
+                        if (pType === 'parts' && profile.target_parts) {
+                            pItems = profile.target_parts.split(/[،,]/).map(s=>s.trim()).filter(Boolean);
+                        } else if (pType === 'surahs' && profile.target_surahs) {
+                            pItems = profile.target_surahs.split(/[،,]/).map(s=>s.trim().replace(/^\d+\.\s*/, '')).filter(Boolean);
+                        }
+                        studentPlans = [{ id: 1, type: pType, items: pItems }];
+                    } else {
+                        studentPlans = [];
+                    }
+                } catch(e) {
+                    console.error("خطأ في قراءة المقررات:", e);
                     studentPlans = [];
                 }
             }
 
-            // جلب سجل الحصص وبناء مجموعة الصفحات المحفوظة فعلياً
             const { data: sessions } = await window.supabase.from('sessions')
                 .select('*').eq('student_id', studentId).order('session_date', {ascending: false}).order('start_time', {ascending: false});
 
@@ -218,7 +225,6 @@
                     const actual = sess.memorized_from || '<span class="text-gray-400">-</span>';
                     const notes = sess.teacher_notes || '<span class="text-gray-400">-</span>';
 
-                    // جمع الصفحات المحفوظة فعلياً
                     if (sess.memorized_from && sess.memorized_from.includes('ص')) {
                         const nums = sess.memorized_from.match(/\d+/g);
                         if (nums && nums.length >= 2) {
@@ -243,7 +249,6 @@
                 tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 font-bold">لا توجد حصص مسجلة لهذا الطالب.</td></tr>';
             }
 
-            // عرض المقررات وشرائط التقدم المخصصة
             const pCont = document.getElementById('plansListContainer');
             pCont.innerHTML = '';
 
@@ -275,7 +280,6 @@
                     const planTotalPages = planPagesSet.size;
                     const percentage = planTotalPages > 0 ? Math.min(100, Math.round((completedInPlan / planTotalPages) * 100)) : 0;
                     
-                    // حفظ النطاق الموحد للمقرر بالكامل لاستخدامه في نافذة تحديث الحصة
                     plan.minPage = planMinPage <= 604 ? planMinPage : 1;
                     plan.maxPage = planMaxPage >= 1 ? planMaxPage : 604;
                     plan.completedPercentage = percentage;
@@ -304,7 +308,6 @@
             }
         }
 
-        // --- إدارة المقررات ---
         function openPlanModal(planId = null) {
             document.getElementById('planForm').reset();
             document.getElementById('planId').value = planId || '';
@@ -312,11 +315,12 @@
 
             if(planId) {
                 const plan = studentPlans.find(p => p.id === planId);
-                document.querySelector(`input[name="planType"][value="${plan.type}"]`).checked = true;
-                const cbs = document.querySelectorAll(plan.type === 'parts' ? 'input[name="juz_check"]' : 'input[name="surah_check"]');
-                cbs.forEach(cb => cb.checked = plan.items.includes(cb.value));
+                if(plan) {
+                    document.querySelector(`input[name="planType"][value="${plan.type}"]`).checked = true;
+                    const cbs = document.querySelectorAll(plan.type === 'parts' ? 'input[name="juz_check"]' : 'input[name="surah_check"]');
+                    cbs.forEach(cb => cb.checked = plan.items.includes(cb.value));
+                }
             } else {
-                // تصفير الخيارات عند إضافة مقرر جديد
                 document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
             }
             togglePlanInputs();
@@ -356,7 +360,6 @@
             btn.disabled = false; btn.textContent = 'حفظ المقرر';
         });
 
-        // --- سجل الحصص والمتابعة الذكية ---
         function openEditModal(id, target, actual, notes) {
             document.getElementById('editSessionId').value = id;
             document.getElementById('editNotes').value = notes !== 'null' ? notes : '';
@@ -366,17 +369,12 @@
             
             let firstIncompletePlanId = null;
 
-            // عرض المقررات ككتلة واحدة مدمجة الصفحات
             studentPlans.forEach(plan => {
                 const lbl = `مقرر ${plan.id} (${plan.desc}) - ص ${plan.minPage} إلى ${plan.maxPage}`;
                 sel.innerHTML += `<option value="${plan.id}" data-plan="مقرر ${plan.id}" data-min="${plan.minPage}" data-max="${plan.maxPage}">${lbl}</option>`;
-                
-                if(firstIncompletePlanId === null && plan.completedPercentage < 100) {
-                    firstIncompletePlanId = plan.id;
-                }
+                if(firstIncompletePlanId === null && plan.completedPercentage < 100) firstIncompletePlanId = plan.id;
             });
 
-            // اختيار المقرر الافتراضي
             if (target && target.includes('ص')) {
                 const planMatch = target.match(/مقرر (\d+)/);
                 if(planMatch) sel.value = planMatch[1];
@@ -414,7 +412,7 @@
             
             const tf = document.getElementById('targetFromPage');
             const tt = document.getElementById('targetToPage');
-            tf.min = minP; tf.max = maxP; tf.value = minP; // تحديد النطاق لكامل المقرر
+            tf.min = minP; tf.max = maxP; tf.value = minP; 
             tt.min = minP; tt.max = maxP; tt.value = maxP;
             syncActualRange();
         }
