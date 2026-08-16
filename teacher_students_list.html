@@ -51,16 +51,36 @@
             const { data: { user } } = await window.supabase.auth.getUser();
             if(!user) return window.location.href = 'login.html';
 
+            // إضافة الحقول الناقصة للاستعلام لتفادي الخطأ
             const { data, error } = await window.supabase.from('student_profiles')
-                .select(`user_id, evaluation_status, users!student_profiles_user_id_fkey(full_name, email, phone)`)
+                .select(`user_id, evaluation_status, custom_plan_type, target_parts, target_surahs, users!student_profiles_user_id_fkey(full_name, email, phone)`)
                 .eq('teacher_id', user.id);
 
             const tbody = document.getElementById('myStudentsTable');
             tbody.innerHTML = '';
 
+            if (error) {
+                tbody.innerHTML = `<tr><td colspan="3" class="px-6 py-8 text-center text-red-500 font-bold">حدث خطأ: ${error.message}</td></tr>`;
+                return;
+            }
+
             if (data && data.length > 0) {
                 data.forEach(s => {
-                    const planText = s.evaluation_status === 'completed' ? '<span class="text-emerald-600 font-bold">تم تقييمه وتحديد خطته</span>' : '<span class="text-red-500 font-bold">بانتظار التقييم المبدئي</span>';
+                    let planText = '<span class="text-red-500 font-bold">بانتظار التقييم المبدئي</span>';
+                    
+                    if (s.evaluation_status === 'completed') {
+                        // معالجة آمنة للنص
+                        if(s.target_parts && s.target_parts.startsWith('[')) {
+                            planText = '<span class="text-emerald-600 font-bold">تم تقييمه (خطة مخصصة متعددة)</span>';
+                        } else if (s.custom_plan_type === 'parts' && s.target_parts) {
+                            planText = `<span class="text-emerald-600 font-bold">حفظ ${s.target_parts}</span>`;
+                        } else if (s.custom_plan_type === 'surahs' && s.target_surahs) {
+                            planText = `<span class="text-emerald-600 font-bold">سورة: ${s.target_surahs}</span>`;
+                        } else {
+                            planText = '<span class="text-emerald-600 font-bold">تم تقييمه وتحديد خطته</span>';
+                        }
+                    }
+
                     const phone = s.users.phone || 'غير متوفر';
                     const cleanPhone = phone !== 'غير متوفر' ? phone.replace(/\D/g, '') : '';
                     const waHtml = cleanPhone ? `<a href="https://wa.me/${cleanPhone}" target="_blank" class="text-green-600 hover:text-green-800 transition font-bold"><i class="fab fa-whatsapp ml-1"></i> ${phone}</a>` : `<span class="text-gray-400">${phone}</span>`;
