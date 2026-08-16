@@ -15,7 +15,7 @@
         <nav class="flex-1 p-4 space-y-2 text-sm font-medium">
             <a href="teacher_dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-home ml-3"></i> الرئيسية</a>
             <a href="teacher_students_list.html" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow"><i class="fas fa-users ml-3"></i> قائمة طلابي</a>
-            <a href="teacher_interviews.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-clipboard-list ml-3"></i> المقابلات والتقييم</a>
+            <a href="teacher_interviews.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-clipboard-list ml-3"></i> التقييم المبدئي والدوري</a>
             <a href="teacher_virtual_session.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-video ml-3"></i> غرفة الإقراء</a>
         </nav>
     </aside>
@@ -35,12 +35,11 @@
                     <tr>
                         <th class="px-6 py-4 font-bold">اسم الطالب وبياناته</th>
                         <th class="px-6 py-4 font-bold">المقرر (الخطة)</th>
-                        <th class="px-6 py-4 font-bold text-center">مستوى الإنجاز</th>
-                        <th class="px-6 py-4 font-bold">الإجراءات</th>
+                        <th class="px-6 py-4 font-bold text-center">الإجراءات</th>
                     </tr>
                 </thead>
                 <tbody id="myStudentsTable" class="divide-y divide-gray-100">
-                    <tr><td colspan="4" class="px-6 py-8 text-center text-gray-500 font-bold">جاري تحميل بيانات الطلاب...</td></tr>
+                    <tr><td colspan="3" class="px-6 py-8 text-center text-gray-500 font-bold">جاري تحميل بيانات الطلاب...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -81,22 +80,16 @@
                                 <div class="text-xs" dir="ltr" style="text-align: right;">${waHtml}</div>
                             </td>
                             <td class="px-6 py-4 font-bold text-emerald-600">${planText}</td>
-                            <td class="px-6 py-4">
-                                <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                    <div class="bg-emerald-600 h-2.5 rounded-full" style="width: 0%"></div>
-                                </div>
-                                <span class="text-xs text-gray-500 mt-1 block text-center">بداية الخطة</span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <a href="teacher_interviews.html?student=${s.user_id}" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded font-bold transition inline-flex items-center">
-                                    <i class="fas fa-star-half-alt ml-1"></i> تقييم دوري
+                            <td class="px-6 py-4 text-center">
+                                <a href="teacher_student_details.html?id=${s.user_id}" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-4 py-2 rounded-lg font-bold transition inline-flex items-center text-xs">
+                                    <i class="fas fa-user-edit ml-1"></i> ملف الطالب وسجل الحصص
                                 </a>
                             </td>
                         </tr>
                     `;
                 });
             } else {
-                tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-12 text-center text-gray-400 font-bold">لا يوجد لديك طلاب موكلين حالياً.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" class="px-6 py-12 text-center text-gray-400 font-bold">لا يوجد لديك طلاب موكلين حالياً.</td></tr>';
             }
         });
     </script>
