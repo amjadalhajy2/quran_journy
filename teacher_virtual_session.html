@@ -101,31 +101,33 @@
                 </div>
             </div>
 
-            <!-- حقول التقييم والتسجيل للحصة -->
-            <div class="flex-1 p-4 bg-gray-800 flex flex-col overflow-y-auto space-y-3">
-                <h4 class="font-bold text-emerald-400 border-b border-gray-700 pb-2 mb-2"><i class="fas fa-clipboard-check ml-1"></i> سجل الحصة</h4>
+<!-- حقول التقييم والتسجيل للحصة (محدثة بالنطاقات) -->
+            <div class="flex-1 p-4 bg-gray-800 flex flex-col overflow-y-auto space-y-4">
+                <h4 class="font-bold text-emerald-400 border-b border-gray-700 pb-2 mb-2"><i class="fas fa-clipboard-check ml-1"></i> المتابعة والحفظ</h4>
                 
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1">مقرر الحفظ المطلوب</label>
-                    <input type="text" id="sessionTarget" placeholder="مثال: البقرة 1-20" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white outline-none focus:border-emerald-500">
-                </div>
-                
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1">ما تم تسميعه (الحفظ الفعلي)</label>
-                    <input type="text" id="sessionActual" placeholder="مثال: البقرة 1-15" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white outline-none focus:border-emerald-500">
+                <div class="bg-gray-900 p-3 rounded-lg border border-gray-700">
+                    <label class="block text-xs font-bold text-gray-400 mb-2">اختر المقرر المستهدف</label>
+                    <select id="selectCurriculum" onchange="onCurriculumChange()" class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-sm text-white outline-none focus:border-emerald-500 mb-3"></select>
+                    
+                    <label class="block text-xs font-bold text-blue-400 mb-1">نطاق الحفظ المطلوب:</label>
+                    <div class="flex space-x-2 space-x-reverse mb-3">
+                        <input type="number" id="targetFrom" onchange="syncActualRange()" class="w-full bg-gray-800 text-white rounded p-2 outline-none focus:border-blue-500 text-center" title="من صفحة">
+                        <input type="number" id="targetTo" onchange="syncActualRange()" class="w-full bg-gray-800 text-white rounded p-2 outline-none focus:border-blue-500 text-center" title="إلى صفحة">
+                    </div>
+
+                    <label class="block text-xs font-bold text-emerald-400 mb-1">الحفظ الفعلي:</label>
+                    <div class="flex space-x-2 space-x-reverse">
+                        <input type="number" id="actualFrom" class="w-full bg-gray-800 text-white rounded p-2 outline-none focus:border-emerald-500 text-center" title="من صفحة">
+                        <input type="number" id="actualTo" class="w-full bg-gray-800 text-white rounded p-2 outline-none focus:border-emerald-500 text-center" title="إلى صفحة">
+                    </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1">تقييم الأداء (من 10)</label>
-                    <input type="number" id="sessionGrade" min="1" max="10" placeholder="10" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white outline-none focus:border-emerald-500">
-                </div>
-
-                <div class="flex-1 flex flex-col min-h-[100px]">
+                <div class="flex-1 flex flex-col">
                     <label class="block text-xs font-bold text-gray-400 mb-1">ملاحظات المعلم والتوجيهات</label>
-                    <textarea id="sessionNotes" class="flex-1 w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white outline-none focus:border-emerald-500 resize-none" placeholder="اكتب ملاحظاتك هنا..."></textarea>
+                    <textarea id="sessionNotes" class="flex-1 w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white outline-none focus:border-emerald-500 resize-none"></textarea>
                 </div>
 
-                <button onclick="saveAndEndSession()" id="finishBtn" class="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition w-full shadow-lg">
+                <button onclick="saveAndEndSession()" id="finishBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition w-full shadow-lg">
                     حفظ السجل وإنهاء الحصة
                 </button>
             </div>
