@@ -89,7 +89,6 @@
                 </div>
             </div>
 
-            <!-- حاوية زر النافذة المنبثقة -->
             <div id="meet-container" class="w-full h-[60vh] bg-gray-900 relative shadow-inner border-b border-gray-800 flex flex-col items-center justify-center p-6 text-center">
                 <div class="bg-gray-800 p-8 rounded-2xl border border-gray-700 shadow-xl max-w-sm w-full">
                     <i class="fas fa-video text-6xl text-blue-500 mb-4 animate-pulse"></i>
@@ -113,25 +112,13 @@
 
     <script src="supabase.js"></script>
     <script>
-        // دالة فتح النافذة المنبثقة
         function openMeetPopup() {
-            // ضع رابط جوجل ميت الخاص بك هنا بدلاً من الرابط الافتراضي
             const meetUrl = "https://meet.google.com/ekj-aziq-ksk"; 
-            
-            // تحديد أبعاد النافذة المنبثقة
-            const width = 800;
-            const height = 600;
-            
-            // حساب المنتصف لتظهر النافذة في وسط الشاشة
+            const width = 800; const height = 600;
             const left = (window.screen.width - width) / 2;
             const top = (window.screen.height - height) / 2;
             
-            // فتح النافذة بخصائص محددة (بدون أشرطة أدوات علوية لتوفير المساحة)
-            window.open(
-                meetUrl,
-                "GoogleMeetWindow",
-                `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`
-            );
+            window.open(meetUrl, "GoogleMeetWindow", `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`);
         }
 
         async function loadSurahsIndex() {
@@ -152,15 +139,28 @@
         const bookContainer = document.getElementById('bookContainer');
         const loadingOverlay = document.getElementById('loadingOverlay');
 
+        // جلب مسار الصورة من المجلد المحلي (quran-low) وبصيغة jpg
         function getImageUrl(pageNum) {
-            const formattedNum = String(pageNum).padStart(3, '0');
-            return `https://cdn.jsdelivr.net/gh/adelpro/open-mushaf-native@master/assets/mushaf-data/mushaf-elmadina-hafs-assim/${formattedNum}.png`;
+            const fileNum = pageNum + 4;
+            const formattedNum = String(fileNum).padStart(3, '0');
+            return `quran-low/${formattedNum}.jpg`;
+        }
+
+        // دالة التحميل المسبق (Preloading) لتحميل الصفحات التالية والسابقة في الذاكرة لتسريع التقليب
+        function preloadImages(pageNum) {
+            const pagesToPreload = [pageNum - 2, pageNum - 1, pageNum + 2, pageNum + 3];
+            pagesToPreload.forEach(p => {
+                if (p >= 1 && p <= 604) {
+                    const img = new Image();
+                    img.src = getImageUrl(p);
+                }
+            });
         }
 
         function updateQuranPage(pageNum) {
             if (pageNum % 2 === 0) pageNum -= 1; 
             if (pageNum < 1) pageNum = 1;
-            if (pageNum > 603) pageNum = 603;
+            if (pageNum > 603) pageNum = 603; 
             
             const oldPage = currentPage;
             currentPage = pageNum;
@@ -178,6 +178,9 @@
                     if (loaded === 2) {
                         loadingOverlay.classList.add('hidden');
                         bookContainer.classList.remove('turning-next', 'turning-prev');
+                        
+                        // بدء التحميل المسبق للصفحات فور الانتهاء من تحميل الصفحة الحالية
+                        preloadImages(currentPage);
                     }
                 };
 
@@ -191,7 +194,7 @@
                     leftImage.src = getImageUrl(currentPage + 1);
                 } else {
                     leftImage.src = "";
-                    onImageLoad();
+                    onImageLoad(); // إذا لم يكن هناك صفحة يسرى
                 }
             }, currentPage === oldPage ? 0 : 400); 
         }
@@ -204,17 +207,13 @@
             if(!user) return window.location.href = 'login.html';
 
             const teacherName = user.user_metadata?.full_name || "معلم القرآن";
-            
             const urlParams = new URLSearchParams(window.location.search);
             const studentId = urlParams.get('student_id');
-            
             let studentName = "طالب (بدون تحديد)";
 
             if (studentId) {
                 const { data: studentData } = await window.supabase.from('users').select('full_name').eq('id', studentId).single();
-                if (studentData) {
-                    studentName = studentData.full_name;
-                }
+                if (studentData) { studentName = studentData.full_name; }
             }
             
             document.getElementById('teacherNameDisplay').textContent = `المعلم: ${teacherName}`;
