@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تفاصيل الطالب وسجل الحصص</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style> @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap'); body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; } </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="flex flex-col h-screen overflow-hidden text-gray-800">
+    <header class="bg-white shadow p-4 flex justify-between items-center z-10 relative border-b">
+        <div class="flex items-center">
+            <a href="teacher_students_list.html" class="text-gray-500 hover:text-emerald-600 bg-gray-100 px-4 py-2 rounded-lg ml-4 transition font-bold"><i class="fas fa-arrow-right ml-1"></i> رجوع للقائمة</a>
+            <h2 class="text-xl font-bold text-gray-700">ملف الطالب: <span id="studentNameHeader" class="text-emerald-600">جاري التحميل...</span></h2>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-6 space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border p-6 flex justify-between items-center">
+            <div>
+                <h3 class="font-bold text-gray-500 mb-1">المقرر الحالي للطالب</h3>
+                <p id="studentPlan" class="text-2xl font-black text-emerald-700">--</p>
+            </div>
+            <div id="studentPhone" class="text-left" dir="ltr"></div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                <h3 class="font-bold text-gray-800"><i class="fas fa-list-ul text-emerald-600 ml-2"></i> السجل الشامل للحصص</h3>
+            </div>
+            <table class="w-full text-right text-sm">
+                <thead class="bg-white border-b text-gray-500">
+                    <tr>
+                        <th class="px-6 py-4 font-bold">التاريخ والوقت</th>
+                        <th class="px-6 py-4 font-bold">مقرر الحفظ (المطلوب)</th>
+                        <th class="px-6 py-4 font-bold">ما تم تسميعه (الفعلي)</th>
+                        <th class="px-6 py-4 font-bold text-center">التقييم</th>
+                        <th class="px-6 py-4 font-bold">الحالة</th>
+                        <th class="px-6 py-4 font-bold text-center">إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="sessionsTable" class="divide-y divide-gray-50">
+                    <tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 font-bold">جاري تحميل السجل...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- نافذة تحديث بيانات الحصة -->
+    <div id="editSessionModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 class="text-xl font-bold text-emerald-700 mb-4 border-b pb-2">تحديث سجل الحصة</h3>
+            <form id="editSessionForm" class="space-y-4">
+                <input type="hidden" id="editSessionId">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">المقرر المطلوب (للحصة القادمة أو الحالية)</label>
+                    <input type="text" id="editTarget" placeholder="مثال: سورة البقرة من آية 1 إلى 20" class="w-full border rounded-lg p-3 outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">ما تم تسميعه فعلياً</label>
+                    <input type="text" id="editActual" placeholder="مثال: سورة البقرة من 1 إلى 15" class="w-full border rounded-lg p-3 outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">التقييم (من 10)</label>
+                    <input type="number" id="editGrade" min="1" max="10" class="w-full border rounded-lg p-3 outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">ملاحظات الحصة</label>
+                    <textarea id="editNotes" rows="2" class="w-full border rounded-lg p-3 outline-none focus:border-emerald-500"></textarea>
+                </div>
+                <div class="flex space-x-2 space-x-reverse mt-4">
+                    <button type="submit" id="saveSessionBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-lg font-bold transition">حفظ السجل</button>
+                    <button type="button" onclick="document.getElementById('editSessionModal').classList.add('hidden')" class="w-full bg-gray-200 hover:bg-gray-300 p-3 rounded-lg font-bold transition">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="supabase.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const studentId = urlParams.get('id');
+        if(!studentId) window.location.href = 'teacher_students_list.html';
+
+        async function loadStudentData() {
+            // بيانات الطالب
+            const { data: profile } = await window.supabase.from('student_profiles')
+                .select(`custom_plan_type, target_parts, target_surahs, users!student_profiles_user_id_fkey(full_name, phone)`)
+                .eq('user_id', studentId).single();
+                
+            if(profile) {
+                document.getElementById('studentNameHeader').textContent = profile.users.full_name;
+                
+                let planText = 'بانتظار التقييم';
+                if (profile.custom_plan_type === 'parts') planText = `حفظ ${profile.target_parts}`;
+                else if (profile.custom_plan_type === 'surahs') planText = `سورة: ${profile.target_surahs}`;
+                document.getElementById('studentPlan').textContent = planText;
+
+                const phone = profile.users.phone || 'غير متوفر';
+                const cleanPhone = phone.replace(/\D/g, '');
+                if(cleanPhone) document.getElementById('studentPhone').innerHTML = `<a href="https://wa.me/${cleanPhone}" target="_blank" class="text-green-600 hover:text-green-800 font-bold bg-green-50 px-4 py-2 rounded-lg border border-green-200 inline-block"><i class="fab fa-whatsapp ml-1"></i> ${phone}</a>`;
+            }
+
+            // سجل الحصص (نستخدم next_assignment كمقرر و memorized_from كحفظ فعلي)
+            const { data: sessions } = await window.supabase.from('sessions')
+                .select('*').eq('student_id', studentId).order('session_date', {ascending: false}).order('start_time', {ascending: false});
+
+            const tbody = document.getElementById('sessionsTable');
+            tbody.innerHTML = '';
+            
+            if(sessions && sessions.length > 0) {
+                sessions.forEach(sess => {
+                    const statusColors = {
+                        'scheduled': 'bg-blue-100 text-blue-700', 'ongoing': 'bg-red-100 text-red-700 animate-pulse',
+                        'completed': 'bg-green-100 text-green-800', 'cancelled': 'bg-gray-200 text-gray-500'
+                    };
+                    const badge = `<span class="px-2 py-1 rounded text-xs font-bold ${statusColors[sess.status] || 'bg-gray-100 text-gray-600'}">${sess.status}</span>`;
+                    
+                    const target = sess.next_assignment || '<span class="text-gray-400">-</span>';
+                    const actual = sess.memorized_from || '<span class="text-gray-400">-</span>';
+                    const grade = sess.evaluation ? `<span class="font-bold text-emerald-600">${sess.evaluation}/10</span>` : '<span class="text-gray-400">-</span>';
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-50 transition border-b border-gray-100">
+                            <td class="px-6 py-4 font-bold text-gray-700">
+                                <div>${sess.session_date}</div>
+                                <div class="text-xs text-gray-400 mt-1" dir="ltr" style="text-align: right;"><i class="far fa-clock"></i> ${sess.start_time.substring(0,5)}</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm font-bold text-gray-800">${target}</td>
+                            <td class="px-6 py-4 text-sm font-bold text-emerald-700">${actual}</td>
+                            <td class="px-6 py-4 text-center">${grade}</td>
+                            <td class="px-6 py-4">${badge}</td>
+                            <td class="px-6 py-4 text-center">
+                                <button onclick="openEditModal('${sess.id}', \`${sess.next_assignment||''}\`, \`${sess.memorized_from||''}\`, '${sess.evaluation||''}', \`${sess.teacher_notes||''}\`)" class="bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-3 py-1.5 rounded font-bold transition text-xs border border-gray-200">
+                                    <i class="fas fa-pen ml-1"></i> تحديث السجل
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 font-bold">لا توجد حصص مسجلة لهذا الطالب.</td></tr>';
+            }
+        }
+
+        function openEditModal(id, target, actual, grade, notes) {
+            document.getElementById('editSessionId').value = id;
+            document.getElementById('editTarget').value = target !== 'null' ? target : '';
+            document.getElementById('editActual').value = actual !== 'null' ? actual : '';
+            document.getElementById('editGrade').value = grade !== 'null' ? grade : '';
+            document.getElementById('editNotes').value = notes !== 'null' ? notes : '';
+            
+            document.getElementById('editSessionModal').classList.remove('hidden');
+            document.getElementById('editSessionModal').classList.add('flex');
+        }
+
+        document.getElementById('editSessionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveSessionBtn');
+            btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+
+            const id = document.getElementById('editSessionId').value;
+            const target = document.getElementById('editTarget').value;
+            const actual = document.getElementById('editActual').value;
+            const grade = document.getElementById('editGrade').value;
+            const notes = document.getElementById('editNotes').value;
+
+            // تحديث الحصة (next_assignment للمقرر, memorized_from للفعلي)
+            const { error } = await window.supabase.from('sessions')
+                .update({ next_assignment: target, memorized_from: actual, evaluation: grade ? parseInt(grade) : null, teacher_notes: notes })
+                .eq('id', id);
+
+            if(error) alert("خطأ: " + error.message);
+            else {
+                document.getElementById('editSessionModal').classList.add('hidden');
+                loadStudentData();
+            }
+            btn.disabled = false; btn.textContent = 'حفظ السجل';
+        });
+
+        window.addEventListener('load', loadStudentData);
+    </script>
+</body>
+</html>
