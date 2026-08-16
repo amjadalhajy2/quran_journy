@@ -14,28 +14,46 @@
             <a href="teacher_students_list.html" class="text-gray-500 hover:text-emerald-600 bg-gray-100 px-4 py-2 rounded-lg ml-4 transition font-bold"><i class="fas fa-arrow-right ml-1"></i> رجوع للقائمة</a>
             <h2 class="text-xl font-bold text-gray-700">ملف الطالب: <span id="studentNameHeader" class="text-emerald-600">جاري التحميل...</span></h2>
         </div>
+        <div id="studentPhone" dir="ltr"></div>
     </header>
 
     <main class="flex-1 overflow-y-auto p-6 space-y-6">
-        <div class="bg-white rounded-xl shadow-sm border p-6 flex justify-between items-center">
-            <div>
-                <h3 class="font-bold text-gray-500 mb-1">المقرر الحالي للطالب</h3>
-                <p id="studentPlan" class="text-2xl font-black text-emerald-700">--</p>
+        <!-- قسم مقررات الحفظ وشريط التقدم الشامل -->
+        <div class="bg-white rounded-xl shadow-sm border p-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 pb-4 border-b">
+                <div>
+                    <h3 class="font-bold text-gray-500 text-sm mb-1"><i class="fas fa-book-open text-emerald-600 ml-1"></i> مقررات الحفظ للطالب</h3>
+                    <p id="studentPlansList" class="text-xl font-black text-emerald-800">--</p>
+                </div>
+                <button onclick="openAddPlanModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg text-sm transition shadow-sm flex items-center">
+                    <i class="fas fa-plus ml-2"></i> إضافة مقرر جديد
+                </button>
             </div>
-            <div id="studentPhone" class="text-left" dir="ltr"></div>
+
+            <!-- شريط التقدم الفعلي -->
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-bold text-gray-600">التقدم الفعلي في الحفظ:</span>
+                    <span class="text-sm font-black text-emerald-700" id="progressStatsText">0 من 0 صفحة (0%)</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3.5 overflow-hidden">
+                    <div id="progressBar" class="bg-emerald-500 h-3.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
         </div>
 
+        <!-- السجل الشامل للحصص -->
         <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
             <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
-                <h3 class="font-bold text-gray-800"><i class="fas fa-list-ul text-emerald-600 ml-2"></i> السجل الشامل للحصص</h3>
+                <h3 class="font-bold text-gray-800"><i class="fas fa-list-ul text-emerald-600 ml-2"></i> سجل الحصص والمتابعة</h3>
             </div>
             <table class="w-full text-right text-sm">
                 <thead class="bg-white border-b text-gray-500">
                     <tr>
                         <th class="px-6 py-4 font-bold">التاريخ والوقت</th>
-                        <th class="px-6 py-4 font-bold">مقرر الحفظ (المطلوب)</th>
-                        <th class="px-6 py-4 font-bold">ما تم تسميعه (الفعلي)</th>
-                        <th class="px-6 py-4 font-bold text-center">التقييم</th>
+                        <th class="px-6 py-4 font-bold">مقرر الحفظ المطلوب</th>
+                        <th class="px-6 py-4 font-bold">الحفظ الفعلي</th>
+                        <th class="px-6 py-4 font-bold">ملاحظات المعلم</th>
                         <th class="px-6 py-4 font-bold">الحالة</th>
                         <th class="px-6 py-4 font-bold text-center">إجراءات</th>
                     </tr>
@@ -47,31 +65,77 @@
         </div>
     </main>
 
-    <!-- نافذة تحديث بيانات الحصة -->
+    <!-- نافذة تحديث سجل الحصة -->
     <div id="editSessionModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl">
             <h3 class="text-xl font-bold text-emerald-700 mb-4 border-b pb-2">تحديث سجل الحصة</h3>
             <form id="editSessionForm" class="space-y-4">
                 <input type="hidden" id="editSessionId">
+                
+                <!-- اختيار المقرر لتحديد نطاق الصفحات -->
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">المقرر المطلوب (للحصة القادمة أو الحالية)</label>
-                    <input type="text" id="editTarget" placeholder="مثال: سورة البقرة من آية 1 إلى 20" class="w-full border rounded-lg p-3 outline-none focus:border-emerald-500">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">اختر المقرر المستهدف للحصة</label>
+                    <select id="selectCurriculum" onchange="onCurriculumChange()" class="w-full border rounded-lg p-2.5 outline-none font-bold focus:border-emerald-500 bg-gray-50" required>
+                    </select>
                 </div>
+
+                <!-- نطاق صفحات مقرر الحفظ -->
+                <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <label class="block text-xs font-bold text-blue-800 mb-2">مقرر الحفظ المطلوب للحصة (نطاق الصفحات):</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <span class="text-xs text-gray-500">من صفحة:</span>
+                            <input type="number" id="targetFromPage" onchange="syncActualRange()" class="w-full border rounded p-2 text-sm font-bold bg-white outline-none focus:border-blue-500" required>
+                        </div>
+                        <div>
+                            <span class="text-xs text-gray-500">إلى صفحة:</span>
+                            <input type="number" id="targetToPage" onchange="syncActualRange()" class="w-full border rounded p-2 text-sm font-bold bg-white outline-none focus:border-blue-500" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- نطاق صفحات الحفظ الفعلي -->
+                <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+                    <label class="block text-xs font-bold text-emerald-800 mb-2">الحفظ الفعلي (ضمن نطاق المقرر أعلاه):</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <span class="text-xs text-gray-500">من صفحة:</span>
+                            <input type="number" id="actualFromPage" class="w-full border rounded p-2 text-sm font-bold bg-white outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <span class="text-xs text-gray-500">إلى صفحة:</span>
+                            <input type="number" id="actualToPage" class="w-full border rounded p-2 text-sm font-bold bg-white outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ملاحظات المعلم -->
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">ما تم تسميعه فعلياً</label>
-                    <input type="text" id="editActual" placeholder="مثال: سورة البقرة من 1 إلى 15" class="w-full border rounded-lg p-3 outline-none focus:border-emerald-500">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">ملاحظات المعلم والتوجيهات</label>
+                    <textarea id="editNotes" rows="2" placeholder="اكتب ملاحظاتك للطالب خلال الحصة..." class="w-full border rounded-lg p-2.5 outline-none focus:border-emerald-500"></textarea>
                 </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">التقييم (من 10)</label>
-                    <input type="number" id="editGrade" min="1" max="10" class="w-full border rounded-lg p-3 outline-none focus:border-emerald-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">ملاحظات الحصة</label>
-                    <textarea id="editNotes" rows="2" class="w-full border rounded-lg p-3 outline-none focus:border-emerald-500"></textarea>
-                </div>
+
                 <div class="flex space-x-2 space-x-reverse mt-4">
                     <button type="submit" id="saveSessionBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-lg font-bold transition">حفظ السجل</button>
                     <button type="button" onclick="document.getElementById('editSessionModal').classList.add('hidden')" class="w-full bg-gray-200 hover:bg-gray-300 p-3 rounded-lg font-bold transition">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة مقرر جديد للطالب -->
+    <div id="addPlanModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 class="text-xl font-bold text-emerald-700 mb-4 border-b pb-2">إضافة مقرر جديد للطالب</h3>
+            <form id="addPlanForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">اختر الجزء المراد إضافته:</label>
+                    <select id="newJuzSelect" class="w-full border rounded-lg p-3 outline-none font-bold focus:border-emerald-500 bg-gray-50" required>
+                    </select>
+                </div>
+                <div class="flex space-x-2 space-x-reverse mt-4">
+                    <button type="submit" id="savePlanBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-lg font-bold transition">إضافة المقرر</button>
+                    <button type="button" onclick="document.getElementById('addPlanModal').classList.add('hidden')" class="w-full bg-gray-200 hover:bg-gray-300 p-3 rounded-lg font-bold transition">إلغاء</button>
                 </div>
             </form>
         </div>
@@ -83,32 +147,61 @@
         const studentId = urlParams.get('id');
         if(!studentId) window.location.href = 'teacher_students_list.html';
 
+        let currentProfile = null;
+        let studentJuzList = [];
+
+        // حدود صفحات أجزاء القرآن الكريم الثلاثين
+        const juzPageBounds = {
+            1: [1, 21], 2: [22, 41], 3: [42, 61], 4: [62, 81], 5: [82, 101],
+            6: [102, 121], 7: [122, 141], 8: [142, 161], 9: [162, 181], 10: [182, 201],
+            11: [202, 221], 12: [222, 241], 13: [242, 261], 14: [262, 281], 15: [282, 301],
+            16: [302, 321], 17: [322, 341], 18: [342, 361], 19: [362, 381], 20: [382, 401],
+            21: [402, 421], 22: [422, 441], 23: [442, 461], 24: [462, 481], 25: [482, 501],
+            26: [502, 521], 27: [522, 541], 28: [542, 561], 29: [562, 581], 30: [582, 604]
+        };
+
         async function loadStudentData() {
-            // بيانات الطالب
+            // جلب ملف الطالب
             const { data: profile } = await window.supabase.from('student_profiles')
                 .select(`custom_plan_type, target_parts, target_surahs, users!student_profiles_user_id_fkey(full_name, phone)`)
                 .eq('user_id', studentId).single();
                 
+            currentProfile = profile;
+            
             if(profile) {
                 document.getElementById('studentNameHeader').textContent = profile.users.full_name;
                 
-                let planText = 'بانتظار التقييم';
-                if (profile.custom_plan_type === 'parts') planText = `حفظ ${profile.target_parts}`;
-                else if (profile.custom_plan_type === 'surahs') planText = `سورة: ${profile.target_surahs}`;
-                document.getElementById('studentPlan').textContent = planText;
+                // استخراج الأجزاء المقررة
+                studentJuzList = [];
+                if (profile.target_parts) {
+                    const matches = profile.target_parts.match(/\d+/g);
+                    if (matches) studentJuzList = matches.map(Number);
+                }
+                
+                let plansText = profile.target_parts || profile.target_surahs || 'بانتظار تحديد المقررات';
+                document.getElementById('studentPlansList').textContent = plansText;
 
                 const phone = profile.users.phone || 'غير متوفر';
                 const cleanPhone = phone.replace(/\D/g, '');
-                if(cleanPhone) document.getElementById('studentPhone').innerHTML = `<a href="https://wa.me/${cleanPhone}" target="_blank" class="text-green-600 hover:text-green-800 font-bold bg-green-50 px-4 py-2 rounded-lg border border-green-200 inline-block"><i class="fab fa-whatsapp ml-1"></i> ${phone}</a>`;
+                if(cleanPhone) document.getElementById('studentPhone').innerHTML = `<a href="https://wa.me/${cleanPhone}" target="_blank" class="text-green-600 hover:text-green-800 font-bold bg-green-50 px-4 py-2 rounded-lg border border-green-200 inline-block text-xs"><i class="fab fa-whatsapp ml-1"></i> ${phone}</a>`;
             }
 
-            // سجل الحصص (نستخدم next_assignment كمقرر و memorized_from كحفظ فعلي)
+            // جلب سجل الحصص
             const { data: sessions } = await window.supabase.from('sessions')
                 .select('*').eq('student_id', studentId).order('session_date', {ascending: false}).order('start_time', {ascending: false});
 
             const tbody = document.getElementById('sessionsTable');
             tbody.innerHTML = '';
             
+            // حساب إجمالي الصفحات المقررة والصفحات المحفوظة فعلياً
+            const memorizedPagesSet = new Set();
+            let totalTargetPages = 0;
+
+            studentJuzList.forEach(j => {
+                const b = juzPageBounds[j];
+                if (b) totalTargetPages += (b[1] - b[0] + 1);
+            });
+
             if(sessions && sessions.length > 0) {
                 sessions.forEach(sess => {
                     const statusColors = {
@@ -119,7 +212,16 @@
                     
                     const target = sess.next_assignment || '<span class="text-gray-400">-</span>';
                     const actual = sess.memorized_from || '<span class="text-gray-400">-</span>';
-                    const grade = sess.evaluation ? `<span class="font-bold text-emerald-600">${sess.evaluation}/10</span>` : '<span class="text-gray-400">-</span>';
+                    const notes = sess.teacher_notes || '<span class="text-gray-400">-</span>';
+
+                    // جمع الصفحات المحفوظة فعلياً لاحتساب التقدم
+                    if (sess.memorized_from && sess.memorized_from.includes('ص')) {
+                        const nums = sess.memorized_from.match(/\d+/g);
+                        if (nums && nums.length >= 2) {
+                            const start = parseInt(nums[0]), end = parseInt(nums[1]);
+                            for (let p = start; p <= end; p++) memorizedPagesSet.add(p);
+                        }
+                    }
 
                     tbody.innerHTML += `
                         <tr class="hover:bg-gray-50 transition border-b border-gray-100">
@@ -129,10 +231,10 @@
                             </td>
                             <td class="px-6 py-4 text-sm font-bold text-gray-800">${target}</td>
                             <td class="px-6 py-4 text-sm font-bold text-emerald-700">${actual}</td>
-                            <td class="px-6 py-4 text-center">${grade}</td>
+                            <td class="px-6 py-4 text-xs text-gray-600 leading-relaxed max-w-xs">${notes}</td>
                             <td class="px-6 py-4">${badge}</td>
                             <td class="px-6 py-4 text-center">
-                                <button onclick="openEditModal('${sess.id}', \`${sess.next_assignment||''}\`, \`${sess.memorized_from||''}\`, '${sess.evaluation||''}', \`${sess.teacher_notes||''}\`)" class="bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-3 py-1.5 rounded font-bold transition text-xs border border-gray-200">
+                                <button onclick="openEditModal('${sess.id}', \`${sess.next_assignment||''}\`, \`${sess.memorized_from||''}\`, \`${sess.teacher_notes||''}\`)" class="bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-3 py-1.5 rounded font-bold transition text-xs border border-gray-200">
                                     <i class="fas fa-pen ml-1"></i> تحديث السجل
                                 </button>
                             </td>
@@ -142,33 +244,98 @@
             } else {
                 tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 font-bold">لا توجد حصص مسجلة لهذا الطالب.</td></tr>';
             }
+
+            // تحديث شريط التقدم بالأرقام الفعلية
+            const completedCount = memorizedPagesSet.size;
+            const percentage = totalTargetPages > 0 ? Math.min(100, Math.round((completedCount / totalTargetPages) * 100)) : 0;
+            document.getElementById('progressBar').style.width = percentage + '%';
+            document.getElementById('progressStatsText').textContent = `${completedCount} من ${totalTargetPages} صفحة (${percentage}%)`;
         }
 
-        function openEditModal(id, target, actual, grade, notes) {
+        // إعداد نافذة التعديل وربط النطاقات
+        function openEditModal(id, target, actual, notes) {
             document.getElementById('editSessionId').value = id;
-            document.getElementById('editTarget').value = target !== 'null' ? target : '';
-            document.getElementById('editActual').value = actual !== 'null' ? actual : '';
-            document.getElementById('editGrade').value = grade !== 'null' ? grade : '';
             document.getElementById('editNotes').value = notes !== 'null' ? notes : '';
             
+            // تعبئة قائمة المقررات في الـ Select
+            const sel = document.getElementById('selectCurriculum');
+            sel.innerHTML = '';
+            studentJuzList.forEach(j => {
+                sel.innerHTML += `<option value="${j}">الجزء ${j} (ص ${juzPageBounds[j][0]} إلى ${juzPageBounds[j][1]})</option>`;
+            });
+
+            onCurriculumChange();
+
+            // إذا كان هناك بيانات سابقة، يتم تعبئتها
+            if (target && target.includes('ص')) {
+                const nums = target.match(/\d+/g);
+                if (nums && nums.length >= 2) {
+                    document.getElementById('targetFromPage').value = nums[0];
+                    document.getElementById('targetToPage').value = nums[1];
+                }
+            }
+            if (actual && actual.includes('ص')) {
+                const nums = actual.match(/\d+/g);
+                if (nums && nums.length >= 2) {
+                    document.getElementById('actualFromPage').value = nums[0];
+                    document.getElementById('actualToPage').value = nums[1];
+                }
+            }
+            syncActualRange();
+
             document.getElementById('editSessionModal').classList.remove('hidden');
             document.getElementById('editSessionModal').classList.add('flex');
         }
 
+        function onCurriculumChange() {
+            const juzNum = parseInt(document.getElementById('selectCurriculum').value);
+            if (!juzNum || !juzPageBounds[juzNum]) return;
+            const bounds = juzPageBounds[juzNum];
+            
+            const tf = document.getElementById('targetFromPage');
+            const tt = document.getElementById('targetToPage');
+            
+            tf.min = bounds[0]; tf.max = bounds[1]; tf.value = bounds[0];
+            tt.min = bounds[0]; tt.max = bounds[1]; tt.value = bounds[1];
+            
+            syncActualRange();
+        }
+
+        function syncActualRange() {
+            const tf = parseInt(document.getElementById('targetFromPage').value);
+            const tt = parseInt(document.getElementById('targetToPage').value);
+            
+            const af = document.getElementById('actualFromPage');
+            const at = document.getElementById('actualToPage');
+            
+            af.min = tf; af.max = tt; af.value = tf;
+            at.min = tf; at.max = tt; at.value = tt;
+        }
+
+        // حفظ سجل الحصة
         document.getElementById('editSessionForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('saveSessionBtn');
             btn.disabled = true; btn.textContent = 'جاري الحفظ...';
 
             const id = document.getElementById('editSessionId').value;
-            const target = document.getElementById('editTarget').value;
-            const actual = document.getElementById('editActual').value;
-            const grade = document.getElementById('editGrade').value;
+            const juzNum = document.getElementById('selectCurriculum').value;
+            const tf = document.getElementById('targetFromPage').value;
+            const tt = document.getElementById('targetToPage').value;
+            const af = document.getElementById('actualFromPage').value;
+            const at = document.getElementById('actualToPage').value;
             const notes = document.getElementById('editNotes').value;
 
-            // تحديث الحصة (next_assignment للمقرر, memorized_from للفعلي)
+            const targetStr = `الجزء ${juzNum} (ص ${tf} إلى ${tt})`;
+            const actualStr = (af && at) ? `ص ${af} إلى ${at}` : '';
+
             const { error } = await window.supabase.from('sessions')
-                .update({ next_assignment: target, memorized_from: actual, evaluation: grade ? parseInt(grade) : null, teacher_notes: notes })
+                .update({ 
+                    next_assignment: targetStr, 
+                    memorized_from: actualStr, 
+                    teacher_notes: notes,
+                    evaluation: null // تم إلغاء التقييم من 10
+                })
                 .eq('id', id);
 
             if(error) alert("خطأ: " + error.message);
@@ -177,6 +344,40 @@
                 loadStudentData();
             }
             btn.disabled = false; btn.textContent = 'حفظ السجل';
+        });
+
+        // نافذة إضافة مقرر جديد
+        function openAddPlanModal() {
+            const sel = document.getElementById('newJuzSelect');
+            sel.innerHTML = '';
+            for(let i=1; i<=30; i++) {
+                if(!studentJuzList.includes(i)) {
+                    sel.innerHTML += `<option value="الجزء ${i}">الجزء ${i}</option>`;
+                }
+            }
+            if(sel.options.length === 0) return alert('تمت إضافة جميع أجزاء القرآن الكريم للطالب!');
+            document.getElementById('addPlanModal').classList.remove('hidden');
+            document.getElementById('addPlanModal').classList.add('flex');
+        }
+
+        document.getElementById('addPlanForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newJuz = document.getElementById('newJuzSelect').value;
+            const btn = document.getElementById('savePlanBtn');
+            btn.disabled = true; btn.textContent = 'جاري الإضافة...';
+
+            let updatedParts = currentProfile.target_parts ? `${currentProfile.target_parts}، ${newJuz}` : newJuz;
+
+            const { error } = await window.supabase.from('student_profiles')
+                .update({ target_parts: updatedParts, custom_plan_type: 'parts' })
+                .eq('user_id', studentId);
+
+            if(error) alert("حدث خطأ: " + error.message);
+            else {
+                document.getElementById('addPlanModal').classList.add('hidden');
+                loadStudentData();
+            }
+            btn.disabled = false; btn.textContent = 'إضافة المقرر';
         });
 
         window.addEventListener('load', loadStudentData);
