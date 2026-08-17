@@ -423,6 +423,11 @@
 
         async function saveAndEndSession() {
             if(!activeSessionId) return alert("لا توجد حصة مجدولة لحفظ السجل فيها.");
+            
+            // إضافة رسالة التأكيد
+            const isConfirmed = confirm("تأكيد الإنهاء: هل أنت متأكد من حفظ السجل؟ سيتم إغلاق الغرفة وتسجيل الحصة كمنتهية بشكل نهائي ولن تتمكن من تعديلها من هذه الواجهة.");
+            if (!isConfirmed) return;
+
             const btn = document.getElementById('finishBtn');
             btn.disabled = true; btn.textContent = 'جاري الحفظ...';
 
