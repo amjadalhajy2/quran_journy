@@ -21,7 +21,6 @@
     <main class="flex-1 overflow-y-auto p-8 bg-gray-50">
         <h2 class="text-2xl font-bold text-gray-700 mb-6">إدارة وتقييم الطلاب الجدد</h2>
         
-        <!-- أزرار التنقل بين التبويبات -->
         <div class="flex space-x-4 space-x-reverse mb-6">
             <button id="btnTab1" onclick="switchTab('tab1')" class="bg-emerald-600 text-white px-6 py-3 rounded-lg font-bold shadow transition flex items-center">
                 <i class="fas fa-calendar-plus ml-2"></i> تعيين حصة التقييم المبدئي
@@ -31,7 +30,6 @@
             </button>
         </div>
 
-        <!-- التبويب الأول: جدولة حصة التقييم المبدئي -->
         <div id="tab1" class="bg-white p-8 rounded-xl shadow-sm border max-w-4xl">
             <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg text-sm text-blue-800 font-bold mb-6">
                 <i class="fas fa-info-circle ml-1"></i> استخدم هذه الواجهة لتحديد موعد حصة واحدة للتعرف على الطالب الجديد وتقييم مستواه قبل اعتماد خطته الدائمة.
@@ -40,9 +38,7 @@
             <form id="scheduleEvalForm" class="space-y-6">
                 <div>
                     <label class="block font-bold text-sm mb-2 text-gray-700">اختر الطالب (الجديد)</label>
-                    <select id="evalStudentSelect" class="w-full border rounded-lg p-3 bg-gray-50 focus:border-emerald-500 font-bold outline-none" required>
-                        <option value="">جاري تحميل الطلاب...</option>
-                    </select>
+                    <select id="evalStudentSelect" class="w-full border rounded-lg p-3 bg-gray-50 focus:border-emerald-500 font-bold outline-none" required></select>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -54,9 +50,7 @@
                         <input type="time" id="evalTime" class="w-full border rounded-lg p-3 bg-white focus:border-emerald-500 font-bold outline-none" required>
                     </div>
                 </div>
-                
                 <div id="evalScheduleMsg" class="hidden text-center p-3 rounded font-bold mt-4"></div>
-
                 <div class="flex justify-end pt-4">
                     <button type="submit" id="saveEvalScheduleBtn" class="bg-emerald-600 text-white px-8 py-3 rounded-lg font-bold shadow hover:bg-emerald-700 transition">
                         <i class="fas fa-calendar-check ml-2"></i> إدراج الحصة في الجدول
@@ -65,7 +59,6 @@
             </form>
         </div>
 
-        <!-- التبويب الثاني: إجراء التقييم واعتماد الخطة -->
         <div id="tab2" class="bg-white p-8 rounded-xl shadow-sm border max-w-4xl hidden">
             <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-lg text-sm text-emerald-800 font-bold mb-6">
                 <i class="fas fa-info-circle ml-1"></i> استخدم هذه الواجهة بعد الانتهاء من مقابلة الطالب لتسجيل نتيجته، وتحديد المقررات، وجدولة حصصه الدائمة للشهر القادم.
@@ -89,16 +82,21 @@
                     </div>
                 </div>
 
-                <!-- قسم جدولة الحصص الديناميكي -->
                 <div id="scheduleSection" class="border-b pb-6 hidden">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-emerald-700"><i class="far fa-calendar-alt ml-2"></i> جدولة الحصص الأسبوعية الدائمة</h3>
                         <span id="packageInfoBadge" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold"></span>
                     </div>
+
+                    <!-- حقل تاريخ أول حصة الجديد -->
+                    <div class="mb-4 bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+                        <label class="block font-bold text-sm text-emerald-800 mb-2">تاريخ بدء أول حصة (يجب أن يوافق يوم الحصة الأولى):</label>
+                        <input type="date" id="firstSessionDate" class="w-full border rounded-lg p-2 font-bold outline-none focus:border-emerald-500" required>
+                    </div>
+
                     <div id="scheduleInputsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                 </div>
 
-                <!-- بناء الخطة المخصصة الذكية -->
                 <div class="border-b pb-6">
                     <h3 class="font-bold text-emerald-700 mb-4"><i class="fas fa-route ml-2"></i> بناء خطة الحفظ (تحديد المقرر)</h3>
                     <div class="flex space-x-6 space-x-reverse mb-4 bg-gray-100 p-3 rounded-lg inline-flex">
@@ -231,6 +229,29 @@
             let endM = totalMins % 60;
             let endTimeStr = String(endH).padStart(2, '0') + ':' + String(endM).padStart(2, '0');
 
+            // كشف التعارض قبل الحفظ
+            const { data: existingSessions } = await window.supabase.from('sessions')
+                .select('session_date, start_time, end_time')
+                .eq('session_date', eDate)
+                .in('status', ['scheduled', 'ongoing'])
+                .or(`teacher_id.eq.${currentUserId},student_id.eq.${stuId}`);
+
+            if (existingSessions) {
+                let startFull = eTime + ':00';
+                let endFull = endTimeStr + ':00';
+                let conflict = existingSessions.find(ex => {
+                    return (startFull < ex.end_time && endFull > ex.start_time);
+                });
+
+                if (conflict) {
+                    msg.textContent = `يتعذر الإدراج! يوجد تعارض مع حصة أخرى مجدولة لك أو للطالب في نفس الوقت.`;
+                    msg.className = 'text-center p-3 rounded font-bold mt-4 bg-red-100 text-red-700 block';
+                    msg.classList.remove('hidden');
+                    btn.disabled = false; btn.innerHTML = '<i class="fas fa-calendar-check ml-2"></i> إدراج الحصة في الجدول';
+                    return;
+                }
+            }
+
             const { error } = await window.supabase.from('sessions').insert({
                 teacher_id: currentUserId,
                 student_id: stuId,
@@ -288,7 +309,7 @@
             scheduleSection.classList.remove('hidden');
         }
 
-        function generateSessionsArray(studentId, durationMins) {
+        function generateSessionsArrayFromDate(studentId, durationMins, startDateStr) {
             const daysSelects = document.querySelectorAll('.schedule-day');
             const timesInputs = document.querySelectorAll('.schedule-time');
             let weeklySchedule = [];
@@ -298,22 +319,25 @@
             }
 
             let sessionsToInsert = [];
-            let today = new Date();
+            let startDate = new Date(startDateStr);
+            let startDayNum = startDate.getDay();
             
-            for(let i=0; i<28; i++) {
-                let currentDate = new Date(today);
-                currentDate.setDate(today.getDate() + i);
-                let currentDayNum = currentDate.getDay(); 
+            for(let week=0; week<4; week++) {
+                for(let j=0; j<weeklySchedule.length; j++) {
+                    let sch = weeklySchedule[j];
+                    let dayDiff = sch.day - startDayNum;
+                    if (dayDiff < 0) dayDiff += 7; 
 
-                let matchedSchedule = weeklySchedule.find(s => s.day === currentDayNum);
-                if(matchedSchedule) {
+                    let currentDate = new Date(startDate);
+                    currentDate.setDate(startDate.getDate() + dayDiff + (week * 7));
+                    
                     const dateStr = getLocalDateString(currentDate);
-                    const startTimeStr = matchedSchedule.time;
+                    const startTimeStr = sch.time;
                     
                     let [hours, mins] = startTimeStr.split(':').map(Number);
                     let endDate = new Date(currentDate);
                     endDate.setHours(hours, mins + durationMins, 0, 0);
-                    const endTimeStr = endDate.toTimeString().split(' ')[0].substring(0, 5); 
+                    const endTimeStr = String(endDate.getHours()).padStart(2, '0') + ':' + String(endDate.getMinutes()).padStart(2, '0');
 
                     sessionsToInsert.push({
                         teacher_id: currentUserId,
@@ -337,6 +361,20 @@
             const level = document.getElementById('levelSelect').value;
             const planType = document.querySelector('input[name="planType"]:checked').value;
             
+            // تحقق التواريخ
+            const firstDateStr = document.getElementById('firstSessionDate').value;
+            if(!firstDateStr) return alert('الرجاء إدخال تاريخ بدء أول حصة!');
+            
+            const daysSelects = document.querySelectorAll('.schedule-day');
+            if(daysSelects.length > 0) {
+                const firstDayExpected = parseInt(daysSelects[0].value);
+                const actualFirstDay = new Date(firstDateStr).getDay();
+                if(actualFirstDay !== firstDayExpected) {
+                    const daysNamesAr = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+                    return alert('تاريخ بدء أول حصة لا يوافق يوم ' + daysNamesAr[firstDayExpected] + ' المختار في الحصة 1!');
+                }
+            }
+            
             let partsStr = null, surahsStr = null;
             if (planType === 'parts') {
                 const checkedParts = Array.from(document.querySelectorAll('input[name="juz_check"]:checked')).map(cb => cb.value);
@@ -352,7 +390,29 @@
             msg.classList.add('hidden');
 
             const studentData = pendingStudentsData.find(s => s.user_id === studentId);
-            const generatedSessions = generateSessionsArray(studentId, studentData.session_duration);
+            const generatedSessions = generateSessionsArrayFromDate(studentId, studentData.session_duration, firstDateStr);
+
+            // كشف التعارض قبل الحفظ النهائي
+            const { data: existingSessions } = await window.supabase.from('sessions')
+                .select('session_date, start_time, end_time, teacher_id, student_id')
+                .in('status', ['scheduled', 'ongoing'])
+                .or(`teacher_id.eq.${currentUserId},student_id.eq.${studentId}`);
+
+            if (existingSessions) {
+                for (let newSess of generatedSessions) {
+                    let newStart = newSess.start_time;
+                    let newEnd = newSess.end_time;
+                    let conflict = existingSessions.find(ex => {
+                        return ex.session_date === newSess.session_date && 
+                               (newStart < ex.end_time && newEnd > ex.start_time) &&
+                               (ex.teacher_id === newSess.teacher_id || ex.student_id === newSess.student_id);
+                    });
+                    if (conflict) {
+                        btn.disabled = false; btn.innerHTML = '<i class="fas fa-save ml-2"></i> اعتماد التقييم والخطة والجدول';
+                        return alert(`تعذر الجدولة! يوجد تعارض في المواعيد يوم ${newSess.session_date} من ${newStart.substring(0,5)} إلى ${newEnd.substring(0,5)}. يرجى تعديل التواقيت لتفادي التعارض مع حصص أخرى لك أو للطالب.`);
+                    }
+                }
+            }
 
             const { error: sessionError } = await window.supabase.from('sessions').insert(generatedSessions);
             if(sessionError) {
