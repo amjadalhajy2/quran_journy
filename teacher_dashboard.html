@@ -17,8 +17,7 @@
         <nav class="flex-1 p-4 space-y-2 text-sm font-medium">
             <a href="teacher_dashboard.html" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow"><i class="fas fa-home ml-3"></i> الرئيسية</a>
             <a href="teacher_students_list.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-users ml-3"></i> قائمة طلابي</a>
-            <a href="teacher_interviews.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-clipboard-list ml-3"></i> التقييم المبدئي والدوري</a>
-            <a href="teacher_virtual_session.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-video ml-3"></i> غرفة الإقراء الافتراضية</a>
+            <a href="teacher_interviews.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-clipboard-list ml-3"></i> التقييم المبدئي واعتماد الخطة</a>
         </nav>
     </aside>
 
@@ -118,11 +117,36 @@
 
             document.getElementById('weekDisplay').textContent = `${startOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})} - ${endOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})}`;
 
-            const { data: sessions } = await window.supabase.from('sessions')
-                .select('student_id, session_date, start_time, end_time, status, users!sessions_student_id_fkey(full_name)')
+            let { data: sessions } = await window.supabase.from('sessions')
+                .select('id, student_id, session_date, start_time, end_time, status, users!sessions_student_id_fkey(full_name)')
                 .eq('teacher_id', currentUserId)
                 .gte('session_date', startStr)
                 .lte('session_date', endStr);
+
+            // التحقق من الحصص التي مر وقتها وتحديثها لـ "انتهت" تلقائياً
+            const now = new Date();
+            const currentDateString = getLocalDateString(now);
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+            if (sessions) {
+                for (let sess of sessions) {
+                    if (sess.status === 'scheduled' || sess.status === 'ongoing') {
+                        let isPast = false;
+                        if (sess.session_date < currentDateString) {
+                            isPast = true;
+                        } else if (sess.session_date === currentDateString) {
+                            const [endH, endM] = sess.end_time.substring(0,5).split(':').map(Number);
+                            if ((endH * 60 + endM) < currentMinutes) {
+                                isPast = true;
+                            }
+                        }
+                        if (isPast) {
+                            await window.supabase.from('sessions').update({ status: 'completed' }).eq('id', sess.id);
+                            sess.status = 'completed'; // تحديثها محلياً في الجدول فوراً
+                        }
+                    }
+                }
+            }
 
             const daysNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
             const grid = document.getElementById('calendarGrid');
@@ -172,7 +196,6 @@
                         let statusBadge = '';
                         let cardStyle = '';
                         
-                        // تمت إزالة border-r-4 والخطوط الجانبية
                         switch(sess.status) {
                             case 'scheduled': 
                                 statusBadge = '<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">مجدولة</span>'; 
@@ -195,8 +218,8 @@
                                 cardStyle = 'bg-emerald-50 border-emerald-200';
                         }
                         
-                        // تصميم البطاقة: الاسم > خط وتوقيت > خط وحالة
-                        colHtml += `<div class="${cardStyle} border p-2 rounded-lg text-sm relative transition hover:shadow-md flex flex-col">
+                        // جعل البطاقة قابلة للضغط وتنقل إلى الغرفة ممررةً الـ session_id
+                        colHtml += `<a href="teacher_virtual_session.html?session_id=${sess.id}" class="block ${cardStyle} border p-2 rounded-lg text-sm relative transition hover:shadow-md flex flex-col cursor-pointer">
                             <div class="font-bold text-gray-800 text-xs mb-1.5 text-center">${sess.users.full_name}</div>
                             
                             <div class="border-t border-gray-200/60 pt-1.5 pb-1.5 text-center w-full whitespace-nowrap">
@@ -206,7 +229,7 @@
                             <div class="border-t border-gray-200/60 pt-1.5 mt-auto text-center w-full">
                                 ${statusBadge}
                             </div>
-                        </div>`;
+                        </a>`;
                     });
                 } else {
                     colHtml += `<div class="text-center text-gray-400 font-bold text-xs mt-6 flex flex-col items-center">
