@@ -15,8 +15,7 @@
         <nav class="flex-1 p-4 space-y-2 text-sm font-medium">
             <a href="teacher_dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-home ml-3"></i> الرئيسية</a>
             <a href="teacher_students_list.html" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow"><i class="fas fa-users ml-3"></i> قائمة طلابي</a>
-            <a href="teacher_interviews.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-clipboard-list ml-3"></i> التقييم المبدئي والدوري</a>
-            <a href="teacher_virtual_session.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-video ml-3"></i> غرفة الإقراء</a>
+            <a href="teacher_interviews.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-clipboard-list ml-3"></i> التقييم المبدئي واعتماد الخطة</a>
         </nav>
     </aside>
 
@@ -51,7 +50,6 @@
             const { data: { user } } = await window.supabase.auth.getUser();
             if(!user) return window.location.href = 'login.html';
 
-            // إضافة الحقول الناقصة للاستعلام لتفادي الخطأ
             const { data, error } = await window.supabase.from('student_profiles')
                 .select(`user_id, evaluation_status, custom_plan_type, target_parts, target_surahs, users!student_profiles_user_id_fkey(full_name, email, phone)`)
                 .eq('teacher_id', user.id);
@@ -69,7 +67,6 @@
                     let planText = '<span class="text-red-500 font-bold">بانتظار التقييم المبدئي</span>';
                     
                     if (s.evaluation_status === 'completed') {
-                        // معالجة آمنة للنص
                         if(s.target_parts && s.target_parts.startsWith('[')) {
                             planText = '<span class="text-emerald-600 font-bold">تم تقييمه (خطة مخصصة متعددة)</span>';
                         } else if (s.custom_plan_type === 'parts' && s.target_parts) {
@@ -88,9 +85,9 @@
                     tbody.innerHTML += `
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4">
-                                <a href="teacher_student_details.html?id=${s.user_id}" class="font-bold text-emerald-700 hover:underline flex items-center mb-1 text-lg">
-                                    ${s.users.full_name} <i class="fas fa-external-link-alt text-xs ml-2 opacity-70"></i>
-                                </a>
+                                <div class="font-bold text-emerald-800 flex items-center mb-1 text-lg">
+                                    ${s.users.full_name}
+                                </div>
                                 <div class="text-xs text-gray-500 mb-1">${s.users.email}</div>
                                 <div class="text-xs" dir="ltr" style="text-align: right;">${waHtml}</div>
                             </td>
