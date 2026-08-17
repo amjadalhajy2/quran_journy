@@ -77,7 +77,7 @@
             </div>
         </div>
 
-        <!-- قسم الفيديو والمتابعة -->
+        <!-- قسم الفيديو والمتابعة المحدث -->
         <div class="w-full lg:w-[450px] xl:w-[500px] bg-gray-900 flex flex-col shadow-2xl z-20">
             <!-- الهيدر -->
             <div class="p-4 border-b border-gray-800 bg-gray-900">
@@ -105,26 +105,41 @@
 
             <!-- حقول التقييم والتسجيل للحصة -->
             <div class="flex-1 p-4 bg-gray-800 flex flex-col overflow-y-auto space-y-4">
-                <h4 class="font-bold text-emerald-400 border-b border-gray-700 pb-2 mb-2"><i class="fas fa-clipboard-check ml-1"></i> المتابعة والحفظ</h4>
                 
                 <div class="bg-gray-900 p-3 rounded-lg border border-gray-700">
-                    <label class="block text-xs font-bold text-gray-400 mb-2">اختر المقرر المستهدف للحصة</label>
-                    <select id="selectCurriculum" onchange="onCurriculumChange()" class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-sm text-white outline-none focus:border-emerald-500 mb-3"></select>
+                    <select id="selectCurriculum" onchange="onCurriculumChange()" class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-sm font-bold text-white outline-none focus:border-emerald-500 mb-3"></select>
                     
-                    <label class="block text-xs font-bold text-blue-400 mb-1">نطاق الحفظ المطلوب:</label>
-                    <div class="flex space-x-2 space-x-reverse mb-3">
-                        <input type="number" id="targetFrom" onchange="syncActualRange()" class="w-full bg-gray-800 text-white rounded p-2 outline-none focus:border-blue-500 text-center" title="من صفحة">
-                        <input type="number" id="targetTo" onchange="syncActualRange()" class="w-full bg-gray-800 text-white rounded p-2 outline-none focus:border-blue-500 text-center" title="إلى صفحة">
-                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <!-- عمود: المطلوب -->
+                        <div class="bg-blue-900/20 p-2 rounded border border-blue-800/50">
+                            <label class="block text-[11px] font-bold text-blue-400 mb-2">المطلوب</label>
+                            <div class="flex flex-col space-y-2">
+                                <div class="flex items-center"><span class="text-xs text-gray-400 w-6 text-right">من</span><input type="number" id="targetFrom" onchange="handleTargetFromChange()" class="w-full bg-gray-800 text-white rounded p-1 outline-none focus:border-blue-500 text-center text-sm border border-gray-600 font-bold" required></div>
+                                <div class="flex items-center"><span class="text-xs text-gray-400 w-6 text-right">إلى</span><input type="number" id="targetTo" onchange="syncActualRange()" class="w-full bg-gray-800 text-white rounded p-1 outline-none focus:border-blue-500 text-center text-sm border border-gray-600 font-bold" required></div>
+                            </div>
+                        </div>
 
-                    <label class="block text-xs font-bold text-emerald-400 mb-1">الحفظ الفعلي:</label>
-                    <div class="flex space-x-2 space-x-reverse">
-                        <input type="number" id="actualFrom" class="w-full bg-gray-800 text-white rounded p-2 outline-none focus:border-emerald-500 text-center" title="من صفحة">
-                        <input type="number" id="actualTo" class="w-full bg-gray-800 text-white rounded p-2 outline-none focus:border-emerald-500 text-center" title="إلى صفحة">
+                        <!-- عمود: الفعلي -->
+                        <div class="bg-emerald-900/20 p-2 rounded border border-emerald-800/50">
+                            <label class="block text-[11px] font-bold text-emerald-400 mb-2">الفعلي</label>
+                            <div class="flex flex-col space-y-2">
+                                <div class="flex items-center"><span class="text-xs text-gray-400 w-6 text-right">من</span><input type="number" id="actualFrom" class="w-full bg-gray-800 text-white rounded p-1 outline-none focus:border-emerald-500 text-center text-sm border border-gray-600 font-bold"></div>
+                                <div class="flex items-center"><span class="text-xs text-gray-400 w-6 text-right">إلى</span><input type="number" id="actualTo" class="w-full bg-gray-800 text-white rounded p-1 outline-none focus:border-emerald-500 text-center text-sm border border-gray-600 font-bold"></div>
+                            </div>
+                        </div>
+
+                        <!-- عمود: للقادمة -->
+                        <div class="bg-purple-900/20 p-2 rounded border border-purple-800/50">
+                            <label class="block text-[11px] font-bold text-purple-400 mb-2">للقادمة</label>
+                            <div class="flex flex-col space-y-2">
+                                <div class="flex items-center"><span class="text-xs text-gray-400 w-6 text-right">من</span><input type="number" id="nextFrom" onchange="handleNextFromChange()" class="w-full bg-gray-800 text-white rounded p-1 outline-none focus:border-purple-500 text-center text-sm border border-gray-600 font-bold disabled:opacity-40 disabled:cursor-not-allowed"></div>
+                                <div class="flex items-center"><span class="text-xs text-gray-400 w-6 text-right">إلى</span><input type="number" id="nextTo" class="w-full bg-gray-800 text-white rounded p-1 outline-none focus:border-purple-500 text-center text-sm border border-gray-600 font-bold disabled:opacity-40 disabled:cursor-not-allowed"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="flex-1 flex flex-col min-h-[100px]">
+                <div class="flex-1 flex flex-col min-h-[90px]">
                     <label class="block text-xs font-bold text-gray-400 mb-1">ملاحظات المعلم والتوجيهات</label>
                     <textarea id="sessionNotes" class="flex-1 w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white outline-none focus:border-emerald-500 resize-none" placeholder="اكتب ملاحظاتك وتوجيهاتك للطالب هنا..."></textarea>
                 </div>
@@ -220,6 +235,30 @@
         function changePage(direction) { updateQuranPage(currentPage + direction); }
         function jumpToPage(val) { if(val) updateQuranPage(parseInt(val)); }
 
+        // دوال التحكم بنطاقات الحفظ
+        function handleTargetFromChange() {
+            const sel = document.getElementById('selectCurriculum');
+            if(!sel.value) return;
+            const opt = sel.options[sel.selectedIndex];
+            const maxP = parseInt(opt.getAttribute('data-max'));
+            const tf = parseInt(document.getElementById('targetFrom').value) || 1;
+            let tt = tf + 1;
+            if(tt > maxP) tt = maxP;
+            document.getElementById('targetTo').value = tt;
+            syncActualRange();
+        }
+
+        function handleNextFromChange() {
+            const sel = document.getElementById('selectCurriculum');
+            if(!sel.value) return;
+            const opt = sel.options[sel.selectedIndex];
+            const maxP = parseInt(opt.getAttribute('data-max'));
+            const nf = parseInt(document.getElementById('nextFrom').value) || 1;
+            let nt = nf + 1;
+            if(nt > maxP) nt = maxP;
+            document.getElementById('nextTo').value = nt;
+        }
+
         function onCurriculumChange() {
             const sel = document.getElementById('selectCurriculum');
             if(!sel.value) return;
@@ -229,8 +268,20 @@
             
             const tf = document.getElementById('targetFrom');
             const tt = document.getElementById('targetTo');
-            tf.min = minP; tf.max = maxP; tf.value = minP;
-            tt.min = minP; tt.max = maxP; tt.value = maxP;
+            
+            tf.min = minP; tf.max = maxP; 
+            if (!tf.value || parseInt(tf.value) < minP || parseInt(tf.value) > maxP) tf.value = minP;
+            
+            tt.min = minP; tt.max = maxP; 
+            tt.value = parseInt(tf.value) + 1;
+            if (parseInt(tt.value) > maxP) tt.value = maxP;
+
+            // تحديث نطاق (القادمة)
+            const nf = document.getElementById('nextFrom');
+            const nt = document.getElementById('nextTo');
+            nf.min = minP; nf.max = maxP;
+            nt.min = minP; nt.max = maxP;
+
             syncActualRange();
         }
 
@@ -239,8 +290,10 @@
             const tt = document.getElementById('targetTo').value;
             const af = document.getElementById('actualFrom');
             const at = document.getElementById('actualTo');
-            af.min = tf; af.max = tt; af.value = tf;
-            at.min = tf; at.max = tt; at.value = tt;
+            
+            // حصر الحفظ الفعلي ضمن نطاق المطلوب
+            af.min = tf; af.max = tt;
+            at.min = tf; at.max = tt;
         }
 
         async function initializeRoom() {
@@ -268,6 +321,25 @@
 
                     if (sessData.status === 'scheduled') {
                         await window.supabase.from('sessions').update({ status: 'ongoing' }).eq('id', activeSessionId);
+                    }
+
+                    // التحقق من وجود حصة قادمة مجدولة
+                    const { data: nextSessions } = await window.supabase.from('sessions')
+                        .select('id')
+                        .eq('student_id', studentId)
+                        .eq('teacher_id', user.id)
+                        .eq('status', 'scheduled')
+                        .neq('id', activeSessionId)
+                        .order('session_date', {ascending: true})
+                        .limit(1);
+
+                    const hasNextSession = nextSessions && nextSessions.length > 0;
+                    if (!hasNextSession) {
+                        const nf = document.getElementById('nextFrom');
+                        const nt = document.getElementById('nextTo');
+                        nf.disabled = true; nt.disabled = true;
+                        nf.title = "لا يوجد حصة قادمة مجدولة للطالب";
+                        nt.title = "لا يوجد حصة قادمة مجدولة للطالب";
                     }
 
                     const { data: profile } = await window.supabase.from('student_profiles')
@@ -316,6 +388,7 @@
                             sel.innerHTML += `<option value="${plan.id}" data-plan="مقرر ${plan.id}" data-min="${planMinPage}" data-max="${planMaxPage}">${lbl}</option>`;
                         });
 
+                        // تعبئة البيانات إن وجدت مسبقاً
                         if(sessData.next_assignment && sessData.next_assignment.includes('ص')) {
                             const matchName = sessData.next_assignment.match(/مقرر (\d+)/);
                             if(matchName) sel.value = matchName[1];
@@ -330,6 +403,9 @@
                             onCurriculumChange();
                         }
                         
+                        document.getElementById('actualFrom').value = '';
+                        document.getElementById('actualTo').value = '';
+
                         if (sessData.memorized_from && sessData.memorized_from.includes('ص')) {
                             const numsAct = sessData.memorized_from.match(/ص (\d+) إلى (\d+)/);
                             if (numsAct) {
@@ -362,12 +438,20 @@
             const tt = document.getElementById('targetTo').value;
             const af = document.getElementById('actualFrom').value;
             const at = document.getElementById('actualTo').value;
+            const nf = document.getElementById('nextFrom').value;
+            const nt = document.getElementById('nextTo').value;
             const notes = document.getElementById('sessionNotes').value;
 
             let targetStr = '', actualStr = '';
             if(sel.value) {
                 targetStr = `${opt.getAttribute('data-plan')} - ص ${tf} إلى ${tt}`;
-                actualStr = `ص ${af} إلى ${at}`;
+                
+                // حفظ المقرر القادم إن وجد في نفس الخانة للمراجعة
+                if (!document.getElementById('nextFrom').disabled && nf && nt) {
+                    targetStr += ` | للقادمة: ص ${nf} إلى ${nt}`;
+                }
+                
+                if (af && at) actualStr = `ص ${af} إلى ${at}`;
             }
 
             const { error } = await window.supabase.from('sessions').update({
