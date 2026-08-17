@@ -344,7 +344,7 @@
             return sessionsToInsert;
         }
 
-        async function confirmApproveRenew() {
+async function confirmApproveRenew() {
             const type = document.querySelector('input[name="renewScheduleType"]:checked').value;
             
             // تحقق من تعبئة الخانات إذا كانت التواقيت جديدة
@@ -379,8 +379,8 @@
             const { error: subErr } = await window.supabase.rpc('update_subscription_status', { p_sub_id: subId, p_status: 'approved' });
             if (subErr) { btn.disabled = false; btn.textContent = 'اعتماد التجديد وجدولة الحصص'; return alert('خطأ في اعتماد الاشتراك: ' + subErr.message); }
 
-            // 2. تحديث المعلم للطالب
-            const { error: profErr } = await window.supabase.from('student_profiles').update({ teacher_id: teacherId }).eq('user_id', studentId);
+            // 2. تحديث المعلم للطالب (استخدام الدالة الخلفية RPC لتجاوز قيود الأمان RLS بنجاح)
+            const { error: profErr } = await window.supabase.rpc('assign_teacher', { p_student_id: studentId, p_teacher_id: teacherId });
             if (profErr) { btn.disabled = false; btn.textContent = 'اعتماد التجديد وجدولة الحصص'; return alert('خطأ في تحديث ملف الطالب: ' + profErr.message); }
 
             // 3. جدولة الحصص الجديدة
