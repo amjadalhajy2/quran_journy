@@ -49,6 +49,7 @@
             </div>
         </div>
 
+        <!-- نافذة الاعتماد وتعيين المعلم (للتسجيل الجديد) -->
         <div id="approveModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
             <div class="bg-white rounded-xl p-6 w-full max-w-md">
                 <h3 class="text-xl font-bold mb-4 text-emerald-700">اعتماد طالب جديد وتعيين معلم</h3>
@@ -62,6 +63,7 @@
             </div>
         </div>
 
+        <!-- نافذة اعتماد التجديد وجدولة الحصص المحدثة -->
         <div id="renewModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 overflow-y-auto">
             <div class="bg-white rounded-xl p-6 w-full max-w-lg my-8 shadow-2xl">
                 <h3 class="text-xl font-bold mb-4 text-blue-700 border-b pb-2">اعتماد تجديد الاشتراك وجدولة الحصص</h3>
@@ -78,7 +80,7 @@
                     </div>
 
                     <div id="renewScheduleTypeContainer" class="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                        <label class="block font-bold text-sm text-blue-800 mb-2">إعداد جدول الحصص (تبدأ من الأسبوع القادم):</label>
+                        <label class="block font-bold text-sm text-blue-800 mb-2">إعداد جدول الحصص (تبدأ بناءً على آخر حصة):</label>
                         <div id="renewScheduleRadioGroup" class="flex space-x-6 space-x-reverse mb-2">
                             <label class="flex items-center font-bold cursor-pointer">
                                 <input type="radio" name="renewScheduleType" value="same" class="w-4 h-4 text-blue-600 focus:ring-blue-500 ml-2" onchange="toggleRenewScheduleInputs()">
@@ -264,22 +266,26 @@
             }
         }
 
-        function generateRenewSessionsArray(studentId, teacherId, scheduleArr, durationMins) {
+        function generateRenewSessionsArray(studentId, teacherId, scheduleArr, durationMins, baseDateStr) {
             let sessionsToInsert = [];
-            let today = new Date();
-            // تبدأ الجدولة من الأسبوع القادم (7 أيام من الآن)
-            for(let i=7; i<35; i++) {
-                let currentDate = new Date(today);
-                currentDate.setDate(today.getDate() + i);
-                let currentDayNum = currentDate.getDay(); 
+            let baseDate = new Date(baseDateStr);
+            baseDate.setHours(0,0,0,0);
+            
+            scheduleArr.forEach(sch => {
+                let dayNum = sch.day;
+                let timeStr = sch.time;
+                let [hours, mins] = timeStr.split(':').map(Number);
 
-                let matchedSchedule = scheduleArr.find(s => s.day === currentDayNum);
-                if(matchedSchedule) {
-                    const dateStr = getLocalDateString(currentDate);
-                    const startTimeStr = matchedSchedule.time;
+                let firstOccurrence = new Date(baseDate);
+                let dayDiff = (dayNum - firstOccurrence.getDay() + 7) % 7;
+                firstOccurrence.setDate(firstOccurrence.getDate() + dayDiff);
+                
+                for(let week=0; week<4; week++) {
+                    let sessionDate = new Date(firstOccurrence);
+                    sessionDate.setDate(sessionDate.getDate() + (week * 7));
                     
-                    let [hours, mins] = startTimeStr.split(':').map(Number);
-                    let endDate = new Date(currentDate);
+                    const dateStr = getLocalDateString(sessionDate);
+                    let endDate = new Date(sessionDate);
                     endDate.setHours(hours, mins + durationMins, 0, 0);
                     const endTimeStr = String(endDate.getHours()).padStart(2, '0') + ':' + String(endDate.getMinutes()).padStart(2, '0');
 
@@ -287,12 +293,12 @@
                         teacher_id: teacherId,
                         student_id: studentId,
                         session_date: dateStr,
-                        start_time: startTimeStr + ':00',
+                        start_time: timeStr + ':00',
                         end_time: endTimeStr + ':00',
                         status: 'scheduled'
                     });
                 }
-            }
+            });
             return sessionsToInsert;
         }
 
@@ -326,7 +332,23 @@
                 }
             }
 
-            const sessionsToInsert = generateRenewSessionsArray(studentId, teacherId, scheduleArr, durationMins);
+            // استخراج تاريخ آخر حصة لتحديد موعد بدء التجديد
+            const { data: lastSess } = await window.supabase.from('sessions')
+                .select('session_date, status')
+                .eq('student_id', studentId)
+                .order('session_date', { ascending: false })
+                .limit(1);
+
+            let baseDate = new Date();
+            if (lastSess && lastSess.length > 0 && (lastSess[0].status === 'scheduled' || lastSess[0].status === 'ongoing')) {
+                // إذا كانت الحصة الأخيرة لم تنتهِ بعد، نبدأ الجدولة بعدها
+                baseDate = new Date(lastSess[0].session_date);
+            }
+            // إضافة يوم واحد للبدء من اليوم التالي دائماً، سواء كانت منتهية أم لا
+            baseDate.setDate(baseDate.getDate() + 1); 
+
+            const baseDateStr = getLocalDateString(baseDate);
+            const sessionsToInsert = generateRenewSessionsArray(studentId, teacherId, scheduleArr, durationMins, baseDateStr);
             
             // كشف التعارض قبل الإدراج
             if (sessionsToInsert.length > 0) {
@@ -354,6 +376,7 @@
                 }
             }
 
+            // الاعتماد النهائي
             const { error: subErr } = await window.supabase.rpc('update_subscription_status', { p_sub_id: subId, p_status: 'approved' });
             if (subErr) { btn.disabled = false; btn.textContent = 'اعتماد التجديد وجدولة الحصص'; return alert('خطأ في اعتماد الاشتراك: ' + subErr.message); }
 
