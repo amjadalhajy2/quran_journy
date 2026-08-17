@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>التقييم المبدئي والدوري</title>
+    <title>التقييم المبدئي واعتماد الخطة</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style> @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap'); body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; } </style>
@@ -14,8 +14,7 @@
         <nav class="flex-1 p-4 space-y-2 text-sm font-medium">
             <a href="teacher_dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300"><i class="fas fa-home ml-3"></i> الرئيسية</a>
             <a href="teacher_students_list.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300"><i class="fas fa-users ml-3"></i> قائمة طلابي</a>
-            <a href="teacher_interviews.html" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow"><i class="fas fa-clipboard-list ml-3"></i> التقييم المبدئي والدوري</a>
-            <a href="teacher_virtual_session.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300"><i class="fas fa-video ml-3"></i> غرفة الإقراء</a>
+            <a href="teacher_interviews.html" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow"><i class="fas fa-clipboard-list ml-3"></i> التقييم المبدئي واعتماد الخطة</a>
         </nav>
     </aside>
 
@@ -28,7 +27,7 @@
                 <i class="fas fa-calendar-plus ml-2"></i> تعيين حصة التقييم المبدئي
             </button>
             <button id="btnTab2" onclick="switchTab('tab2')" class="bg-white text-gray-600 border border-gray-300 px-6 py-3 rounded-lg font-bold shadow-sm hover:bg-gray-50 transition flex items-center">
-                <i class="fas fa-clipboard-check ml-2"></i> التقييم الدوري واعتماد الخطة
+                <i class="fas fa-clipboard-check ml-2"></i> التقييم المبدئي واعتماد الخطة
             </button>
         </div>
 
@@ -66,7 +65,7 @@
             </form>
         </div>
 
-        <!-- التبويب الثاني: إجراء التقييم واعتماد الخطة (المحتوى السابق) -->
+        <!-- التبويب الثاني: إجراء التقييم واعتماد الخطة -->
         <div id="tab2" class="bg-white p-8 rounded-xl shadow-sm border max-w-4xl hidden">
             <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-lg text-sm text-emerald-800 font-bold mb-6">
                 <i class="fas fa-info-circle ml-1"></i> استخدم هذه الواجهة بعد الانتهاء من مقابلة الطالب لتسجيل نتيجته، وتحديد المقررات، وجدولة حصصه الدائمة للشهر القادم.
@@ -96,7 +95,6 @@
                         <h3 class="font-bold text-emerald-700"><i class="far fa-calendar-alt ml-2"></i> جدولة الحصص الأسبوعية الدائمة</h3>
                         <span id="packageInfoBadge" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold"></span>
                     </div>
-                    <!-- سيتم توليد حقول الأيام والأوقات هنا -->
                     <div id="scheduleInputsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                 </div>
 
@@ -125,12 +123,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-b pb-6">
-                    <div>
-                        <label class="block font-bold text-sm mb-2 text-gray-700">جودة التلاوة المبدئية (من 10)</label>
-                        <input type="range" min="1" max="10" value="5" class="w-full accent-emerald-600" oninput="document.getElementById('tajweedScore').innerText = this.value">
-                        <div class="text-center font-black text-2xl text-emerald-600 mt-2" id="tajweedScore">5</div>
-                    </div>
+                <div class="grid grid-cols-1 gap-6 border-b pb-6">
                     <div>
                         <label class="block font-bold text-sm mb-2 text-gray-700">ملاحظات المعلم وتوصياته للطالب</label>
                         <textarea id="evalNotes" rows="3" class="w-full border rounded-lg p-3 focus:border-emerald-500 outline-none" required></textarea>
@@ -150,7 +143,7 @@
 
     <script src="supabase.js"></script>
     <script>
-let currentUserId = null;
+        let currentUserId = null;
         let pendingStudentsData = []; 
 
         function getLocalDateString(date) {
@@ -295,7 +288,6 @@ let currentUserId = null;
             scheduleSection.classList.remove('hidden');
         }
 
-        // تم التعديل هنا لضمان استخدام getLocalDateString
         function generateSessionsArray(studentId, durationMins) {
             const daysSelects = document.querySelectorAll('.schedule-day');
             const timesInputs = document.querySelectorAll('.schedule-time');
@@ -315,7 +307,7 @@ let currentUserId = null;
 
                 let matchedSchedule = weeklySchedule.find(s => s.day === currentDayNum);
                 if(matchedSchedule) {
-                    const dateStr = getLocalDateString(currentDate); // استخدام التوقيت المحلي بدلاً من toISOString
+                    const dateStr = getLocalDateString(currentDate);
                     const startTimeStr = matchedSchedule.time;
                     
                     let [hours, mins] = startTimeStr.split(':').map(Number);
