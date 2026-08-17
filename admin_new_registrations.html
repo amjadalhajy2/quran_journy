@@ -49,7 +49,7 @@
             </div>
         </div>
 
-        <!-- نافذة الاعتماد وتعيين المعلم (للتسجيل الجديد فقط) -->
+        <!-- نافذة الاعتماد وتعيين المعلم (للتسجيل الجديد) -->
         <div id="approveModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
             <div class="bg-white rounded-xl p-6 w-full max-w-md">
                 <h3 class="text-xl font-bold mb-4 text-emerald-700">اعتماد طالب جديد وتعيين معلم</h3>
@@ -62,20 +62,75 @@
                 </div>
             </div>
         </div>
+
+        <!-- نافذة اعتماد التجديد وجدولة الحصص المحدثة -->
+        <div id="renewModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 overflow-y-auto">
+            <div class="bg-white rounded-xl p-6 w-full max-w-lg my-8 shadow-2xl">
+                <h3 class="text-xl font-bold mb-4 text-blue-700 border-b pb-2">اعتماد تجديد الاشتراك</h3>
+                <input type="hidden" id="renewSubId">
+                <input type="hidden" id="renewStudentId">
+                <input type="hidden" id="renewDuration">
+                <input type="hidden" id="renewOldScheduleJson">
+
+                <div class="space-y-4">
+                    <!-- تعيين المعلم -->
+                    <div>
+                        <label class="block font-bold text-sm text-gray-700 mb-1">المعلم المشرف:</label>
+                        <select id="renewTeacherSelect" class="w-full border p-3 rounded-lg font-bold bg-gray-50 focus:border-blue-500 outline-none"></select>
+                        <p class="text-[11px] text-gray-500 mt-1">يمكنك إبقاء المعلم الحالي أو تغييره لطالب آخر.</p>
+                    </div>
+
+                    <!-- إعداد جدول الحصص -->
+                    <div id="renewScheduleTypeContainer" class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <label class="block font-bold text-sm text-blue-800 mb-2">إعداد جدول الحصص للباقة الجديدة:</label>
+                        <div id="renewScheduleRadioGroup" class="flex space-x-6 space-x-reverse mb-2">
+                            <label class="flex items-center font-bold cursor-pointer">
+                                <input type="radio" name="renewScheduleType" value="same" class="w-4 h-4 text-blue-600 focus:ring-blue-500 ml-2" onchange="toggleRenewScheduleInputs()">
+                                اعتماد التواقيت السابقة
+                            </label>
+                            <label class="flex items-center font-bold cursor-pointer">
+                                <input type="radio" name="renewScheduleType" value="new" class="w-4 h-4 text-blue-600 focus:ring-blue-500 ml-2" onchange="toggleRenewScheduleInputs()" checked>
+                                تحديد تواقيت جديدة
+                            </label>
+                        </div>
+                        <div id="renewScheduleNotice" class="text-xs text-red-600 font-bold hidden bg-red-50 p-2 rounded border border-red-200 mt-2">
+                            <i class="fas fa-exclamation-triangle ml-1"></i> الباقة المطلوبة مختلفة عن السابقة (أو تعذر جلب الجدول السابق) - يجب إدخال تواقيت جديدة متوافقة مع الباقة.
+                        </div>
+                    </div>
+
+                    <!-- حقول ادخال الجدول الجديد -->
+                    <div id="renewScheduleInputsContainer" class="grid grid-cols-1 gap-3 max-h-48 overflow-y-auto">
+                        <!-- تضاف برمجياً -->
+                    </div>
+                </div>
+
+                <div class="flex space-x-2 space-x-reverse mt-6 pt-4 border-t">
+                    <button onclick="confirmApproveRenew()" id="renewSubmitBtn" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition shadow">اعتماد التجديد وجدولة الحصص</button>
+                    <button onclick="document.getElementById('renewModal').classList.add('hidden')" class="w-full bg-gray-200 p-3 rounded-lg font-bold hover:bg-gray-300 transition text-gray-700">إلغاء</button>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script src="supabase.js"></script>
     <script>
+        let availableTeachers = [];
+
+        function getLocalDateString(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
         async function loadPendingRequests() {
             const tbody = document.getElementById('requestsTable');
             
-            // جلب الاشتراكات المعلقة عبر استعلام مباشر لجلب المعرفات بشكل دقيق
             const { data: subs, error } = await window.supabase.from('subscriptions')
-                .select(`id, created_at, receipt_url, student_id, packages(name, price), users!subscriptions_student_id_fkey(full_name, email, phone)`)
+                .select(`id, created_at, receipt_url, student_id, package_id, packages(id, name, price, sessions_per_week, session_duration), users!subscriptions_student_id_fkey(full_name, email, phone)`)
                 .eq('status', 'pending')
                 .order('created_at', { ascending: false });
                 
-            // جلب ملفات الطلاب للتحقق من وجود معلم (للتمييز بين التجديد والجديد)
             const { data: profiles } = await window.supabase.from('student_profiles').select('user_id, teacher_id');
 
             tbody.innerHTML = '';
@@ -95,7 +150,6 @@
 
                     const { data: urlData } = window.supabase.storage.from('payment-receipts').getPublicUrl(req.receipt_url);
                     
-                    // تحديد نوع الطلب
                     const studentProfile = profiles?.find(p => p.user_id === req.student_id);
                     const isRenewal = studentProfile && studentProfile.teacher_id !== null;
                     
@@ -103,9 +157,9 @@
                         ? `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold block mt-2 w-max border border-blue-200">تجديد اشتراك</span>`
                         : `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold block mt-2 w-max border border-emerald-200">تسجيل جديد</span>`;
 
-                    // زر الاعتماد يختلف حسب نوع الطلب
+                    // زر الاعتماد
                     const approveBtn = isRenewal
-                        ? `<button onclick="approveRenewal('${req.id}')" class="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg font-bold shadow-sm flex items-center w-full justify-center"><i class="fas fa-check-double ml-2"></i> اعتماد التجديد</button>`
+                        ? `<button onclick="openRenewModal('${req.id}', '${req.student_id}', '${req.packages?.id}', ${req.packages?.sessions_per_week || 3}, ${req.packages?.session_duration || 30}, '${studentProfile.teacher_id}')" class="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg font-bold shadow-sm flex items-center w-full justify-center"><i class="fas fa-check-double ml-2"></i> اعتماد التجديد والجدولة</button>`
                         : `<button onclick="openAssignModal('${req.id}')" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white px-4 py-2 rounded-lg font-bold shadow-sm flex items-center w-full justify-center"><i class="fas fa-user-check ml-2"></i> اعتماد وتعيين</button>`;
 
                     tbody.innerHTML += `
@@ -135,14 +189,13 @@
             }
         }
 
-        let availableTeachers = [];
         window.addEventListener('load', async () => {
             const { data } = await window.supabase.from('users').select('id, full_name').eq('role', 'teacher');
             availableTeachers = data || [];
             loadPendingRequests();
         });
 
-        // اعتماد تسجيل جديد
+        // ------------------ قسم التسجيل الجديد ------------------
         function openAssignModal(subId) {
             document.getElementById('pendingSubId').value = subId;
             const select = document.getElementById('teacherSelect');
@@ -162,12 +215,184 @@
             else { document.getElementById('approveModal').classList.add('hidden'); loadPendingRequests(); }
         }
 
-        // اعتماد تجديد اشتراك (بدون تغيير المعلم)
-        async function approveRenewal(subId) {
-            if(!confirm('سيتم اعتماد تجديد الاشتراك وبقاء الطالب مع نفس معلمه الحالي. المتابعة؟')) return;
-            const { error } = await window.supabase.rpc('update_subscription_status', { p_sub_id: subId, p_status: 'approved' });
-            if (error) alert('خطأ: ' + error.message);
-            else loadPendingRequests();
+        // ------------------ قسم تجديد الاشتراك المطور ------------------
+        async function openRenewModal(subId, studentId, newPkgId, sessionsPerWeek, sessionDuration, currentTeacherId) {
+            document.getElementById('renewSubId').value = subId;
+            document.getElementById('renewStudentId').value = studentId;
+            document.getElementById('renewDuration').value = sessionDuration;
+
+            // تعبئة قائمة المعلمين
+            const select = document.getElementById('renewTeacherSelect');
+            select.innerHTML = '';
+            availableTeachers.forEach(t => {
+                const isSelected = t.id === currentTeacherId ? 'selected' : '';
+                select.innerHTML += `<option value="${t.id}" ${isSelected}>${t.full_name}</option>`;
+            });
+
+            // فحص الباقة السابقة لمعرفة ما إذا كانت نفسها
+            const { data: prevSubs } = await window.supabase.from('subscriptions')
+                .select('package_id')
+                .eq('student_id', studentId)
+                .eq('status', 'approved')
+                .order('created_at', {ascending: false})
+                .limit(1);
+
+            let isSamePackage = (prevSubs && prevSubs.length > 0 && prevSubs[0].package_id === newPkgId);
+
+            // استخراج التواقيت السابقة من أحدث حصص الطالب
+            let oldSchedule = [];
+            const { data: recentSessions } = await window.supabase.from('sessions')
+                .select('session_date, start_time')
+                .eq('student_id', studentId)
+                .order('session_date', {ascending: false})
+                .limit(sessionsPerWeek); // جلب حصص أسبوع كامل تقريباً
+
+            if (recentSessions && recentSessions.length === sessionsPerWeek) {
+                oldSchedule = recentSessions.map(s => {
+                    return { day: new Date(s.session_date).getDay(), time: s.start_time.substring(0,5) };
+                });
+            }
+
+            document.getElementById('renewOldScheduleJson').value = JSON.stringify(oldSchedule);
+
+            const radioGroup = document.getElementById('renewScheduleRadioGroup');
+            const notice = document.getElementById('renewScheduleNotice');
+
+            // إذا كانت الباقة نفسها ووجدنا جدول سابق مكتمل
+            if (isSamePackage && oldSchedule.length === sessionsPerWeek) {
+                radioGroup.classList.remove('hidden');
+                notice.classList.add('hidden');
+                document.querySelector('input[name="renewScheduleType"][value="same"]').checked = true;
+            } else {
+                // باقة مختلفة أو الجدول السابق لا يكفي لاستنساخه
+                radioGroup.classList.add('hidden');
+                notice.classList.remove('hidden');
+                document.querySelector('input[name="renewScheduleType"][value="new"]').checked = true;
+            }
+
+            // توليد حقول إدخال التواقيت الجديدة بناءً على عدد الحصص
+            const container = document.getElementById('renewScheduleInputsContainer');
+            container.innerHTML = '';
+            for(let i=0; i<sessionsPerWeek; i++) {
+                container.innerHTML += `
+                    <div class="bg-white border p-3 rounded-lg flex space-x-4 space-x-reverse">
+                        <div class="w-1/2">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">الحصة ${i+1}: اليوم</label>
+                            <select class="renew-schedule-day w-full border rounded p-2 text-sm font-bold bg-gray-50 outline-none focus:border-blue-500" required>
+                                <option value="">اختر اليوم...</option>
+                                <option value="0">الأحد</option><option value="1">الإثنين</option><option value="2">الثلاثاء</option>
+                                <option value="3">الأربعاء</option><option value="4">الخميس</option><option value="5">الجمعة</option><option value="6">السبت</option>
+                            </select>
+                        </div>
+                        <div class="w-1/2">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">وقت البدء</label>
+                            <input type="time" class="renew-schedule-time w-full border rounded p-2 text-sm font-bold bg-gray-50 outline-none focus:border-blue-500" required>
+                        </div>
+                    </div>
+                `;
+            }
+
+            toggleRenewScheduleInputs();
+
+            document.getElementById('renewModal').classList.remove('hidden');
+            document.getElementById('renewModal').classList.add('flex');
+        }
+
+        function toggleRenewScheduleInputs() {
+            const type = document.querySelector('input[name="renewScheduleType"]:checked').value;
+            const container = document.getElementById('renewScheduleInputsContainer');
+            const inputs = container.querySelectorAll('select, input');
+            
+            if (type === 'same') {
+                container.classList.add('hidden');
+                inputs.forEach(el => el.removeAttribute('required'));
+            } else {
+                container.classList.remove('hidden');
+                inputs.forEach(el => el.setAttribute('required', 'required'));
+            }
+        }
+
+        function generateRenewSessionsArray(studentId, teacherId, scheduleArr, durationMins) {
+            let sessionsToInsert = [];
+            let today = new Date();
+            
+            for(let i=0; i<28; i++) {
+                let currentDate = new Date(today);
+                currentDate.setDate(today.getDate() + i);
+                let currentDayNum = currentDate.getDay(); 
+
+                let matchedSchedule = scheduleArr.find(s => s.day === currentDayNum);
+                if(matchedSchedule) {
+                    const dateStr = getLocalDateString(currentDate);
+                    const startTimeStr = matchedSchedule.time;
+                    
+                    let [hours, mins] = startTimeStr.split(':').map(Number);
+                    let endDate = new Date(currentDate);
+                    endDate.setHours(hours, mins + durationMins, 0, 0);
+                    const endTimeStr = endDate.toTimeString().split(' ')[0].substring(0, 5); 
+
+                    sessionsToInsert.push({
+                        teacher_id: teacherId,
+                        student_id: studentId,
+                        session_date: dateStr,
+                        start_time: startTimeStr + ':00',
+                        end_time: endTimeStr + ':00',
+                        status: 'scheduled'
+                    });
+                }
+            }
+            return sessionsToInsert;
+        }
+
+        async function confirmApproveRenew() {
+            const type = document.querySelector('input[name="renewScheduleType"]:checked').value;
+            
+            // تحقق من تعبئة الخانات إذا كانت التواقيت جديدة
+            if (type === 'new') {
+                const selects = document.querySelectorAll('.renew-schedule-day');
+                const times = document.querySelectorAll('.renew-schedule-time');
+                for(let i=0; i<selects.length; i++) {
+                    if(!selects[i].value || !times[i].value) return alert('الرجاء إكمال كافة التواقيت الجديدة للحصص!');
+                }
+            }
+
+            const btn = document.getElementById('renewSubmitBtn');
+            btn.disabled = true; btn.textContent = 'جاري الاعتماد...';
+
+            const subId = document.getElementById('renewSubId').value;
+            const studentId = document.getElementById('renewStudentId').value;
+            const durationMins = parseInt(document.getElementById('renewDuration').value);
+            const teacherId = document.getElementById('renewTeacherSelect').value;
+            
+            let scheduleArr = [];
+            if (type === 'same') {
+                scheduleArr = JSON.parse(document.getElementById('renewOldScheduleJson').value);
+            } else {
+                const daysSelects = document.querySelectorAll('.renew-schedule-day');
+                const timesInputs = document.querySelectorAll('.renew-schedule-time');
+                for(let i=0; i<daysSelects.length; i++) {
+                    scheduleArr.push({ day: parseInt(daysSelects[i].value), time: timesInputs[i].value });
+                }
+            }
+
+            // 1. اعتماد الاشتراك المالي
+            const { error: subErr } = await window.supabase.rpc('update_subscription_status', { p_sub_id: subId, p_status: 'approved' });
+            if (subErr) { btn.disabled = false; btn.textContent = 'اعتماد التجديد وجدولة الحصص'; return alert('خطأ في اعتماد الاشتراك: ' + subErr.message); }
+
+            // 2. تحديث المعلم للطالب
+            const { error: profErr } = await window.supabase.from('student_profiles').update({ teacher_id: teacherId }).eq('user_id', studentId);
+            if (profErr) { btn.disabled = false; btn.textContent = 'اعتماد التجديد وجدولة الحصص'; return alert('خطأ في تحديث ملف الطالب: ' + profErr.message); }
+
+            // 3. جدولة الحصص الجديدة
+            const sessionsToInsert = generateRenewSessionsArray(studentId, teacherId, scheduleArr, durationMins);
+            if (sessionsToInsert.length > 0) {
+                const { error: sessErr } = await window.supabase.from('sessions').insert(sessionsToInsert);
+                if (sessErr) { btn.disabled = false; btn.textContent = 'اعتماد التجديد وجدولة الحصص'; return alert('الاشتراك اعتُمد، لكن حدث خطأ في الجدولة التلقائية: ' + sessErr.message); }
+            }
+
+            document.getElementById('renewModal').classList.add('hidden');
+            btn.disabled = false; btn.textContent = 'اعتماد التجديد وجدولة الحصص';
+            loadPendingRequests();
         }
 
         // رفض
