@@ -123,7 +123,6 @@
                 .gte('session_date', startStr)
                 .lte('session_date', endStr);
 
-            // التحقق من الحصص التي مر وقتها وتحديثها لـ "انتهت" تلقائياً
             const now = new Date();
             const currentDateString = getLocalDateString(now);
             const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -142,7 +141,7 @@
                         }
                         if (isPast) {
                             await window.supabase.from('sessions').update({ status: 'completed' }).eq('id', sess.id);
-                            sess.status = 'completed'; // تحديثها محلياً في الجدول فوراً
+                            sess.status = 'completed'; 
                         }
                     }
                 }
@@ -218,18 +217,32 @@
                                 cardStyle = 'bg-emerald-50 border-emerald-200';
                         }
                         
-                        // جعل البطاقة قابلة للضغط وتنقل إلى الغرفة ممررةً الـ session_id
-                        colHtml += `<a href="teacher_virtual_session.html?session_id=${sess.id}" class="block ${cardStyle} border p-2 rounded-lg text-sm relative transition hover:shadow-md flex flex-col cursor-pointer">
-                            <div class="font-bold text-gray-800 text-xs mb-1.5 text-center">${sess.users.full_name}</div>
-                            
-                            <div class="border-t border-gray-200/60 pt-1.5 pb-1.5 text-center w-full whitespace-nowrap">
-                                <span class="font-bold text-gray-500 text-[11px] inline-block"><i class="far fa-clock ml-1"></i>${sTime} - ${eTime}</span>
-                            </div>
-                            
-                            <div class="border-t border-gray-200/60 pt-1.5 mt-auto text-center w-full">
-                                ${statusBadge}
-                            </div>
-                        </a>`;
+                        // إلغاء الدخول للحصص المنتهية والملغية
+                        if (sess.status === 'completed' || sess.status === 'cancelled') {
+                            colHtml += `<div class="block ${cardStyle} border p-2 rounded-lg text-sm relative flex flex-col">
+                                <div class="font-bold text-gray-800 text-xs mb-1.5 text-center">${sess.users.full_name}</div>
+                                
+                                <div class="border-t border-gray-200/60 pt-1.5 pb-1.5 text-center w-full whitespace-nowrap">
+                                    <span class="font-bold text-gray-500 text-[11px] inline-block"><i class="far fa-clock ml-1"></i>${sTime} - ${eTime}</span>
+                                </div>
+                                
+                                <div class="border-t border-gray-200/60 pt-1.5 mt-auto text-center w-full">
+                                    ${statusBadge}
+                                </div>
+                            </div>`;
+                        } else {
+                            colHtml += `<a href="teacher_virtual_session.html?session_id=${sess.id}" class="block ${cardStyle} border p-2 rounded-lg text-sm relative transition hover:shadow-md flex flex-col cursor-pointer">
+                                <div class="font-bold text-gray-800 text-xs mb-1.5 text-center">${sess.users.full_name}</div>
+                                
+                                <div class="border-t border-gray-200/60 pt-1.5 pb-1.5 text-center w-full whitespace-nowrap">
+                                    <span class="font-bold text-gray-500 text-[11px] inline-block"><i class="far fa-clock ml-1"></i>${sTime} - ${eTime}</span>
+                                </div>
+                                
+                                <div class="border-t border-gray-200/60 pt-1.5 mt-auto text-center w-full">
+                                    ${statusBadge}
+                                </div>
+                            </a>`;
+                        }
                     });
                 } else {
                     colHtml += `<div class="text-center text-gray-400 font-bold text-xs mt-6 flex flex-col items-center">
