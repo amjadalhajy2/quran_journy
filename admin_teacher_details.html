@@ -17,6 +17,7 @@
     </header>
 
     <main class="flex-1 overflow-y-auto p-6 space-y-6">
+        <!-- الطلاب الموكلين -->
         <div class="bg-white rounded-xl shadow-sm border p-6">
             <h3 class="font-bold text-lg mb-4 text-emerald-700 border-b pb-2"><i class="fas fa-users ml-2"></i> الطلاب الموكلين للمعلم</h3>
             <div id="studentsList" class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -24,13 +25,17 @@
             </div>
         </div>
 
+        <!-- الجدول الأسبوعي (بالتصميم الجديد) -->
         <div class="bg-white rounded-xl shadow-sm border p-6">
             <div class="flex justify-between items-center mb-6 border-b pb-4">
                 <h3 class="font-bold text-lg text-emerald-700"><i class="fas fa-calendar-week ml-2"></i> الجدول الأسبوعي للحلقات</h3>
-                <div class="flex items-center bg-gray-100 rounded-lg p-1">
-                    <button onclick="changeWeek(1)" class="px-4 py-1 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition"><i class="fas fa-chevron-right"></i> الأسبوع القادم</button>
-                    <span id="weekDisplay" class="px-4 font-bold text-emerald-700 text-sm">الأسبوع الحالي</span>
-                    <button onclick="changeWeek(-1)" class="px-4 py-1 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition">الأسبوع السابق <i class="fas fa-chevron-left"></i></button>
+                <div class="flex items-center bg-gray-100 rounded-lg p-1 space-x-1 space-x-reverse">
+                    <button onclick="changeWeek(1)" class="px-4 py-1.5 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition">التالي <i class="fas fa-chevron-left mr-1 text-xs"></i></button>
+                    
+                    <span id="weekDisplay" class="px-4 font-bold text-emerald-700 text-sm border-x border-gray-300">الأسبوع الحالي</span>
+                    <button onclick="resetToToday()" class="px-3 py-1.5 hover:bg-white rounded text-emerald-600 font-bold shadow-sm transition border border-emerald-200 bg-emerald-50">اليوم</button>
+                    
+                    <button onclick="changeWeek(-1)" class="px-4 py-1.5 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition"><i class="fas fa-chevron-right ml-1 text-xs"></i> السابق</button>
                 </div>
             </div>
 
@@ -121,14 +126,41 @@
             document.getElementById('weekDisplay').textContent = `${startOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})} - ${endOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})}`;
 
             const { data: sessions } = await window.supabase.from('sessions')
-                .select('session_date, start_time, end_time, status, users!sessions_student_id_fkey(full_name)')
+                .select('id, session_date, start_time, end_time, status, users!sessions_student_id_fkey(full_name)')
                 .eq('teacher_id', teacherId)
                 .gte('session_date', startStr)
                 .lte('session_date', endStr);
 
+            // تحديث الحصص المنتهية تلقائياً
+            const now = new Date();
+            const currentDateString = getLocalDateString(now);
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+            if (sessions) {
+                for (let sess of sessions) {
+                    if (sess.status === 'scheduled' || sess.status === 'ongoing') {
+                        let isPast = false;
+                        if (sess.session_date < currentDateString) {
+                            isPast = true;
+                        } else if (sess.session_date === currentDateString) {
+                            const [endH, endM] = sess.end_time.substring(0,5).split(':').map(Number);
+                            if ((endH * 60 + endM) < currentMinutes) {
+                                isPast = true;
+                            }
+                        }
+                        if (isPast) {
+                            await window.supabase.from('sessions').update({ status: 'completed' }).eq('id', sess.id);
+                            sess.status = 'completed'; 
+                        }
+                    }
+                }
+            }
+
             const daysNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
             const grid = document.getElementById('calendarGrid');
             grid.innerHTML = '';
+
+            const actualTodayString = getLocalDateString(new Date());
 
             for(let i=0; i<7; i++) {
                 const dayDate = new Date(startOfWeek);
@@ -139,20 +171,20 @@
                 const daySessions = (sessions || []).filter(s => s.session_date === dateString);
                 
                 let headerClass = 'bg-gray-200 text-gray-700';
-                let bodyClass = 'bg-gray-50';
+                let bodyClass = 'border border-gray-200 bg-gray-50';
                 
                 if (dayDate.getTime() === actualToday.getTime()) {
                     headerClass = 'bg-emerald-500 text-white shadow-md border-b-4 border-emerald-700';
-                    bodyClass = 'bg-emerald-50 border-emerald-200 ring-2 ring-emerald-400';
+                    bodyClass = 'border-2 border-emerald-500 bg-emerald-50 shadow-md'; 
                 } else if (dayDate.getTime() < actualToday.getTime()) {
                     headerClass = 'bg-gray-100 text-gray-400';
-                    bodyClass = 'bg-gray-100 opacity-60';
+                    bodyClass = 'border border-gray-200 bg-gray-100 opacity-60'; 
                 } else {
                     headerClass = 'bg-blue-50 text-blue-800 border-b-2 border-blue-200';
-                    bodyClass = 'bg-white border-gray-200';
+                    bodyClass = 'border border-gray-200 bg-white';
                 }
 
-                let colHtml = `<div class="border rounded-xl overflow-hidden min-h-[350px] flex flex-col ${bodyClass} transition-all">
+                let colHtml = `<div class="rounded-xl overflow-hidden min-h-[350px] flex flex-col ${bodyClass} transition-all">
                                 <div class="text-center py-2 ${headerClass}">
                                     <h4 class="font-bold">${daysNames[i]}</h4>
                                     <span class="text-xs font-medium opacity-90">${dayDate.toLocaleDateString('ar-OM', {month:'numeric', day:'numeric'})}</span>
@@ -169,32 +201,36 @@
                         
                         switch(sess.status) {
                             case 'scheduled': 
-                                statusBadge = '<span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-bold">مجدولة</span>'; 
-                                cardStyle = 'bg-white border-blue-200 shadow-sm border-r-4 border-r-blue-500';
+                                statusBadge = '<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">مجدولة</span>'; 
+                                cardStyle = 'bg-white border-blue-200 shadow-sm';
                                 break;
                             case 'ongoing': 
-                                statusBadge = '<span class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded text-[10px] font-bold animate-pulse">جارية</span>'; 
-                                cardStyle = 'bg-red-50 border-red-300 shadow-md border-r-4 border-r-red-500 ring-1 ring-red-200';
+                                statusBadge = '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold animate-pulse">جارية الآن</span>'; 
+                                cardStyle = 'bg-red-50 border-red-300 shadow-md ring-1 ring-red-200';
                                 break;
                             case 'completed': 
-                                statusBadge = '<span class="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-[10px] font-bold">انتهت</span>'; 
-                                cardStyle = 'bg-gray-50 border-green-200 opacity-80 border-r-4 border-r-green-500';
+                                statusBadge = '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-[10px] font-bold">انتهت</span>'; 
+                                cardStyle = 'bg-gray-50 border-green-200 opacity-80';
                                 break;
                             case 'cancelled': 
-                                statusBadge = '<span class="bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded text-[10px] font-bold line-through">ملغية</span>'; 
+                                statusBadge = '<span class="bg-gray-200 text-gray-500 px-2 py-0.5 rounded text-[10px] font-bold line-through">ملغية</span>'; 
                                 cardStyle = 'bg-gray-100 border-gray-200 opacity-60 grayscale';
                                 break;
                             default:
-                                statusBadge = `<span class="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded text-[10px] font-bold">${sess.status}</span>`; 
+                                statusBadge = `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">${sess.status}</span>`; 
                                 cardStyle = 'bg-emerald-50 border-emerald-200';
                         }
 
-                        colHtml += `<div class="${cardStyle} border p-2 rounded-lg text-sm relative transition hover:shadow-md">
-                            <div class="flex justify-between items-center mb-1.5 border-b border-gray-100 pb-1">
-                                <div class="font-bold text-gray-500 text-[11px]"><i class="far fa-clock"></i> ${sTime} - ${eTime}</div>
+                        colHtml += `<div class="block ${cardStyle} border p-2 rounded-lg text-sm relative flex flex-col">
+                            <div class="font-bold text-gray-800 text-xs mb-1.5 text-center">${sess.users.full_name}</div>
+                            
+                            <div class="border-t border-gray-200/60 pt-1.5 pb-1.5 text-center w-full whitespace-nowrap">
+                                <span class="font-bold text-gray-500 text-[11px] inline-block"><i class="far fa-clock ml-1"></i>${sTime} - ${eTime}</span>
+                            </div>
+                            
+                            <div class="border-t border-gray-200/60 pt-1.5 mt-auto text-center w-full">
                                 ${statusBadge}
                             </div>
-                            <div class="font-bold text-gray-800 text-xs">${sess.users.full_name}</div>
                         </div>`;
                     });
                 } else {
@@ -211,6 +247,11 @@
 
         function changeWeek(direction) {
             currentWeekOffset += direction;
+            loadCalendar();
+        }
+
+        function resetToToday() {
+            currentWeekOffset = 0;
             loadCalendar();
         }
 
