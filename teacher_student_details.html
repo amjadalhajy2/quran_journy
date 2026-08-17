@@ -10,7 +10,6 @@
 </head>
 <body class="flex flex-col h-screen overflow-hidden text-gray-800">
     
-    <!-- الشريط العلوي المحدث ببيانات الطالب -->
     <header class="bg-white shadow p-4 flex flex-col md:flex-row justify-between items-start md:items-center z-10 relative border-b gap-4">
         <div class="flex items-center">
             <a href="teacher_students_list.html" class="text-gray-500 hover:text-emerald-600 bg-gray-100 px-4 py-2 rounded-lg ml-4 transition font-bold shrink-0 flex items-center"><i class="fas fa-arrow-right ml-2"></i> رجوع</a>
@@ -26,10 +25,8 @@
 
     <main class="flex-1 overflow-y-auto p-6 space-y-6">
         
-        <!-- رسالة الخطأ إن وجدت -->
         <div id="errorMessage" class="hidden bg-red-100 text-red-700 p-4 rounded-lg font-bold border border-red-200"></div>
 
-        <!-- مقررات الحفظ وشريط التقدم لكل مقرر -->
         <div class="bg-white rounded-xl shadow-sm border p-6">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 pb-4 border-b">
                 <h3 class="font-bold text-emerald-700 text-lg"><i class="fas fa-book-open ml-2"></i> مقررات الحفظ للطالب</h3>
@@ -43,7 +40,6 @@
             </div>
         </div>
 
-        <!-- السجل الشامل للحصص -->
         <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
             <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
                 <h3 class="font-bold text-gray-800"><i class="fas fa-list-ul text-emerald-600 ml-2"></i> سجل الحصص والمتابعة</h3>
@@ -66,7 +62,6 @@
         </div>
     </main>
 
-    <!-- نافذة إدارة المقررات (إضافة وتعديل) -->
     <div id="planModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl">
             <h3 class="text-xl font-bold text-emerald-700 mb-4 border-b pb-2" id="planModalTitle">إدارة المقرر</h3>
@@ -115,7 +110,7 @@
                 <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
                     <label class="block text-xs font-bold text-blue-800 mb-2">نطاق مقرر الحفظ المطلوب للحصة:</label>
                     <div class="grid grid-cols-2 gap-3">
-                        <div><span class="text-xs text-gray-500">من صفحة:</span><input type="number" id="targetFromPage" onchange="syncActualRange()" class="w-full border rounded p-2 text-sm font-bold bg-white outline-none focus:border-blue-500" required></div>
+                        <div><span class="text-xs text-gray-500">من صفحة:</span><input type="number" id="targetFromPage" onchange="handleTargetFromChange()" class="w-full border rounded p-2 text-sm font-bold bg-white outline-none focus:border-blue-500" required></div>
                         <div><span class="text-xs text-gray-500">إلى صفحة:</span><input type="number" id="targetToPage" onchange="syncActualRange()" class="w-full border rounded p-2 text-sm font-bold bg-white outline-none focus:border-blue-500" required></div>
                     </div>
                 </div>
@@ -189,7 +184,6 @@
                 if(profile) {
                     const userData = Array.isArray(profile.users) ? profile.users[0] : (profile.users || {});
                     
-                    // تحديث بيانات الترويسة
                     document.getElementById('studentNameDisplay').textContent = userData.full_name || 'طالب';
                     document.getElementById('studentEmailDisplay').innerHTML = `<i class="fas fa-envelope ml-1 text-gray-400"></i> ${userData.email || 'لا يوجد بريد'}`;
 
@@ -223,8 +217,9 @@
                     }
                 }
 
+                // ترتيب السجلات من الأقدم للأحدث كما طلبتم
                 const { data: sessions, error: sessErr } = await window.supabase.from('sessions')
-                    .select('*').eq('student_id', studentId).order('session_date', {ascending: false}).order('start_time', {ascending: false});
+                    .select('*').eq('student_id', studentId).order('session_date', {ascending: true}).order('start_time', {ascending: true});
 
                 if (sessErr) throw new Error("تعذر جلب سجل الحصص.");
 
@@ -386,6 +381,49 @@
         });
 
         // --- سجل الحصص ---
+        function handleTargetFromChange() {
+            const sel = document.getElementById('selectCurriculum');
+            if(!sel.value) return;
+            const opt = sel.options[sel.selectedIndex];
+            const maxP = parseInt(opt.getAttribute('data-max'));
+            const tf = parseInt(document.getElementById('targetFromPage').value) || 1;
+            let tt = tf + 1;
+            if(tt > maxP) tt = maxP;
+            document.getElementById('targetToPage').value = tt;
+            syncActualRange();
+        }
+
+        function onCurriculumChange() {
+            const sel = document.getElementById('selectCurriculum');
+            if(!sel.value) return;
+            const opt = sel.options[sel.selectedIndex];
+            const minP = parseInt(opt.getAttribute('data-min'));
+            const maxP = parseInt(opt.getAttribute('data-max'));
+            
+            const tf = document.getElementById('targetFromPage');
+            const tt = document.getElementById('targetToPage');
+            
+            tf.min = minP; tf.max = maxP; 
+            if (!tf.value || parseInt(tf.value) < minP || parseInt(tf.value) > maxP) tf.value = minP;
+            
+            tt.min = minP; tt.max = maxP; 
+            tt.value = parseInt(tf.value) + 1;
+            if (parseInt(tt.value) > maxP) tt.value = maxP;
+
+            syncActualRange();
+        }
+
+        function syncActualRange() {
+            const tf = document.getElementById('targetFromPage').value;
+            const tt = document.getElementById('targetToPage').value;
+            const af = document.getElementById('actualFromPage');
+            const at = document.getElementById('actualToPage');
+            
+            // تحديد نطاق الحفظ الفعلي ليكون ضمن النطاق المطلوب
+            af.min = tf; af.max = tt;
+            at.min = tf; at.max = tt;
+        }
+
         function openEditModal(id, target, actual, notes) {
             document.getElementById('editSessionId').value = id;
             document.getElementById('editNotes').value = notes !== 'null' ? notes : '';
@@ -404,19 +442,24 @@
             if (target && target.includes('ص')) {
                 const planMatch = target.match(/مقرر (\d+)/);
                 if(planMatch) sel.value = planMatch[1];
-                onCurriculumChange();
                 
                 const nums = target.match(/ص (\d+) إلى (\d+)/);
                 if (nums) {
                     document.getElementById('targetFromPage').value = nums[1];
                     document.getElementById('targetToPage').value = nums[2];
                 }
+                syncActualRange();
             } else {
                 if (firstIncompletePlanId !== null) sel.value = firstIncompletePlanId;
                 else if (studentPlans.length > 0) sel.value = studentPlans[0].id;
                 onCurriculumChange();
             }
 
+            // تفريغ خانات الحفظ الفعلي افتراضياً
+            document.getElementById('actualFromPage').value = '';
+            document.getElementById('actualToPage').value = '';
+
+            // وإذا كان هناك قيمة سابقة، نقوم بتعبئتها
             if (actual && actual.includes('ص')) {
                 const nums = actual.match(/ص (\d+) إلى (\d+)/);
                 if (nums) {
@@ -427,29 +470,6 @@
 
             document.getElementById('editSessionModal').classList.remove('hidden');
             document.getElementById('editSessionModal').classList.add('flex');
-        }
-
-        function onCurriculumChange() {
-            const sel = document.getElementById('selectCurriculum');
-            if(!sel.value) return;
-            const opt = sel.options[sel.selectedIndex];
-            const minP = parseInt(opt.getAttribute('data-min'));
-            const maxP = parseInt(opt.getAttribute('data-max'));
-            
-            const tf = document.getElementById('targetFromPage');
-            const tt = document.getElementById('targetToPage');
-            tf.min = minP; tf.max = maxP; tf.value = minP; 
-            tt.min = minP; tt.max = maxP; tt.value = maxP;
-            syncActualRange();
-        }
-
-        function syncActualRange() {
-            const tf = document.getElementById('targetFromPage').value;
-            const tt = document.getElementById('targetToPage').value;
-            const af = document.getElementById('actualFromPage');
-            const at = document.getElementById('actualToPage');
-            af.min = tf; af.max = tt; af.value = tf;
-            at.min = tf; at.max = tt; at.value = tt;
         }
 
         document.getElementById('editSessionForm').addEventListener('submit', async (e) => {
@@ -469,7 +489,8 @@
             let targetStr = '', actualStr = '';
             if(sel.value) {
                 targetStr = `${opt.getAttribute('data-plan')} - ص ${tf} إلى ${tt}`;
-                actualStr = `ص ${af} إلى ${at}`;
+                // تخزين القيمة فقط إذا تم إدخالها
+                if (af && at) actualStr = `ص ${af} إلى ${at}`;
             }
 
             const { error } = await window.supabase.from('sessions')
