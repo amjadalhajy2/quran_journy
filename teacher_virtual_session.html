@@ -77,7 +77,7 @@
             </div>
         </div>
 
-        <!-- قسم الفيديو والمتابعة (المحدث) -->
+        <!-- قسم الفيديو والمتابعة -->
         <div class="w-full lg:w-[450px] xl:w-[500px] bg-gray-900 flex flex-col shadow-2xl z-20">
             <!-- الهيدر -->
             <div class="p-4 border-b border-gray-800 bg-gray-900">
@@ -103,7 +103,7 @@
                 </div>
             </div>
 
-            <!-- حقول التقييم والتسجيل للحصة (محدثة بالنطاقات) -->
+            <!-- حقول التقييم والتسجيل للحصة -->
             <div class="flex-1 p-4 bg-gray-800 flex flex-col overflow-y-auto space-y-4">
                 <h4 class="font-bold text-emerald-400 border-b border-gray-700 pb-2 mb-2"><i class="fas fa-clipboard-check ml-1"></i> المتابعة والحفظ</h4>
                 
@@ -138,7 +138,7 @@
 
     <script src="supabase.js"></script>
     <script>
-let myMeetLink = ""; 
+        let myMeetLink = ""; 
         let activeSessionId = null;
         let studentPlans = [];
         window.quranChapters = [];
@@ -248,90 +248,103 @@ let myMeetLink = "";
             if(!user) return window.location.href = 'login.html';
 
             const urlParams = new URLSearchParams(window.location.search);
-            const studentId = urlParams.get('student_id');
+            const sessionId = urlParams.get('session_id');
+
             let studentName = "طالب (بدون تحديد)";
+            let studentId = null;
 
             const { data: teacherData } = await window.supabase.from('users').select('meet_link').eq('id', user.id).single();
             if(teacherData) myMeetLink = teacherData.meet_link || "";
 
-            if (studentId) {
-                const { data: profile } = await window.supabase.from('student_profiles')
-                    .select('target_parts, custom_plan_type, target_surahs, users!student_profiles_user_id_fkey(full_name)')
-                    .eq('user_id', studentId).single();
-                
-                if(profile) {
-                    studentName = profile.users?.full_name || studentName;
-                    
-                    try {
-                        if (profile.target_parts && profile.target_parts.startsWith('[')) {
-                            studentPlans = JSON.parse(profile.target_parts);
-                        } else if (profile.target_parts || profile.target_surahs) {
-                            let pType = profile.custom_plan_type || (profile.target_parts ? 'parts' : 'surahs');
-                            let pItems = [];
-                            if (pType === 'parts' && profile.target_parts) {
-                                pItems = profile.target_parts.split(/[،,]/).map(s=>s.trim()).filter(Boolean);
-                            } else if (pType === 'surahs' && profile.target_surahs) {
-                                pItems = profile.target_surahs.split(/[،,]/).map(s=>s.trim().replace(/^\d+\.\s*/, '')).filter(Boolean);
-                            }
-                            studentPlans = [{ id: 1, type: pType, items: pItems }];
-                        }
-                    } catch(e) { console.error(e); }
-
-                    const sel = document.getElementById('selectCurriculum');
-                    sel.innerHTML = '<option value="">-- اختر من مقررات الطالب --</option>';
-                    let firstIncompletePlanId = null;
-
-                    studentPlans.forEach(plan => {
-                        const itemsStr = plan.items.join('، ');
-                        let planMinPage = 604, planMaxPage = 1;
-                        
-                        plan.items.forEach(item => {
-                            let bounds = null;
-                            if(plan.type === 'parts') {
-                                const jNum = parseInt(item.replace(/\D/g,''));
-                                bounds = juzPageBounds[jNum];
-                            } else {
-                                const ch = window.quranChapters?.find(c => c.name_arabic === item);
-                                if(ch) bounds = ch.pages;
-                            }
-                            if(bounds) {
-                                planMinPage = Math.min(planMinPage, bounds[0]);
-                                planMaxPage = Math.max(planMaxPage, bounds[1]);
-                            }
-                        });
-                        
-                        const lbl = `مقرر ${plan.id} (${itemsStr}) - ص ${planMinPage} إلى ${planMaxPage}`;
-                        sel.innerHTML += `<option value="${plan.id}" data-plan="مقرر ${plan.id}" data-min="${planMinPage}" data-max="${planMaxPage}">${lbl}</option>`;
-                        if(firstIncompletePlanId === null) firstIncompletePlanId = plan.id;
-                    });
-                }
-
-                // الحصة الجارية
-                const todayStr = new Date().toISOString().split('T')[0];
+            if (sessionId) {
                 const { data: sessData } = await window.supabase.from('sessions')
-                    .select('id, next_assignment')
-                    .eq('student_id', studentId).eq('teacher_id', user.id).eq('session_date', todayStr)
-                    .in('status', ['scheduled', 'ongoing']).limit(1).single();
+                    .select('*, users!sessions_student_id_fkey(full_name)')
+                    .eq('id', sessionId).single();
                 
-                if(sessData) {
+                if (sessData) {
+                    studentId = sessData.student_id;
+                    studentName = sessData.users?.full_name || studentName;
                     activeSessionId = sessData.id;
-                    await window.supabase.from('sessions').update({ status: 'ongoing' }).eq('id', activeSessionId);
-                    
-                    const sel = document.getElementById('selectCurriculum');
-                    if(sessData.next_assignment && sessData.next_assignment.includes('ص')) {
-                        const matchName = sessData.next_assignment.match(/مقرر (\d+)/);
-                        if(matchName) sel.value = matchName[1];
-                        onCurriculumChange();
-                        const nums = sessData.next_assignment.match(/ص (\d+) إلى (\d+)/);
-                        if (nums) {
-                            document.getElementById('targetFrom').value = nums[1];
-                            document.getElementById('targetTo').value = nums[2];
+
+                    if (sessData.status === 'scheduled') {
+                        await window.supabase.from('sessions').update({ status: 'ongoing' }).eq('id', activeSessionId);
+                    }
+
+                    const { data: profile } = await window.supabase.from('student_profiles')
+                        .select('target_parts, custom_plan_type, target_surahs')
+                        .eq('user_id', studentId).single();
+
+                    if(profile) {
+                        try {
+                            if (profile.target_parts && profile.target_parts.startsWith('[')) {
+                                studentPlans = JSON.parse(profile.target_parts);
+                            } else if (profile.target_parts || profile.target_surahs) {
+                                let pType = profile.custom_plan_type || (profile.target_parts ? 'parts' : 'surahs');
+                                let pItems = [];
+                                if (pType === 'parts' && profile.target_parts) {
+                                    pItems = profile.target_parts.split(/[،,]/).map(s=>s.trim()).filter(Boolean);
+                                } else if (pType === 'surahs' && profile.target_surahs) {
+                                    pItems = profile.target_surahs.split(/[،,]/).map(s=>s.trim().replace(/^\d+\.\s*/, '')).filter(Boolean);
+                                }
+                                studentPlans = [{ id: 1, type: pType, items: pItems }];
+                            }
+                        } catch(e) { console.error(e); }
+
+                        const sel = document.getElementById('selectCurriculum');
+                        sel.innerHTML = '<option value="">-- اختر من مقررات الطالب --</option>';
+
+                        studentPlans.forEach(plan => {
+                            const itemsStr = plan.items.join('، ');
+                            let planMinPage = 604, planMaxPage = 1;
+                            
+                            plan.items.forEach(item => {
+                                let bounds = null;
+                                if(plan.type === 'parts') {
+                                    const jNum = parseInt(item.replace(/\D/g,''));
+                                    bounds = juzPageBounds[jNum];
+                                } else {
+                                    const ch = window.quranChapters?.find(c => c.name_arabic === item);
+                                    if(ch) bounds = ch.pages;
+                                }
+                                if(bounds) {
+                                    planMinPage = Math.min(planMinPage, bounds[0]);
+                                    planMaxPage = Math.max(planMaxPage, bounds[1]);
+                                }
+                            });
+                            
+                            const lbl = `مقرر ${plan.id} (${itemsStr}) - ص ${planMinPage} إلى ${planMaxPage}`;
+                            sel.innerHTML += `<option value="${plan.id}" data-plan="مقرر ${plan.id}" data-min="${planMinPage}" data-max="${planMaxPage}">${lbl}</option>`;
+                        });
+
+                        if(sessData.next_assignment && sessData.next_assignment.includes('ص')) {
+                            const matchName = sessData.next_assignment.match(/مقرر (\d+)/);
+                            if(matchName) sel.value = matchName[1];
+                            onCurriculumChange();
+                            const nums = sessData.next_assignment.match(/ص (\d+) إلى (\d+)/);
+                            if (nums) {
+                                document.getElementById('targetFrom').value = nums[1];
+                                document.getElementById('targetTo').value = nums[2];
+                            }
+                        } else if (sel.options.length > 1) {
+                            sel.selectedIndex = 1;
+                            onCurriculumChange();
                         }
-                    } else if (sel.options.length > 1) {
-                        sel.selectedIndex = 1;
-                        onCurriculumChange();
+                        
+                        if (sessData.memorized_from && sessData.memorized_from.includes('ص')) {
+                            const numsAct = sessData.memorized_from.match(/ص (\d+) إلى (\d+)/);
+                            if (numsAct) {
+                                document.getElementById('actualFrom').value = numsAct[1];
+                                document.getElementById('actualTo').value = numsAct[2];
+                            }
+                        }
+
+                        if (sessData.teacher_notes) {
+                            document.getElementById('sessionNotes').value = sessData.teacher_notes;
+                        }
                     }
                 }
+            } else {
+                alert("يرجى الدخول للغرفة من خلال الضغط على موعد الحصة في الجدول الخاص بك.");
             }
             
             document.getElementById('teacherNameDisplay').textContent = `المعلم: ${user.user_metadata?.full_name || "معلم"}`;
