@@ -118,7 +118,7 @@
                     const sessionsBadge = totalSessions > 0 ? `<div class="text-xs mt-1 text-gray-500 font-bold">متبقي: <span class="text-blue-600">${remainingSessions} من ${totalSessions}</span> حصة</div>` : '';
 
                     let planText = '<span class="text-orange-500 text-xs">بانتظار تقييم المعلم</span>';
-                    if (p.custom_plan_type === 'parts') planText = `حفظ ${p.target_parts} أجزاء`;
+                    if (p.custom_plan_type === 'parts') planText = `تلاوة ${p.target_parts} أجزاء`;
                     else if (p.custom_plan_type === 'surahs') planText = `سور: ${p.target_surahs}`;
                     else if (p.target_parts && p.target_parts.startsWith('[')) planText = `<span class="text-emerald-600 font-bold">خطة مخصصة متعددة</span>`;
 
