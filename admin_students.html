@@ -22,7 +22,9 @@
         </nav>
     </aside>
     <main class="flex-1 flex flex-col overflow-y-auto bg-gray-50">
-        <header class="bg-white shadow-sm p-4 border-b"><h2 class="text-2xl font-bold text-gray-700">الطلاب المنتظمين</h2></header>
+        <header class="bg-white shadow-sm p-4 border-b flex justify-between items-center">
+            <h2 class="text-2xl font-bold text-gray-700">الطلاب المنتظمين</h2>
+        </header>
         <div class="p-8">
             <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
                 <table class="w-full text-right text-sm">
@@ -85,20 +87,12 @@
         let teachersList = [];
 
         async function loadStudents() {
-            // جلب المعلمين
             const { data: teachers } = await window.supabase.from('users').select('id, full_name').eq('role', 'teacher');
             teachersList = teachers || [];
 
-            // جلب بيانات الطلاب
             const { data: profiles, error } = await window.supabase.rpc('get_enrolled_students');
-            
-            // جلب أرقام الهواتف
             const { data: usersList } = await window.supabase.from('users').select('id, phone');
-            
-            // جلب الاشتراكات لحساب الحصص
             const { data: subsList } = await window.supabase.from('subscriptions').select('student_id, packages(sessions_per_week)').eq('status', 'approved');
-            
-            // جلب الجلسات المكتملة لخصمها من الحصص
             const { data: sessionsList } = await window.supabase.from('sessions').select('student_id, status').eq('status', 'completed');
 
             if (error) {
@@ -111,24 +105,22 @@
             
             if(profiles && profiles.length > 0) {
                 profiles.forEach(p => {
-                    // بيانات الهاتف ورابط الواتساب
                     const user = usersList?.find(u => u.id === p.student_id);
                     const phone = user?.phone || 'غير متوفر';
                     const cleanPhone = phone !== 'غير متوفر' ? phone.replace(/\D/g, '') : '';
                     const waLink = cleanPhone ? `https://wa.me/${cleanPhone}` : '#';
                     const waHtml = cleanPhone ? `<a href="${waLink}" target="_blank" class="text-green-600 hover:text-green-800 transition inline-flex items-center"><i class="fab fa-whatsapp ml-1"></i> ${phone}</a>` : `<span class="text-gray-400">${phone}</span>`;
 
-                    // حساب الحصص المتبقية (مبني على 4 أسابيع للشهر الواحد)
                     const sub = subsList?.find(s => s.student_id === p.student_id);
                     const totalSessions = sub?.packages?.sessions_per_week ? sub.packages.sessions_per_week * 4 : 0;
                     const usedSessions = sessionsList?.filter(s => s.student_id === p.student_id).length || 0;
                     const remainingSessions = Math.max(0, totalSessions - usedSessions);
                     const sessionsBadge = totalSessions > 0 ? `<div class="text-xs mt-1 text-gray-500 font-bold">متبقي: <span class="text-blue-600">${remainingSessions} من ${totalSessions}</span> حصة</div>` : '';
 
-                    // تحديد شكل الخطة
                     let planText = '<span class="text-orange-500 text-xs">بانتظار تقييم المعلم</span>';
                     if (p.custom_plan_type === 'parts') planText = `حفظ ${p.target_parts} أجزاء`;
                     else if (p.custom_plan_type === 'surahs') planText = `سور: ${p.target_surahs}`;
+                    else if (p.target_parts && p.target_parts.startsWith('[')) planText = `<span class="text-emerald-600 font-bold">خطة مخصصة متعددة</span>`;
 
                     const pkgName = p.package_name || 'غير معروف';
                     const statusBadge = p.sub_status === 'approved' 
@@ -138,10 +130,13 @@
                     const teacher = teachersList.find(t => t.id === p.teacher_id);
                     const teacherName = teacher ? teacher.full_name : '<span class="text-orange-500 font-bold">بانتظار التعيين</span>';
 
+                    // تم تعديل اسم الطالب ليصبح رابط يفتح صفحة admin_student_details.html
                     tbody.innerHTML += `
                         <tr class="hover:bg-gray-50 border-b transition">
                             <td class="px-6 py-4">
-                                <div class="font-bold text-gray-800">${p.full_name}</div>
+                                <a href="admin_student_details.html?id=${p.student_id}" class="font-bold text-emerald-700 hover:underline flex items-center mb-1 text-lg">
+                                    ${p.full_name} <i class="fas fa-external-link-alt text-[10px] ml-2 opacity-70"></i>
+                                </a>
                                 <div class="text-xs text-gray-400 mb-1">${p.email}</div>
                                 <div class="text-xs font-bold" dir="ltr" style="text-align: right;">${waHtml}</div>
                             </td>
@@ -166,7 +161,6 @@
             } else { tbody.innerHTML = '<tr><td colspan="6" class="text-center p-12 text-gray-500 font-bold">لا يوجد طلاب منتظمين حالياً.</td></tr>'; }
         }
 
-        // نوافذ تعيين المعلم
         function openAssignModal(studentId, currentTeacherId) {
             document.getElementById('modalStudentId').value = studentId;
             const select = document.getElementById('teacherSelect');
@@ -192,7 +186,6 @@
             }
         }
 
-        // نوافذ تعديل بيانات الطالب
         function openEditStudentModal(id, name, phone) {
             document.getElementById('editStudentId').value = id;
             document.getElementById('editStudentName').value = name;
@@ -213,14 +206,11 @@
             const newName = document.getElementById('editStudentName').value;
             const newPhone = document.getElementById('editStudentPhone').value;
 
-            // تحديث البيانات في جدول users (نحتاج لدالة خلفية لتجاوز RLS إذا كنا نستدعيها من واجهة الإدارة)
-            // استخدام دالة مخصصة أو التحديث المباشر إذا كان الأدمن يملك صلاحيات Service Role
-            // سنستخدم RPC مشابهة لتلك الخاصة بالمعلمين
             const { error } = await window.supabase.rpc('update_teacher_info', { 
                 p_user_id: id, 
                 p_full_name: newName, 
                 p_phone: newPhone, 
-                p_meet_link: null // لا يوجد رابط للطالب
+                p_meet_link: null 
             });
 
             msg.classList.remove('hidden');
