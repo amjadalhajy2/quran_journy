@@ -17,6 +17,7 @@
     </header>
 
     <main class="flex-1 overflow-y-auto p-6 space-y-6">
+        <!-- الطلاب الموكلين -->
         <div class="bg-white rounded-xl shadow-sm border p-6">
             <h3 class="font-bold text-lg mb-4 text-emerald-700 border-b pb-2"><i class="fas fa-users ml-2"></i> الطلاب الموكلين للمعلم</h3>
             <div id="studentsList" class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -24,6 +25,7 @@
             </div>
         </div>
 
+        <!-- الجدول الأسبوعي (بالتصميم الجديد) -->
         <div class="bg-white rounded-xl shadow-sm border p-6">
             <div class="flex justify-between items-center mb-6 border-b pb-4">
                 <h3 class="font-bold text-lg text-emerald-700"><i class="fas fa-calendar-week ml-2"></i> الجدول الأسبوعي للحلقات</h3>
@@ -129,6 +131,7 @@
                 .gte('session_date', startStr)
                 .lte('session_date', endStr);
 
+            // تحديث الحصص المنتهية تلقائياً
             const now = new Date();
             const currentDateString = getLocalDateString(now);
             const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -218,8 +221,8 @@
                                 cardStyle = 'bg-emerald-50 border-emerald-200';
                         }
 
-                        // تحويل البطاقة إلى رابط لغرفة الإشراف
-                        if (sess.status === 'cancelled') {
+                        // تحويل البطاقة إلى رابط لغرفة الإشراف فقط إذا كانت مجدولة أو جارية
+                        if (sess.status === 'completed' || sess.status === 'cancelled') {
                             colHtml += `<div class="block ${cardStyle} border p-2 rounded-lg text-sm relative flex flex-col">
                                 <div class="font-bold text-gray-800 text-xs mb-1.5 text-center">${sess.users.full_name}</div>
                                 <div class="border-t border-gray-200/60 pt-1.5 pb-1.5 text-center w-full whitespace-nowrap">
