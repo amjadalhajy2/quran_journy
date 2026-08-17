@@ -80,31 +80,33 @@
         <!-- قسم الفيديو والمتابعة المحدث -->
         <div class="w-full lg:w-[450px] xl:w-[500px] bg-gray-900 flex flex-col shadow-2xl z-20">
             <!-- الهيدر -->
-            <div class="p-4 border-b border-gray-800 bg-gray-900">
+            <div class="p-3 border-b border-gray-800 bg-gray-900">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h3 class="font-bold text-white text-lg" id="studentNameDisplay">جاري التحميل...</h3>
-                        <p class="text-xs text-emerald-400 font-bold" id="teacherNameDisplay">المعلم: جاري التحميل...</p>
+                        <h3 class="font-bold text-white text-md" id="studentNameDisplay">جاري التحميل...</h3>
+                        <p class="text-xs text-emerald-400 font-bold mt-0.5" id="teacherNameDisplay">المعلم: جاري التحميل...</p>
                     </div>
-                    <span class="bg-red-500 text-white text-xs px-2 py-1 rounded animate-pulse font-bold flex items-center">
-                        <i class="fas fa-circle text-[8px] ml-1"></i> مباشر
+                    <span class="bg-red-500 text-white text-[10px] px-2 py-1 rounded animate-pulse font-bold flex items-center">
+                        <i class="fas fa-circle text-[6px] ml-1"></i> مباشر
                     </span>
                 </div>
             </div>
 
-            <!-- زر جوجل ميت -->
-            <div id="meet-container" class="w-full h-auto bg-gray-900 relative shadow-inner border-b border-gray-800 flex flex-col items-center justify-center p-6 text-center">
-                <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl w-full">
-                    <i class="fas fa-video text-4xl text-blue-500 mb-3 animate-pulse"></i>
-                    <h4 class="text-lg font-bold text-white mb-2">غرفة الاتصال المرئي</h4>
-                    <button onclick="openMeetPopup()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition w-full shadow-lg flex items-center justify-center cursor-pointer text-sm">
-                        <i class="fas fa-external-link-square-alt ml-2"></i> فتح الكاميرا (Google Meet)
+            <!-- زر جوجل ميت (بشكل شريط أفقي مصغر) -->
+            <div id="meet-container" class="w-full bg-gray-900 relative shadow-inner border-b border-gray-800 p-3">
+                <div class="bg-gray-800 p-3 rounded-xl border border-gray-700 shadow-sm w-full flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-video text-xl text-blue-500 ml-3 animate-pulse"></i>
+                        <h4 class="text-sm font-bold text-white">غرفة الاتصال المرئي</h4>
+                    </div>
+                    <button onclick="openMeetPopup()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded-lg transition shadow flex items-center justify-center cursor-pointer text-xs">
+                        <i class="fas fa-external-link-square-alt ml-1"></i> فتح الكاميرا
                     </button>
                 </div>
             </div>
 
             <!-- حقول التقييم والتسجيل للحصة -->
-            <div class="flex-1 p-4 bg-gray-800 flex flex-col overflow-y-auto space-y-4">
+            <div class="flex-1 p-3 bg-gray-800 flex flex-col overflow-y-auto space-y-3">
                 
                 <div class="bg-gray-900 p-3 rounded-lg border border-gray-700">
                     <select id="selectCurriculum" onchange="onCurriculumChange()" class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-sm font-bold text-white outline-none focus:border-emerald-500 mb-3"></select>
@@ -139,12 +141,12 @@
                     </div>
                 </div>
 
-                <div class="flex-1 flex flex-col min-h-[90px]">
+                <div class="flex-1 flex flex-col min-h-[60px]">
                     <label class="block text-xs font-bold text-gray-400 mb-1">ملاحظات المعلم والتوجيهات</label>
                     <textarea id="sessionNotes" class="flex-1 w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white outline-none focus:border-emerald-500 resize-none" placeholder="اكتب ملاحظاتك وتوجيهاتك للطالب هنا..."></textarea>
                 </div>
 
-                <button onclick="saveAndEndSession()" id="finishBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition w-full shadow-lg">
+                <button onclick="saveAndEndSession()" id="finishBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg transition w-full shadow-md text-sm mt-auto">
                     حفظ السجل وإنهاء الحصة
                 </button>
             </div>
@@ -235,7 +237,6 @@
         function changePage(direction) { updateQuranPage(currentPage + direction); }
         function jumpToPage(val) { if(val) updateQuranPage(parseInt(val)); }
 
-        // دوال التحكم بنطاقات الحفظ
         function handleTargetFromChange() {
             const sel = document.getElementById('selectCurriculum');
             if(!sel.value) return;
@@ -276,7 +277,6 @@
             tt.value = parseInt(tf.value) + 1;
             if (parseInt(tt.value) > maxP) tt.value = maxP;
 
-            // تحديث نطاق (القادمة)
             const nf = document.getElementById('nextFrom');
             const nt = document.getElementById('nextTo');
             nf.min = minP; nf.max = maxP;
@@ -291,7 +291,6 @@
             const af = document.getElementById('actualFrom');
             const at = document.getElementById('actualTo');
             
-            // حصر الحفظ الفعلي ضمن نطاق المطلوب
             af.min = tf; af.max = tt;
             at.min = tf; at.max = tt;
         }
@@ -323,7 +322,6 @@
                         await window.supabase.from('sessions').update({ status: 'ongoing' }).eq('id', activeSessionId);
                     }
 
-                    // التحقق من وجود حصة قادمة مجدولة
                     const { data: nextSessions } = await window.supabase.from('sessions')
                         .select('id')
                         .eq('student_id', studentId)
@@ -388,7 +386,6 @@
                             sel.innerHTML += `<option value="${plan.id}" data-plan="مقرر ${plan.id}" data-min="${planMinPage}" data-max="${planMaxPage}">${lbl}</option>`;
                         });
 
-                        // تعبئة البيانات إن وجدت مسبقاً
                         if(sessData.next_assignment && sessData.next_assignment.includes('ص')) {
                             const matchName = sessData.next_assignment.match(/مقرر (\d+)/);
                             if(matchName) sel.value = matchName[1];
@@ -446,7 +443,6 @@
             if(sel.value) {
                 targetStr = `${opt.getAttribute('data-plan')} - ص ${tf} إلى ${tt}`;
                 
-                // حفظ المقرر القادم إن وجد في نفس الخانة للمراجعة
                 if (!document.getElementById('nextFrom').disabled && nf && nt) {
                     targetStr += ` | للقادمة: ص ${nf} إلى ${nt}`;
                 }
