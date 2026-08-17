@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدير النظام - لوحة المؤشرات</title>
+    <title>مدير النظام - لوحة التحكم</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style> @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap'); body { font-family: 'Tajawal', sans-serif; background-color: #f4f7f6; } </style>
@@ -17,9 +17,9 @@
             <i class="fas fa-shield-alt text-emerald-400 mr-2 ml-2"></i> الإدارة العليا
         </div>
         <nav class="flex-1 p-4 space-y-2 text-sm font-medium">
-            <a href="admin_dashboard.html" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow"><i class="fas fa-chart-pie ml-3"></i> لوحة المؤشرات</a>
+            <a href="admin_dashboard.html" class="flex items-center bg-emerald-600 px-4 py-3 rounded-lg text-white shadow"><i class="fas fa-chart-pie ml-3"></i> لوحة التحكم</a>
             <a href="admin_teachers.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-chalkboard-teacher ml-3"></i> إدارة المعلمين</a>
-            <a href="admin_new_registrations.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-user-plus ml-3"></i> طلبات التسجيل الجديدة</a>
+            <a href="admin_new_registrations.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-user-plus ml-3"></i> طلبات التسجيل والتجديد</a>
             <a href="admin_students.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-user-graduate ml-3"></i> إدارة الطلاب المنتظمين</a>
             <a href="admin_finances.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-file-invoice-dollar ml-3"></i> الإدارة المالية</a>
             <a href="admin_packages.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"><i class="fas fa-box ml-3"></i> إدارة الباقات</a>
@@ -28,11 +28,12 @@
 
     <main class="flex-1 flex flex-col overflow-y-auto bg-gray-50">
         <header class="bg-white shadow-sm p-4 flex justify-between items-center border-b border-gray-200 sticky top-0 z-10">
-            <h2 class="text-2xl font-bold text-gray-700">التصور التحليلي للبيانات</h2>
+            <h2 class="text-2xl font-bold text-gray-700">لوحة التحكم</h2>
             <button onclick="logout()" class="text-red-500 font-bold hover:bg-red-50 px-4 py-2 rounded-lg transition"><i class="fas fa-sign-out-alt ml-2"></i> تسجيل الخروج</button>
         </header>
 
         <div class="p-8">
+            <!-- البطاقات الإحصائية -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
                     <div>
@@ -61,21 +62,79 @@
                     </label>
                 </div>
             </div>
+
+            <!-- جدول الرصد الزمني للحصص -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="flex justify-between items-center p-6 border-b bg-gray-50">
+                    <div>
+                        <h3 class="font-bold text-lg text-emerald-700"><i class="fas fa-stream ml-2"></i> الرصد الزمني للحصص (الأسبوع الحالي)</h3>
+                        <p class="text-xs text-gray-500 mt-1">تتبع التوزيع الزمني لحصص المعلمين من 04:00 فجراً حتى 20:00 ليلاً.</p>
+                    </div>
+                    <select id="teacherFilter" onchange="fetchTeacherSchedule()" class="border border-gray-300 rounded-lg p-2.5 focus:border-emerald-500 outline-none font-bold text-sm bg-white shadow-sm min-w-[200px]">
+                        <option value="">-- اختر المعلم لعرض جدوله --</option>
+                    </select>
+                </div>
+
+                <!-- مفتاح الألوان -->
+                <div class="bg-white px-6 py-3 border-b flex space-x-4 space-x-reverse text-xs font-bold text-gray-600">
+                    <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-blue-500 ml-1 block"></span> مجدولة</span>
+                    <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-orange-500 ml-1 block animate-pulse"></span> جارية</span>
+                    <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-gray-400 ml-1 block"></span> منتهية</span>
+                    <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-red-400 ml-1 block"></span> ملغية</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <div class="min-w-[900px]">
+                        <!-- رأس الجدول (الساعات) -->
+                        <div class="flex border-b border-gray-200 bg-gray-100 text-gray-500 text-xs font-bold">
+                            <div class="w-32 shrink-0 py-2 border-l border-gray-200 text-center flex items-center justify-center bg-gray-200">اليوم</div>
+                            <div class="flex-1 flex">
+                                <!-- توليد 16 ساعة من 4 إلى 19 -->
+                                <div class="flex-1 border-l border-gray-200 text-center py-2">04</div>
+                                <div class="flex-1 border-l border-gray-200 text-center py-2">05</div>
+                                <div class="flex-1 border-l border-gray-200 text-center py-2">06</div>
+                                <div class="flex-1 border-l border-gray-200 text-center py-2">07</div>
+                                <div class="flex-1 border-l border-gray-200 text-center py-2">08</div>
+                                <div class="flex-1 border-l border-gray-200 text-center py-2">09</div>
+                                <div class="flex-1 border-l border-gray-200 text-center py-2">10</div>
+                                <div class="flex-1 border-l border-gray-200 text-center py-2">11</div>
+                                <div class="flex-1 border-l border-gray-200 text-center py-2">12</div>
+                                <div class="flex-1 border-l border-gray-200 text-center py-2">13</div>
+                                <div class="flex-1 border-l border-gray-200 text-center py-2">14</div>
+                                <div class="flex-1 border-l border-gray-200 text-center py-2">15</div>
+                                <div class="flex-1 border-l border-gray-200 text-center py-2">16</div>
+                                <div class="flex-1 border-l border-gray-200 text-center py-2">17</div>
+                                <div class="flex-1 border-l border-gray-200 text-center py-2">18</div>
+                                <div class="flex-1 text-center py-2">19</div>
+                            </div>
+                        </div>
+                        
+                        <!-- صفوف الأيام سيتم ضخها هنا -->
+                        <div id="scheduleRows">
+                            <div class="p-8 text-center text-gray-400 font-bold">الرجاء اختيار معلم من القائمة أعلاه لاستعراض توقيت حصصه.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
     <script src="supabase.js"></script>
     <script>
+        function getLocalDateString(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
         async function loadDashboard() {
-            // جلب أعداد الطلاب
             const { count: studentCount } = await window.supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'student');
             document.getElementById('stat-students').textContent = studentCount || 0;
 
-            // جلب أعداد المعلمين
             const { count: teacherCount } = await window.supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'teacher');
             document.getElementById('stat-teachers').textContent = teacherCount || 0;
 
-            // حالة التسجيل
             const { data: settings } = await window.supabase.from('system_settings').select('is_registration_open').single();
             const toggle = document.getElementById('reg-toggle');
             const statusText = document.getElementById('reg-status-text');
@@ -90,7 +149,120 @@
                 statusText.textContent = isOpen ? 'مفتوح' : 'مغلق';
                 await window.supabase.from('system_settings').update({ is_registration_open: isOpen }).eq('id', 1);
             });
+
+            // جلب قائمة المعلمين للفلتر
+            const { data: teachers } = await window.supabase.from('users').select('id, full_name').eq('role', 'teacher');
+            const select = document.getElementById('teacherFilter');
+            if(teachers) {
+                teachers.forEach(t => {
+                    select.innerHTML += `<option value="${t.id}">${t.full_name}</option>`;
+                });
+            }
         }
+
+        async function fetchTeacherSchedule() {
+            const teacherId = document.getElementById('teacherFilter').value;
+            const rowsContainer = document.getElementById('scheduleRows');
+            
+            if(!teacherId) {
+                rowsContainer.innerHTML = '<div class="p-8 text-center text-gray-400 font-bold">الرجاء اختيار معلم من القائمة أعلاه لاستعراض توقيت حصصه.</div>';
+                return;
+            }
+            
+            rowsContainer.innerHTML = '<div class="p-8 text-center text-emerald-600 font-bold"><i class="fas fa-spinner fa-spin"></i> جاري استخراج الجدول الزمني...</div>';
+
+            const today = new Date();
+            const currentDay = today.getDay(); 
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - currentDay);
+            startOfWeek.setHours(0,0,0,0);
+            
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setHours(23,59,59,999);
+
+            const startStr = getLocalDateString(startOfWeek);
+            const endStr = getLocalDateString(endOfWeek);
+
+            const { data: sessions } = await window.supabase.from('sessions')
+                .select('id, session_date, start_time, end_time, status, users!sessions_student_id_fkey(full_name)')
+                .eq('teacher_id', teacherId)
+                .gte('session_date', startStr)
+                .lte('session_date', endStr);
+
+            renderSchedule(startOfWeek, sessions || []);
+        }
+
+        function renderSchedule(startOfWeek, sessions) {
+            const daysNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            const rowsContainer = document.getElementById('scheduleRows');
+            rowsContainer.innerHTML = '';
+
+            for(let i=0; i<7; i++) {
+                const dayDate = new Date(startOfWeek);
+                dayDate.setDate(startOfWeek.getDate() + i);
+                const dateStr = getLocalDateString(dayDate);
+
+                const daySessions = sessions.filter(s => s.session_date === dateStr);
+
+                // رسم خطوط الشبكة الخلفية للساعات (16 خانة)
+                let gridLines = '';
+                for(let h=4; h<20; h++) {
+                    gridLines += `<div class="flex-1 border-l border-gray-100"></div>`;
+                }
+
+                let sessionsHtml = '';
+                daySessions.forEach(sess => {
+                    const startParts = sess.start_time.split(':').map(Number);
+                    const endParts = sess.end_time.split(':').map(Number);
+                    
+                    const startMins = startParts[0] * 60 + startParts[1];
+                    const endMins = endParts[0] * 60 + endParts[1];
+                    
+                    // تجاهل الحصص خارج النطاق 04:00 (240 دقيقة) إلى 20:00 (1200 دقيقة)
+                    if(endMins <= 240 || startMins >= 1200) return; 
+
+                    const clampedStart = Math.max(240, startMins);
+                    const clampedEnd = Math.min(1200, endMins);
+                    
+                    const duration = clampedEnd - clampedStart;
+                    const offset = clampedStart - 240;
+                    
+                    // حساب النسبة المئوية للتموضع (بما أن الاتجاه RTL فستكون الخاصية right)
+                    const rightPct = (offset / 960) * 100;
+                    const widthPct = (duration / 960) * 100;
+
+                    let colorClass = 'bg-blue-500';
+                    let statusAr = 'مجدولة';
+                    if(sess.status === 'completed') { colorClass = 'bg-gray-400'; statusAr = 'منتهية'; }
+                    else if(sess.status === 'cancelled') { colorClass = 'bg-red-400'; statusAr = 'ملغية'; }
+                    else if(sess.status === 'ongoing') { colorClass = 'bg-orange-500 animate-pulse'; statusAr = 'جارية الآن'; }
+
+                    const tooltipText = `الطالب: ${sess.users?.full_name}\nالتاريخ: ${sess.session_date}\nالوقت: ${sess.start_time.substring(0,5)} - ${sess.end_time.substring(0,5)}\nالحالة: ${statusAr}`;
+
+                    sessionsHtml += `<div class="absolute top-1.5 bottom-1.5 ${colorClass} rounded text-white text-[10px] font-bold px-1 overflow-hidden shadow cursor-help flex items-center justify-center truncate border border-black/10 transition hover:scale-110 hover:z-10" style="right: ${rightPct}%; width: ${widthPct}%; min-width: 20px;" title="${tooltipText}">
+                        ${sess.users?.full_name.split(' ')[0]}
+                    </div>`;
+                });
+
+                const isToday = (dateStr === getLocalDateString(new Date()));
+                const rowBg = isToday ? 'bg-blue-50/20' : 'bg-white';
+
+                rowsContainer.innerHTML += `
+                    <div class="flex border-b border-gray-200 relative h-14 group ${rowBg}">
+                        <div class="w-32 shrink-0 border-l border-gray-200 flex flex-col items-center justify-center font-bold text-sm bg-gray-50 group-hover:bg-gray-100 ${isToday?'text-emerald-700':''}">
+                            <div>${daysNames[i]}</div>
+                            <div class="text-[10px] text-gray-500 font-normal">${dayDate.toLocaleDateString('en-GB')}</div>
+                        </div>
+                        <div class="flex-1 flex relative">
+                            <div class="absolute inset-0 flex">${gridLines}</div>
+                            ${sessionsHtml}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
         async function logout() { await window.supabase.auth.signOut(); window.location.href = 'login.html'; }
         window.addEventListener('load', loadDashboard);
     </script>
