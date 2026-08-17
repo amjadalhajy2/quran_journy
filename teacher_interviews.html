@@ -77,7 +77,7 @@
                         <select id="levelSelect" class="w-full border rounded-lg p-3 bg-white focus:border-emerald-500 font-bold outline-none" required>
                             <option value="مبتدئ">مبتدئ (تأسيس وتلقين)</option>
                             <option value="متوسط">متوسط (تلاوة وأحكام)</option>
-                            <option value="متقدم">متقدم (حفظ وإتقان)</option>
+                            <option value="متقدم">متقدم (إتقان)</option>
                         </select>
                     </div>
                 </div>
@@ -98,7 +98,7 @@
                 </div>
 
                 <div class="border-b pb-6">
-                    <h3 class="font-bold text-emerald-700 mb-4"><i class="fas fa-route ml-2"></i> بناء خطة الحفظ (تحديد المقرر)</h3>
+                    <h3 class="font-bold text-emerald-700 mb-4"><i class="fas fa-route ml-2"></i> بناء خطة التلاوة (تحديد المقرر)</h3>
                     <div class="flex space-x-6 space-x-reverse mb-4 bg-gray-100 p-3 rounded-lg inline-flex">
                         <label class="flex items-center font-bold cursor-pointer">
                             <input type="radio" name="planType" value="parts" checked class="w-4 h-4 text-emerald-600 focus:ring-emerald-500 ml-2" onchange="togglePlanInputs()"> 
@@ -111,12 +111,12 @@
                     </div>
 
                     <div id="partsInputGroup" class="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
-                        <label class="block font-bold text-sm mb-3 text-emerald-800"><i class="fas fa-check-square ml-1"></i> حدد الأجزاء المراد حفظها:</label>
+                        <label class="block font-bold text-sm mb-3 text-emerald-800"><i class="fas fa-check-square ml-1"></i> حدد الأجزاء المراد تلاوتها:</label>
                         <div id="juzContainer" class="h-48 overflow-y-auto border border-emerald-100 rounded-lg p-3 bg-white grid grid-cols-2 md:grid-cols-4 gap-3 shadow-inner"></div>
                     </div>
 
                     <div id="surahsInputGroup" class="bg-emerald-50 p-4 rounded-lg border border-emerald-200 hidden">
-                        <label class="block font-bold text-sm mb-3 text-emerald-800"><i class="fas fa-check-square ml-1"></i> حدد السور المراد حفظها:</label>
+                        <label class="block font-bold text-sm mb-3 text-emerald-800"><i class="fas fa-check-square ml-1"></i> حدد السور المراد تلاوتها:</label>
                         <div id="surahsContainer" class="h-56 overflow-y-auto border border-emerald-100 rounded-lg p-3 bg-white grid grid-cols-2 md:grid-cols-4 gap-3 shadow-inner"></div>
                     </div>
                 </div>
