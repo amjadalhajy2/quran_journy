@@ -49,6 +49,7 @@
             <h3 class="text-xl font-bold mb-4 text-emerald-700 border-b pb-2"><i class="fas fa-clock ml-2"></i> تعديل موعد الحصة</h3>
             <form id="editSessionTimeForm" class="space-y-4">
                 <input type="hidden" id="editSessId">
+                <input type="hidden" id="editSessStudentId">
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">تاريخ الحصة</label>
                     <input type="date" id="editSessDate" class="w-full border rounded-lg p-3 outline-none focus:border-emerald-500 bg-gray-50" required>
@@ -152,7 +153,7 @@
             document.getElementById('weekDisplay').textContent = `${startOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})} - ${endOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})}`;
 
             const { data: sessions } = await window.supabase.from('sessions')
-                .select('id, session_date, start_time, end_time, status, users!sessions_student_id_fkey(full_name)')
+                .select('id, student_id, session_date, start_time, end_time, status, users!sessions_student_id_fkey(full_name)')
                 .eq('teacher_id', teacherId)
                 .gte('session_date', startStr)
                 .lte('session_date', endStr);
@@ -209,7 +210,7 @@
                     bodyClass = 'border border-gray-200 bg-white';
                 }
 
-                let colHtml = `<div class="rounded-xl min-h-[350px] flex flex-col ${bodyClass} transition-all">
+                let colHtml = `<div class="rounded-xl overflow-hidden min-h-[350px] flex flex-col ${bodyClass} transition-all">
                                 <div class="text-center py-2 ${headerClass} rounded-t-xl">
                                     <h4 class="font-bold">${daysNames[i]}</h4>
                                     <span class="text-xs font-medium opacity-90">${dayDate.toLocaleDateString('ar-OM', {month:'numeric', day:'numeric'})}</span>
@@ -256,7 +257,7 @@
                                     <i class="fas fa-ellipsis-v px-1"></i>
                                 </button>
                                 <div id="menu-${sess.id}" class="hidden absolute left-0 mt-1 w-28 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
-                                    <button type="button" onclick="openEditSessionTimeModal(event, '${sess.id}', '${sess.session_date}', '${sess.start_time}', ${durationMins})" class="w-full text-right px-3 py-2 text-[11px] font-bold text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition flex items-center">
+                                    <button type="button" onclick="openEditSessionTimeModal(event, '${sess.id}', '${sess.student_id}', '${sess.session_date}', '${sess.start_time}', ${durationMins})" class="w-full text-right px-3 py-2 text-[11px] font-bold text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition flex items-center">
                                         <i class="fas fa-edit ml-1.5"></i> تعديل الحصة
                                     </button>
                                 </div>
@@ -300,6 +301,7 @@
             }
         }
 
+        // --- دوال القائمة المنبثقة للثلاث نقاط ---
         function toggleSessionMenu(e, id) {
             e.preventDefault();
             e.stopPropagation();
@@ -317,12 +319,13 @@
             }
         });
 
-        function openEditSessionTimeModal(e, id, date, time, duration) {
+        function openEditSessionTimeModal(e, id, studentId, date, time, duration) {
             e.preventDefault();
             e.stopPropagation();
             document.querySelectorAll('[id^="menu-"]').forEach(el => el.classList.add('hidden'));
             
             document.getElementById('editSessId').value = id;
+            document.getElementById('editSessStudentId').value = studentId; // تخزين معرف الطالب
             document.getElementById('editSessDate').value = date;
             document.getElementById('editSessTime').value = time.substring(0, 5);
             currentSessDuration = duration;
@@ -343,41 +346,53 @@
             btn.disabled = true; btn.textContent = 'جاري الحفظ...';
             
             const id = document.getElementById('editSessId').value;
+            const studentId = document.getElementById('editSessStudentId').value;
             const newDate = document.getElementById('editSessDate').value;
             const newTime = document.getElementById('editSessTime').value;
             
+            // حساب الدقائق الدقيقة للتوقيت الجديد
             let [hours, mins] = newTime.split(':').map(Number);
-            let totalMins = hours * 60 + mins + currentSessDuration;
-            let endH = Math.floor(totalMins / 60) % 24;
-            let endM = totalMins % 60;
+            let newStartMins = hours * 60 + mins;
+            let newEndMins = newStartMins + currentSessDuration;
+            
+            let endH = Math.floor(newEndMins / 60) % 24;
+            let endM = newEndMins % 60;
             let endTimeStr = String(endH).padStart(2, '0') + ':' + String(endM).padStart(2, '0') + ':00';
             let startTimeStr = newTime + ':00';
 
             const msg = document.getElementById('editSessMsg');
 
-            // --- كشف التعارض للمعلم ---
-            const { data: existingSessions } = await window.supabase.from('sessions')
-                .select('start_time, end_time')
-                .eq('teacher_id', teacherId)
+            // الخوارزمية المطورة: جلب الحصص للمقارنة (بناءً على المعلم والطالب في نفس اليوم)
+            const { data: existingSessions, error: conflictErr } = await window.supabase.from('sessions')
+                .select('start_time, end_time, teacher_id, student_id')
                 .eq('session_date', newDate)
                 .in('status', ['scheduled', 'ongoing'])
-                .neq('id', id); // استثناء الحصة الحالية من الفحص
+                .neq('id', id) // استثناء الحصة الحالية
+                .or(`teacher_id.eq.${teacherId},student_id.eq.${studentId}`);
 
+            // حساب دقيق للتعارض باستخدام الدقائق بدلاً من النصوص
             if (existingSessions && existingSessions.length > 0) {
                 let conflict = existingSessions.find(ex => {
-                    return (startTimeStr < ex.end_time && endTimeStr > ex.start_time);
+                    let exStartParts = ex.start_time.split(':').map(Number);
+                    let exEndParts = ex.end_time.split(':').map(Number);
+                    
+                    let exStartMins = exStartParts[0] * 60 + exStartParts[1];
+                    let exEndMins = exEndParts[0] * 60 + exEndParts[1];
+
+                    // التحقق من تداخل الفترات الزمنية
+                    return (newStartMins < exEndMins && newEndMins > exStartMins);
                 });
 
                 if (conflict) {
-                    msg.textContent = 'يتعذر التعديل! يوجد تعارض مع حصة أخرى للمعلم في هذا الوقت.';
+                    msg.textContent = 'يتعذر التعديل! التوقيت الجديد يتعارض مع حصة أخرى مجدولة للمعلم أو للطالب.';
                     msg.className = 'text-sm font-bold p-2 text-center rounded bg-red-50 text-red-600 block mt-2';
                     msg.classList.remove('hidden');
                     btn.disabled = false; btn.textContent = 'حفظ التعديل';
                     return;
                 }
             }
-            // ---------------------------
 
+            // إذا لم يكن هناك تعارض، يتم الحفظ باستخدام الدالة الخلفية
             const { error } = await window.supabase.rpc('update_session_time', {
                 p_session_id: id,
                 p_session_date: newDate,
