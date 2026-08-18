@@ -25,7 +25,7 @@
             </div>
         </div>
 
-        <!-- الجدول الأسبوعي (بالتصميم الجديد) -->
+        <!-- الجدول الأسبوعي -->
         <div class="bg-white rounded-xl shadow-sm border p-6">
             <div class="flex justify-between items-center mb-6 border-b pb-4">
                 <h3 class="font-bold text-lg text-emerald-700"><i class="fas fa-calendar-week ml-2"></i> الجدول الأسبوعي للحلقات</h3>
@@ -43,11 +43,37 @@
         </div>
     </main>
 
+    <!-- نافذة تعديل موعد الحصة -->
+    <div id="editSessionTimeModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 class="text-xl font-bold mb-4 text-emerald-700 border-b pb-2"><i class="fas fa-clock ml-2"></i> تعديل موعد الحصة</h3>
+            <form id="editSessionTimeForm" class="space-y-4">
+                <input type="hidden" id="editSessId">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">تاريخ الحصة</label>
+                    <input type="date" id="editSessDate" class="w-full border rounded-lg p-3 outline-none focus:border-emerald-500 bg-gray-50" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">وقت البدء</label>
+                    <input type="time" id="editSessTime" class="w-full border rounded-lg p-3 outline-none focus:border-emerald-500 bg-gray-50" required>
+                </div>
+                
+                <div id="editSessMsg" class="hidden text-sm font-bold p-2 text-center rounded"></div>
+                
+                <div class="flex space-x-2 space-x-reverse mt-6">
+                    <button type="submit" id="saveSessTimeBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 transition text-white p-3 rounded-lg font-bold shadow-md">حفظ التعديل</button>
+                    <button type="button" onclick="closeEditSessionTimeModal()" class="w-full bg-gray-200 hover:bg-gray-300 transition text-gray-700 p-3 rounded-lg font-bold">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="supabase.js"></script>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const teacherId = urlParams.get('id');
         let currentWeekOffset = 0; 
+        let currentSessDuration = 30; // افتراضي
 
         if(!teacherId) window.location.href = 'admin_teachers.html';
 
@@ -131,7 +157,6 @@
                 .gte('session_date', startStr)
                 .lte('session_date', endStr);
 
-            // تحديث الحصص المنتهية تلقائياً
             const now = new Date();
             const currentDateString = getLocalDateString(now);
             const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -184,8 +209,9 @@
                     bodyClass = 'border border-gray-200 bg-white';
                 }
 
-                let colHtml = `<div class="rounded-xl overflow-hidden min-h-[350px] flex flex-col ${bodyClass} transition-all">
-                                <div class="text-center py-2 ${headerClass}">
+                // إزالة overflow-hidden للسماح بظهور القائمة المنسدلة بالكامل
+                let colHtml = `<div class="rounded-xl min-h-[350px] flex flex-col ${bodyClass} transition-all">
+                                <div class="text-center py-2 ${headerClass} rounded-t-xl">
                                     <h4 class="font-bold">${daysNames[i]}</h4>
                                     <span class="text-xs font-medium opacity-90">${dayDate.toLocaleDateString('ar-OM', {month:'numeric', day:'numeric'})}</span>
                                 </div>
@@ -193,6 +219,10 @@
                 
                 if(daySessions.length > 0) {
                     daySessions.sort((a,b) => a.start_time.localeCompare(b.start_time)).forEach(sess => {
+                        const sParts = sess.start_time.split(':').map(Number);
+                        const eParts = sess.end_time.split(':').map(Number);
+                        const durationMins = (eParts[0]*60 + eParts[1]) - (sParts[0]*60 + sParts[1]);
+
                         const sTime = sess.start_time.substring(0,5); 
                         const eTime = sess.end_time.substring(0,5);
                         
@@ -221,27 +251,44 @@
                                 cardStyle = 'bg-emerald-50 border-emerald-200';
                         }
 
-                        // تحويل البطاقة إلى رابط لغرفة الإشراف فقط إذا كانت مجدولة أو جارية
-                        if (sess.status === 'completed' || sess.status === 'cancelled') {
-                            colHtml += `<div class="block ${cardStyle} border p-2 rounded-lg text-sm relative flex flex-col">
-                                <div class="font-bold text-gray-800 text-xs mb-1.5 text-center">${sess.users.full_name}</div>
-                                <div class="border-t border-gray-200/60 pt-1.5 pb-1.5 text-center w-full whitespace-nowrap">
-                                    <span class="font-bold text-gray-500 text-[11px] inline-block"><i class="far fa-clock ml-1"></i>${sTime} - ${eTime}</span>
+                        // زر القائمة المنسدلة للتعديل
+                        let menuHtml = `
+                            <div class="absolute top-1 left-1 z-20">
+                                <button onclick="toggleSessionMenu(event, '${sess.id}')" class="menu-btn text-gray-400 hover:text-emerald-600 bg-white/60 hover:bg-white rounded p-1 shadow-sm transition">
+                                    <i class="fas fa-ellipsis-v px-1"></i>
+                                </button>
+                                <div id="menu-${sess.id}" class="hidden absolute left-0 mt-1 w-28 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
+                                    <button type="button" onclick="openEditSessionTimeModal(event, '${sess.id}', '${sess.session_date}', '${sess.start_time}', ${durationMins})" class="w-full text-right px-3 py-2 text-[11px] font-bold text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition flex items-center">
+                                        <i class="fas fa-edit ml-1.5"></i> تعديل الحصة
+                                    </button>
                                 </div>
-                                <div class="border-t border-gray-200/60 pt-1.5 mt-auto text-center w-full">
-                                    ${statusBadge}
+                            </div>
+                        `;
+
+                        const innerContent = `
+                            <div class="font-bold text-gray-800 text-xs mb-1.5 text-center px-4">${sess.users.full_name}</div>
+                            <div class="border-t border-gray-200/60 pt-1.5 pb-1.5 text-center w-full whitespace-nowrap">
+                                <span class="font-bold text-gray-500 text-[11px] inline-block"><i class="far fa-clock ml-1"></i>${sTime} - ${eTime}</span>
+                            </div>
+                            <div class="border-t border-gray-200/60 pt-1.5 mt-auto text-center w-full">
+                                ${statusBadge}
+                            </div>
+                        `;
+
+                        if (sess.status === 'completed' || sess.status === 'cancelled') {
+                            colHtml += `<div class="relative block ${cardStyle} border rounded-lg text-sm flex flex-col">
+                                ${menuHtml}
+                                <div class="p-2 flex flex-col h-full w-full">
+                                    ${innerContent}
                                 </div>
                             </div>`;
                         } else {
-                            colHtml += `<a href="admin_virtual_session.html?session_id=${sess.id}" class="block ${cardStyle} border p-2 rounded-lg text-sm relative transition hover:shadow-md flex flex-col cursor-pointer" title="انقر للدخول للحصة ووضع ملاحظات إشرافية">
-                                <div class="font-bold text-gray-800 text-xs mb-1.5 text-center">${sess.users.full_name}</div>
-                                <div class="border-t border-gray-200/60 pt-1.5 pb-1.5 text-center w-full whitespace-nowrap">
-                                    <span class="font-bold text-gray-500 text-[11px] inline-block"><i class="far fa-clock ml-1"></i>${sTime} - ${eTime}</span>
-                                </div>
-                                <div class="border-t border-gray-200/60 pt-1.5 mt-auto text-center w-full">
-                                    ${statusBadge}
-                                </div>
-                            </a>`;
+                            colHtml += `<div class="relative block ${cardStyle} border rounded-lg text-sm transition hover:shadow-md flex flex-col">
+                                ${menuHtml}
+                                <a href="admin_virtual_session.html?session_id=${sess.id}" class="p-2 flex flex-col h-full w-full cursor-pointer" title="انقر للدخول للحصة ووضع ملاحظات إشرافية">
+                                    ${innerContent}
+                                </a>
+                            </div>`;
                         }
                     });
                 } else {
@@ -255,6 +302,77 @@
                 grid.innerHTML += colHtml;
             }
         }
+
+        // --- دوال القائمة المنبثقة للثلاث نقاط ---
+        function toggleSessionMenu(e, id) {
+            e.preventDefault();
+            e.stopPropagation();
+            const menu = document.getElementById('menu-'+id);
+            const isHidden = menu.classList.contains('hidden');
+            document.querySelectorAll('[id^="menu-"]').forEach(el => el.classList.add('hidden'));
+            if (isHidden) {
+                menu.classList.remove('hidden');
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('[id^="menu-"]') && !e.target.closest('.menu-btn')) {
+                document.querySelectorAll('[id^="menu-"]').forEach(el => el.classList.add('hidden'));
+            }
+        });
+
+        function openEditSessionTimeModal(e, id, date, time, duration) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.querySelectorAll('[id^="menu-"]').forEach(el => el.classList.add('hidden'));
+            
+            document.getElementById('editSessId').value = id;
+            document.getElementById('editSessDate').value = date;
+            document.getElementById('editSessTime').value = time.substring(0, 5);
+            currentSessDuration = duration;
+            
+            document.getElementById('editSessMsg').classList.add('hidden');
+            document.getElementById('editSessionTimeModal').classList.remove('hidden');
+            document.getElementById('editSessionTimeModal').classList.add('flex');
+        }
+
+        function closeEditSessionTimeModal() {
+            document.getElementById('editSessionTimeModal').classList.add('hidden');
+            document.getElementById('editSessionTimeModal').classList.remove('flex');
+        }
+
+        document.getElementById('editSessionTimeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveSessTimeBtn');
+            btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+            
+            const id = document.getElementById('editSessId').value;
+            const newDate = document.getElementById('editSessDate').value;
+            const newTime = document.getElementById('editSessTime').value;
+            
+            let [hours, mins] = newTime.split(':').map(Number);
+            let totalMins = hours * 60 + mins + currentSessDuration;
+            let endH = Math.floor(totalMins / 60) % 24;
+            let endM = totalMins % 60;
+            let endTimeStr = String(endH).padStart(2, '0') + ':' + String(endM).padStart(2, '0') + ':00';
+
+            const { error } = await window.supabase.from('sessions')
+                .update({ session_date: newDate, start_time: newTime + ':00', end_time: endTimeStr })
+                .eq('id', id);
+
+            const msg = document.getElementById('editSessMsg');
+            msg.classList.remove('hidden');
+            if(error) {
+                msg.textContent = 'حدث خطأ: ' + error.message;
+                msg.className = 'text-sm font-bold p-2 text-center rounded bg-red-50 text-red-600 block mt-2';
+            } else {
+                msg.textContent = 'تم تعديل موعد الحصة بنجاح!';
+                msg.className = 'text-sm font-bold p-2 text-center rounded bg-green-50 text-green-600 block mt-2';
+                loadCalendar();
+                setTimeout(() => closeEditSessionTimeModal(), 1500);
+            }
+            btn.disabled = false; btn.textContent = 'حفظ التعديل';
+        });
 
         function changeWeek(direction) {
             currentWeekOffset += direction;
