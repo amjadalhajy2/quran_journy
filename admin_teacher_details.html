@@ -209,7 +209,6 @@
                     bodyClass = 'border border-gray-200 bg-white';
                 }
 
-                // إزالة overflow-hidden للسماح بظهور القائمة المنسدلة بالكامل
                 let colHtml = `<div class="rounded-xl min-h-[350px] flex flex-col ${bodyClass} transition-all">
                                 <div class="text-center py-2 ${headerClass} rounded-t-xl">
                                     <h4 class="font-bold">${daysNames[i]}</h4>
@@ -251,7 +250,6 @@
                                 cardStyle = 'bg-emerald-50 border-emerald-200';
                         }
 
-                        // زر القائمة المنسدلة للتعديل
                         let menuHtml = `
                             <div class="absolute top-1 left-1 z-20">
                                 <button onclick="toggleSessionMenu(event, '${sess.id}')" class="menu-btn text-gray-400 hover:text-emerald-600 bg-white/60 hover:bg-white rounded p-1 shadow-sm transition">
@@ -275,9 +273,9 @@
                             </div>
                         `;
 
+                        // إخفاء قائمة التعديل (menuHtml) عن الحصص المنتهية والملغية
                         if (sess.status === 'completed' || sess.status === 'cancelled') {
                             colHtml += `<div class="relative block ${cardStyle} border rounded-lg text-sm flex flex-col">
-                                ${menuHtml}
                                 <div class="p-2 flex flex-col h-full w-full">
                                     ${innerContent}
                                 </div>
@@ -356,9 +354,13 @@
             let endM = totalMins % 60;
             let endTimeStr = String(endH).padStart(2, '0') + ':' + String(endM).padStart(2, '0') + ':00';
 
-            const { error } = await window.supabase.from('sessions')
-                .update({ session_date: newDate, start_time: newTime + ':00', end_time: endTimeStr })
-                .eq('id', id);
+            // استخدام الدالة الخلفية لتجاوز RLS
+            const { error } = await window.supabase.rpc('update_session_time', {
+                p_session_id: id,
+                p_session_date: newDate,
+                p_start_time: newTime + ':00',
+                p_end_time: endTimeStr
+            });
 
             const msg = document.getElementById('editSessMsg');
             msg.classList.remove('hidden');
