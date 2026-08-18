@@ -274,6 +274,7 @@
                             </div>
                         `;
 
+                        // إخفاء قائمة التعديل عن الحصص المنتهية والملغية، وإبقاؤها للمجدولة والجارية
                         if (sess.status === 'completed' || sess.status === 'cancelled') {
                             colHtml += `<div class="relative block ${cardStyle} border rounded-lg text-sm flex flex-col">
                                 <div class="p-2 flex flex-col h-full w-full">
@@ -349,7 +350,6 @@
             const newDate = document.getElementById('editSessDate').value;
             const newTime = document.getElementById('editSessTime').value;
             
-            // حساب الدقائق الدقيقة للتوقيت الجديد
             let [hours, mins] = newTime.split(':').map(Number);
             let newStartMins = hours * 60 + mins;
             let newEndMins = newStartMins + currentSessDuration;
@@ -364,31 +364,33 @@
             try {
                 let allExistingSessions = [];
 
-                // 1. جلب حصص المعلم في نفس اليوم
+                // 1. جلب الحصص النشطة للمعلم (بدون استخدام 'ongoing' كشرط مباشر لتجنب أخطاء ENUM)
                 const { data: teacherSessions, error: tErr } = await window.supabase.from('sessions')
                     .select('start_time, end_time')
                     .eq('teacher_id', teacherId)
                     .eq('session_date', newDate)
-                    .in('status', ['scheduled', 'ongoing'])
+                    .neq('status', 'completed')
+                    .neq('status', 'cancelled')
                     .neq('id', id);
 
                 if (tErr) throw new Error("تعذر فحص حصص المعلم: " + tErr.message);
                 if (teacherSessions) allExistingSessions = [...allExistingSessions, ...teacherSessions];
 
-                // 2. جلب حصص الطالب في نفس اليوم (فقط إذا كان المعرف صالحاً وموجوداً)
+                // 2. جلب الحصص النشطة للطالب (إذا كان الطالب معرفاً بشكل صحيح)
                 if (studentId && studentId !== 'undefined' && studentId !== 'null' && studentId.trim() !== '') {
                     const { data: studentSessions, error: sErr } = await window.supabase.from('sessions')
                         .select('start_time, end_time')
                         .eq('student_id', studentId)
                         .eq('session_date', newDate)
-                        .in('status', ['scheduled', 'ongoing'])
+                        .neq('status', 'completed')
+                        .neq('status', 'cancelled')
                         .neq('id', id);
 
                     if (sErr) throw new Error("تعذر فحص حصص الطالب: " + sErr.message);
                     if (studentSessions) allExistingSessions = [...allExistingSessions, ...studentSessions];
                 }
 
-                // حساب دقيق للتعارض
+                // حساب دقيق للتعارض بالدقائق
                 if (allExistingSessions.length > 0) {
                     let conflict = allExistingSessions.find(ex => {
                         let exStartParts = ex.start_time.split(':').map(Number);
@@ -409,7 +411,6 @@
                     }
                 }
 
-                // الحفظ النهائي باستخدام الدالة الخلفية إذا لم يكن هناك تعارض
                 const { error } = await window.supabase.rpc('update_session_time', {
                     p_session_id: id,
                     p_session_date: newDate,
