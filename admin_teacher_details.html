@@ -150,8 +150,6 @@
             const startStr = getLocalDateString(startOfWeek);
             const endStr = getLocalDateString(endOfWeek);
 
-            document.getElementById('weekDisplay').textContent = `${startOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})} - ${endOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})}`;
-
             const { data: sessions } = await window.supabase.from('sessions')
                 .select('id, student_id, session_date, start_time, end_time, status, users!sessions_student_id_fkey(full_name)')
                 .eq('teacher_id', teacherId)
@@ -274,7 +272,6 @@
                             </div>
                         `;
 
-                        // إخفاء قائمة التعديل عن الحصص المنتهية والملغية، وإبقاؤها للمجدولة والجارية
                         if (sess.status === 'completed' || sess.status === 'cancelled') {
                             colHtml += `<div class="relative block ${cardStyle} border rounded-lg text-sm flex flex-col">
                                 <div class="p-2 flex flex-col h-full w-full">
@@ -364,33 +361,30 @@
             try {
                 let allExistingSessions = [];
 
-                // 1. جلب الحصص النشطة للمعلم (بدون استخدام 'ongoing' كشرط مباشر لتجنب أخطاء ENUM)
+                // استعلام مباشر وسريع من قاعدة البيانات للحصص المجدولة والجارية
                 const { data: teacherSessions, error: tErr } = await window.supabase.from('sessions')
                     .select('start_time, end_time')
                     .eq('teacher_id', teacherId)
                     .eq('session_date', newDate)
-                    .neq('status', 'completed')
-                    .neq('status', 'cancelled')
+                    .in('status', ['scheduled', 'ongoing'])
                     .neq('id', id);
 
                 if (tErr) throw new Error("تعذر فحص حصص المعلم: " + tErr.message);
                 if (teacherSessions) allExistingSessions = [...allExistingSessions, ...teacherSessions];
 
-                // 2. جلب الحصص النشطة للطالب (إذا كان الطالب معرفاً بشكل صحيح)
                 if (studentId && studentId !== 'undefined' && studentId !== 'null' && studentId.trim() !== '') {
                     const { data: studentSessions, error: sErr } = await window.supabase.from('sessions')
                         .select('start_time, end_time')
                         .eq('student_id', studentId)
                         .eq('session_date', newDate)
-                        .neq('status', 'completed')
-                        .neq('status', 'cancelled')
+                        .in('status', ['scheduled', 'ongoing'])
                         .neq('id', id);
 
                     if (sErr) throw new Error("تعذر فحص حصص الطالب: " + sErr.message);
                     if (studentSessions) allExistingSessions = [...allExistingSessions, ...studentSessions];
                 }
 
-                // حساب دقيق للتعارض بالدقائق
+                // حساب التعارض
                 if (allExistingSessions.length > 0) {
                     let conflict = allExistingSessions.find(ex => {
                         let exStartParts = ex.start_time.split(':').map(Number);
