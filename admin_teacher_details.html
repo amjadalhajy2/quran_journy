@@ -273,7 +273,6 @@
                             </div>
                         `;
 
-                        // إخفاء قائمة التعديل (menuHtml) عن الحصص المنتهية والملغية
                         if (sess.status === 'completed' || sess.status === 'cancelled') {
                             colHtml += `<div class="relative block ${cardStyle} border rounded-lg text-sm flex flex-col">
                                 <div class="p-2 flex flex-col h-full w-full">
@@ -301,7 +300,6 @@
             }
         }
 
-        // --- دوال القائمة المنبثقة للثلاث نقاط ---
         function toggleSessionMenu(e, id) {
             e.preventDefault();
             e.stopPropagation();
@@ -353,16 +351,40 @@
             let endH = Math.floor(totalMins / 60) % 24;
             let endM = totalMins % 60;
             let endTimeStr = String(endH).padStart(2, '0') + ':' + String(endM).padStart(2, '0') + ':00';
+            let startTimeStr = newTime + ':00';
 
-            // استخدام الدالة الخلفية لتجاوز RLS
+            const msg = document.getElementById('editSessMsg');
+
+            // --- كشف التعارض للمعلم ---
+            const { data: existingSessions } = await window.supabase.from('sessions')
+                .select('start_time, end_time')
+                .eq('teacher_id', teacherId)
+                .eq('session_date', newDate)
+                .in('status', ['scheduled', 'ongoing'])
+                .neq('id', id); // استثناء الحصة الحالية من الفحص
+
+            if (existingSessions && existingSessions.length > 0) {
+                let conflict = existingSessions.find(ex => {
+                    return (startTimeStr < ex.end_time && endTimeStr > ex.start_time);
+                });
+
+                if (conflict) {
+                    msg.textContent = 'يتعذر التعديل! يوجد تعارض مع حصة أخرى للمعلم في هذا الوقت.';
+                    msg.className = 'text-sm font-bold p-2 text-center rounded bg-red-50 text-red-600 block mt-2';
+                    msg.classList.remove('hidden');
+                    btn.disabled = false; btn.textContent = 'حفظ التعديل';
+                    return;
+                }
+            }
+            // ---------------------------
+
             const { error } = await window.supabase.rpc('update_session_time', {
                 p_session_id: id,
                 p_session_date: newDate,
-                p_start_time: newTime + ':00',
+                p_start_time: startTimeStr,
                 p_end_time: endTimeStr
             });
 
-            const msg = document.getElementById('editSessMsg');
             msg.classList.remove('hidden');
             if(error) {
                 msg.textContent = 'حدث خطأ: ' + error.message;
