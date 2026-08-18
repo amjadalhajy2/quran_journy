@@ -59,7 +59,7 @@
                     <input type="time" id="editSessTime" class="w-full border rounded-lg p-3 outline-none focus:border-emerald-500 bg-gray-50" required>
                 </div>
                 
-                <div id="editSessMsg" class="hidden text-sm font-bold p-2 text-center rounded"></div>
+                <div id="editSessMsg" class="hidden text-sm font-bold p-2 text-center rounded leading-relaxed"></div>
                 
                 <div class="flex space-x-2 space-x-reverse mt-6">
                     <button type="submit" id="saveSessTimeBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 transition text-white p-3 rounded-lg font-bold shadow-md">حفظ التعديل</button>
@@ -152,7 +152,6 @@
 
             document.getElementById('weekDisplay').textContent = `${startOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})} - ${endOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})}`;
 
-            // تم إضافة student_id هنا لضمان تمريره واستخدامه بشكل صحيح في خوارزمية التعارض
             const { data: sessions } = await window.supabase.from('sessions')
                 .select('id, student_id, session_date, start_time, end_time, status, users!sessions_student_id_fkey(full_name)')
                 .eq('teacher_id', teacherId)
@@ -363,7 +362,9 @@
             const msg = document.getElementById('editSessMsg');
 
             try {
-                // جلب الحصص الخاصة بالمعلم في هذا اليوم (باستثناء الحصة الحالية)
+                let allExistingSessions = [];
+
+                // 1. جلب حصص المعلم في نفس اليوم
                 const { data: teacherSessions, error: tErr } = await window.supabase.from('sessions')
                     .select('start_time, end_time')
                     .eq('teacher_id', teacherId)
@@ -371,42 +372,44 @@
                     .in('status', ['scheduled', 'ongoing'])
                     .neq('id', id);
 
-                // جلب الحصص الخاصة للطالب في هذا اليوم (باستثناء الحصة الحالية)
-                const { data: studentSessions, error: sErr } = await window.supabase.from('sessions')
-                    .select('start_time, end_time')
-                    .eq('student_id', studentId)
-                    .eq('session_date', newDate)
-                    .in('status', ['scheduled', 'ongoing'])
-                    .neq('id', id);
+                if (tErr) throw new Error("تعذر فحص حصص المعلم: " + tErr.message);
+                if (teacherSessions) allExistingSessions = [...allExistingSessions, ...teacherSessions];
 
-                if (tErr || sErr) throw new Error("فشل في التحقق من التعارض");
+                // 2. جلب حصص الطالب في نفس اليوم (فقط إذا كان المعرف صالحاً وموجوداً)
+                if (studentId && studentId !== 'undefined' && studentId !== 'null' && studentId.trim() !== '') {
+                    const { data: studentSessions, error: sErr } = await window.supabase.from('sessions')
+                        .select('start_time, end_time')
+                        .eq('student_id', studentId)
+                        .eq('session_date', newDate)
+                        .in('status', ['scheduled', 'ongoing'])
+                        .neq('id', id);
 
-                // دمج جميع الحصص المحتمل أن تتعارض مع التوقيت الجديد
-                const existingSessions = [...(teacherSessions || []), ...(studentSessions || [])];
+                    if (sErr) throw new Error("تعذر فحص حصص الطالب: " + sErr.message);
+                    if (studentSessions) allExistingSessions = [...allExistingSessions, ...studentSessions];
+                }
 
-                // حساب دقيق للتعارض باستخدام الدقائق بدلاً من النصوص
-                if (existingSessions.length > 0) {
-                    let conflict = existingSessions.find(ex => {
+                // حساب دقيق للتعارض
+                if (allExistingSessions.length > 0) {
+                    let conflict = allExistingSessions.find(ex => {
                         let exStartParts = ex.start_time.split(':').map(Number);
                         let exEndParts = ex.end_time.split(':').map(Number);
                         
                         let exStartMins = exStartParts[0] * 60 + exStartParts[1];
                         let exEndMins = exEndParts[0] * 60 + exEndParts[1];
 
-                        // شرط حدوث تداخل بين فترتين زمنيتين
                         return (newStartMins < exEndMins && newEndMins > exStartMins);
                     });
 
                     if (conflict) {
-                        msg.textContent = 'يتعذر التعديل! التوقيت الجديد يتعارض مع حصة أخرى مجدولة للمعلم أو للطالب.';
-                        msg.className = 'text-sm font-bold p-2 text-center rounded bg-red-50 text-red-600 block mt-2';
+                        msg.textContent = 'يتعذر التعديل! التوقيت الجديد يتعارض مع حصة أخرى مجدولة للمعلم أو للطالب في نفس الوقت.';
+                        msg.className = 'text-sm font-bold p-3 text-center rounded bg-red-50 text-red-600 block mt-2 border border-red-200';
                         msg.classList.remove('hidden');
                         btn.disabled = false; btn.textContent = 'حفظ التعديل';
-                        return; // منع الإكمال إذا وجد تعارض
+                        return;
                     }
                 }
 
-                // الحفظ باستخدام الدالة الخلفية لتجاوز الـ RLS إذا لم يكن هناك تعارض
+                // الحفظ النهائي باستخدام الدالة الخلفية إذا لم يكن هناك تعارض
                 const { error } = await window.supabase.rpc('update_session_time', {
                     p_session_id: id,
                     p_session_date: newDate,
@@ -417,14 +420,14 @@
                 if(error) throw new Error(error.message);
 
                 msg.textContent = 'تم تعديل موعد الحصة بنجاح!';
-                msg.className = 'text-sm font-bold p-2 text-center rounded bg-green-50 text-green-600 block mt-2';
+                msg.className = 'text-sm font-bold p-3 text-center rounded bg-green-50 text-green-600 block mt-2 border border-green-200';
                 msg.classList.remove('hidden');
                 loadCalendar();
                 setTimeout(() => closeEditSessionTimeModal(), 1500);
 
             } catch (err) {
                 msg.textContent = 'حدث خطأ: ' + err.message;
-                msg.className = 'text-sm font-bold p-2 text-center rounded bg-red-50 text-red-600 block mt-2';
+                msg.className = 'text-sm font-bold p-3 text-center rounded bg-red-50 text-red-600 block mt-2 border border-red-200';
                 msg.classList.remove('hidden');
             }
             
