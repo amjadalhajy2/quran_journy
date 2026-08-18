@@ -152,6 +152,7 @@
 
             document.getElementById('weekDisplay').textContent = `${startOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})} - ${endOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})}`;
 
+            // تم إضافة student_id هنا لضمان تمريره واستخدامه بشكل صحيح في خوارزمية التعارض
             const { data: sessions } = await window.supabase.from('sessions')
                 .select('id, student_id, session_date, start_time, end_time, status, users!sessions_student_id_fkey(full_name)')
                 .eq('teacher_id', teacherId)
@@ -301,7 +302,6 @@
             }
         }
 
-        // --- دوال القائمة المنبثقة للثلاث نقاط ---
         function toggleSessionMenu(e, id) {
             e.preventDefault();
             e.stopPropagation();
@@ -325,7 +325,7 @@
             document.querySelectorAll('[id^="menu-"]').forEach(el => el.classList.add('hidden'));
             
             document.getElementById('editSessId').value = id;
-            document.getElementById('editSessStudentId').value = studentId; // تخزين معرف الطالب
+            document.getElementById('editSessStudentId').value = studentId; 
             document.getElementById('editSessDate').value = date;
             document.getElementById('editSessTime').value = time.substring(0, 5);
             currentSessDuration = duration;
@@ -362,54 +362,72 @@
 
             const msg = document.getElementById('editSessMsg');
 
-            // الخوارزمية المطورة: جلب الحصص للمقارنة (بناءً على المعلم والطالب في نفس اليوم)
-            const { data: existingSessions, error: conflictErr } = await window.supabase.from('sessions')
-                .select('start_time, end_time, teacher_id, student_id')
-                .eq('session_date', newDate)
-                .in('status', ['scheduled', 'ongoing'])
-                .neq('id', id) // استثناء الحصة الحالية
-                .or(`teacher_id.eq.${teacherId},student_id.eq.${studentId}`);
+            try {
+                // جلب الحصص الخاصة بالمعلم في هذا اليوم (باستثناء الحصة الحالية)
+                const { data: teacherSessions, error: tErr } = await window.supabase.from('sessions')
+                    .select('start_time, end_time')
+                    .eq('teacher_id', teacherId)
+                    .eq('session_date', newDate)
+                    .in('status', ['scheduled', 'ongoing'])
+                    .neq('id', id);
 
-            // حساب دقيق للتعارض باستخدام الدقائق بدلاً من النصوص
-            if (existingSessions && existingSessions.length > 0) {
-                let conflict = existingSessions.find(ex => {
-                    let exStartParts = ex.start_time.split(':').map(Number);
-                    let exEndParts = ex.end_time.split(':').map(Number);
-                    
-                    let exStartMins = exStartParts[0] * 60 + exStartParts[1];
-                    let exEndMins = exEndParts[0] * 60 + exEndParts[1];
+                // جلب الحصص الخاصة للطالب في هذا اليوم (باستثناء الحصة الحالية)
+                const { data: studentSessions, error: sErr } = await window.supabase.from('sessions')
+                    .select('start_time, end_time')
+                    .eq('student_id', studentId)
+                    .eq('session_date', newDate)
+                    .in('status', ['scheduled', 'ongoing'])
+                    .neq('id', id);
 
-                    // التحقق من تداخل الفترات الزمنية
-                    return (newStartMins < exEndMins && newEndMins > exStartMins);
+                if (tErr || sErr) throw new Error("فشل في التحقق من التعارض");
+
+                // دمج جميع الحصص المحتمل أن تتعارض مع التوقيت الجديد
+                const existingSessions = [...(teacherSessions || []), ...(studentSessions || [])];
+
+                // حساب دقيق للتعارض باستخدام الدقائق بدلاً من النصوص
+                if (existingSessions.length > 0) {
+                    let conflict = existingSessions.find(ex => {
+                        let exStartParts = ex.start_time.split(':').map(Number);
+                        let exEndParts = ex.end_time.split(':').map(Number);
+                        
+                        let exStartMins = exStartParts[0] * 60 + exStartParts[1];
+                        let exEndMins = exEndParts[0] * 60 + exEndParts[1];
+
+                        // شرط حدوث تداخل بين فترتين زمنيتين
+                        return (newStartMins < exEndMins && newEndMins > exStartMins);
+                    });
+
+                    if (conflict) {
+                        msg.textContent = 'يتعذر التعديل! التوقيت الجديد يتعارض مع حصة أخرى مجدولة للمعلم أو للطالب.';
+                        msg.className = 'text-sm font-bold p-2 text-center rounded bg-red-50 text-red-600 block mt-2';
+                        msg.classList.remove('hidden');
+                        btn.disabled = false; btn.textContent = 'حفظ التعديل';
+                        return; // منع الإكمال إذا وجد تعارض
+                    }
+                }
+
+                // الحفظ باستخدام الدالة الخلفية لتجاوز الـ RLS إذا لم يكن هناك تعارض
+                const { error } = await window.supabase.rpc('update_session_time', {
+                    p_session_id: id,
+                    p_session_date: newDate,
+                    p_start_time: startTimeStr,
+                    p_end_time: endTimeStr
                 });
 
-                if (conflict) {
-                    msg.textContent = 'يتعذر التعديل! التوقيت الجديد يتعارض مع حصة أخرى مجدولة للمعلم أو للطالب.';
-                    msg.className = 'text-sm font-bold p-2 text-center rounded bg-red-50 text-red-600 block mt-2';
-                    msg.classList.remove('hidden');
-                    btn.disabled = false; btn.textContent = 'حفظ التعديل';
-                    return;
-                }
-            }
+                if(error) throw new Error(error.message);
 
-            // إذا لم يكن هناك تعارض، يتم الحفظ باستخدام الدالة الخلفية
-            const { error } = await window.supabase.rpc('update_session_time', {
-                p_session_id: id,
-                p_session_date: newDate,
-                p_start_time: startTimeStr,
-                p_end_time: endTimeStr
-            });
-
-            msg.classList.remove('hidden');
-            if(error) {
-                msg.textContent = 'حدث خطأ: ' + error.message;
-                msg.className = 'text-sm font-bold p-2 text-center rounded bg-red-50 text-red-600 block mt-2';
-            } else {
                 msg.textContent = 'تم تعديل موعد الحصة بنجاح!';
                 msg.className = 'text-sm font-bold p-2 text-center rounded bg-green-50 text-green-600 block mt-2';
+                msg.classList.remove('hidden');
                 loadCalendar();
                 setTimeout(() => closeEditSessionTimeModal(), 1500);
+
+            } catch (err) {
+                msg.textContent = 'حدث خطأ: ' + err.message;
+                msg.className = 'text-sm font-bold p-2 text-center rounded bg-red-50 text-red-600 block mt-2';
+                msg.classList.remove('hidden');
             }
+            
             btn.disabled = false; btn.textContent = 'حفظ التعديل';
         });
 
