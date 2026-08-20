@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>الإدارة المالية - منصة التحفيظ</title>
+    <title>الإدارة المالية والتقارير - منصة التحفيظ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style> 
@@ -12,7 +12,6 @@
         ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         
-        /* أزرار التبويبات بلون محايد */
         .tab-btn { border-bottom: 3px solid transparent; color: #64748b; }
         .tab-btn:hover { background-color: #f1f5f9; }
         .tab-btn.active-tab { border-bottom-color: #334155; color: #0f172a; background-color: #e2e8f0; font-weight: 900; }
@@ -22,7 +21,6 @@
 </head>
 <body class="flex h-screen overflow-hidden text-gray-800">
     
-    <!-- القائمة الجانبية -->
     <aside class="w-64 bg-[#0f172a] text-white flex flex-col hidden md:flex z-20 shadow-2xl">
         <div class="p-6 text-xl font-black border-b border-gray-800 flex items-center">
             <i class="fas fa-shield-alt text-emerald-500 mr-2 ml-2"></i> الإدارة العليا
@@ -47,7 +45,6 @@
 
         <div class="p-6 space-y-6 max-w-7xl mx-auto w-full">
             
-            <!-- الفلاتر والبحث -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
                 <div>
                     <label class="block text-xs font-bold text-gray-500 mb-1">من تاريخ</label>
@@ -72,33 +69,20 @@
                 </div>
             </div>
 
-            <!-- الحاوية الرئيسية -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col min-h-[500px]">
                 
-                <!-- أزرار التبويبات -->
                 <div class="flex border-b bg-gray-50">
-                    <button type="button" id="btn-revenues" onclick="switchTab('revenues')" class="tab-btn flex-1 py-4 font-bold text-sm md:text-base transition">
-                        الإيرادات
-                    </button>
-                    <button type="button" id="btn-expenses" onclick="switchTab('expenses')" class="tab-btn flex-1 py-4 font-bold text-sm md:text-base transition border-r border-l border-gray-200">
-                        المصروفات
-                    </button>
-                    <button type="button" id="btn-report" onclick="switchTab('report')" class="tab-btn flex-1 py-4 font-bold text-sm md:text-base transition">
-                        التقرير المالي
-                    </button>
+                    <button type="button" id="btn-revenues" onclick="switchTab('revenues')" class="tab-btn flex-1 py-4 font-bold text-sm md:text-base transition">الإيرادات</button>
+                    <button type="button" id="btn-expenses" onclick="switchTab('expenses')" class="tab-btn flex-1 py-4 font-bold text-sm md:text-base transition border-r border-l border-gray-200">المصروفات</button>
+                    <button type="button" id="btn-report" onclick="switchTab('report')" class="tab-btn flex-1 py-4 font-bold text-sm md:text-base transition">التقرير المالي</button>
                 </div>
 
-                <!-- تبويب الإيرادات -->
                 <div id="tab-revenues" class="tab-content hidden flex-1 flex flex-col">
                     <div class="p-4 bg-white border-b flex justify-between items-center">
                         <h3 class="font-bold text-gray-700">سجل الإيرادات</h3>
                         <div class="flex space-x-2 space-x-reverse">
-                            <button type="button" onclick="openManageCategoriesModal('rev')" class="bg-gray-100 border border-gray-300 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-lg font-bold transition text-xs md:text-sm">
-                                إدارة الأصناف
-                            </button>
-                            <button type="button" onclick="openAddRevenueModal()" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg font-bold transition text-xs md:text-sm">
-                                إيراد يدوي
-                            </button>
+                            <button type="button" onclick="openManageCategoriesModal('rev')" class="bg-gray-100 border border-gray-300 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-lg font-bold transition text-xs md:text-sm">إدارة الأصناف</button>
+                            <button type="button" onclick="openAddRevenueModal()" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg font-bold transition text-xs md:text-sm">إيراد يدوي</button>
                         </div>
                     </div>
                     <div class="overflow-x-auto flex-1">
@@ -118,17 +102,12 @@
                     </div>
                 </div>
 
-                <!-- تبويب المصروفات -->
                 <div id="tab-expenses" class="tab-content hidden flex-1 flex flex-col">
                     <div class="p-4 bg-white border-b flex justify-between items-center">
                         <h3 class="font-bold text-gray-700">سجل المصروفات</h3>
                         <div class="flex space-x-2 space-x-reverse">
-                            <button type="button" onclick="openManageCategoriesModal('exp')" class="bg-gray-100 border border-gray-300 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-lg font-bold transition text-xs md:text-sm">
-                                إدارة الأصناف
-                            </button>
-                            <button type="button" onclick="openAddExpenseModal()" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg font-bold transition text-xs md:text-sm">
-                                تسجيل مصروف
-                            </button>
+                            <button type="button" onclick="openManageCategoriesModal('exp')" class="bg-gray-100 border border-gray-300 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-lg font-bold transition text-xs md:text-sm">إدارة الأصناف</button>
+                            <button type="button" onclick="openAddExpenseModal()" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg font-bold transition text-xs md:text-sm">تسجيل مصروف</button>
                         </div>
                     </div>
                     <div class="overflow-x-auto flex-1">
@@ -148,11 +127,8 @@
                     </div>
                 </div>
 
-                <!-- التقرير المالي المبسط -->
                 <div id="tab-report" class="tab-content hidden flex-1 bg-white p-6 md:p-10">
                     <div class="max-w-3xl mx-auto space-y-6 text-gray-800">
-                        
-                        <!-- الإيرادات -->
                         <div class="border border-gray-200 rounded-lg p-6">
                             <h3 class="font-bold text-lg border-b pb-2 mb-4 text-gray-800">الإيرادات</h3>
                             <div id="report-revenues-content" class="space-y-2 text-sm"></div>
@@ -162,7 +138,6 @@
                             </div>
                         </div>
 
-                        <!-- المصروفات -->
                         <div class="border border-gray-200 rounded-lg p-6">
                             <h3 class="font-bold text-lg border-b pb-2 mb-4 text-gray-800">المصروفات</h3>
                             <div id="report-expenses-content" class="space-y-2 text-sm"></div>
@@ -172,12 +147,10 @@
                             </div>
                         </div>
 
-                        <!-- صافي الربح -->
                         <div class="bg-gray-800 text-white rounded-lg p-6 flex justify-between items-center mt-6">
                             <span class="font-bold text-lg">صافي الربح</span>
                             <span id="report-net-profit" class="font-black text-2xl tracking-wider">0.00</span>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -336,11 +309,17 @@
 
         // ------------------ جلب البيانات ------------------ //
         async function loadFinances() {
-            const { data: subs } = await window.supabase.from('subscriptions')
+            const { data: subs, error: subsErr } = await window.supabase.from('subscriptions')
                 .select(`id, created_at, category, admin_notes, status, receipt_url, packages(price, name), users!subscriptions_user_id_fkey(full_name)`)
                 .eq('status', 'approved');
+            
+            if (subsErr) {
+                console.error("خطأ في جلب الاشتراكات:", subsErr);
+                alert("تنبيه: فشل جلب بيانات الاشتراكات. " + subsErr.message);
+            }
 
-            const { data: manualRevs } = await window.supabase.from('manual_revenues').select('*');
+            const { data: manualRevs, error: manErr } = await window.supabase.from('manual_revenues').select('*');
+            if (manErr) console.error("خطأ في الإيرادات اليدوية:", manErr);
 
             allRevenues = [];
             if(subs) {
@@ -362,7 +341,8 @@
             }
             allRevenues.sort((a,b) => new Date(b.date) - new Date(a.date));
 
-            const { data: exps } = await window.supabase.from('expenses').select('*').order('expense_date', { ascending: false });
+            const { data: exps, error: expErr } = await window.supabase.from('expenses').select('*').order('expense_date', { ascending: false });
+            if (expErr) console.error("خطأ في المصروفات:", expErr);
             allExpenses = exps || [];
 
             updateAll();
@@ -551,7 +531,7 @@
                 input.value = '';
                 await loadCategories();
                 openManageCategoriesModal(type); 
-            } catch (err) { alert('تأكد من تشغيل أمر SQL المذكور لتحديث الصلاحيات.'); }
+            } catch (err) { alert('خطأ في الإضافة: ' + err.message); }
         }
 
         async function editCategory(type, id, oldName) {
@@ -565,7 +545,7 @@
                 await loadCategories();
                 openManageCategoriesModal(type);
                 loadFinances(); 
-            } catch (err) { alert('تأكد من تشغيل أمر SQL المذكور لتحديث الصلاحيات.'); }
+            } catch (err) { alert('خطأ في التعديل: ' + err.message); }
         }
 
         // ------------------ النوافذ والحفظ ------------------ //
@@ -637,8 +617,11 @@
 
         async function deleteRecord(table, id) {
             if(!confirm('تأكيد الحذف نهائياً؟')) return;
-            await window.supabase.from(table).delete().eq('id', id);
-            loadFinances();
+            try {
+                const { error } = await window.supabase.from(table).delete().eq('id', id);
+                if (error) throw error;
+                loadFinances();
+            } catch (err) { alert('خطأ في الحذف: ' + err.message); }
         }
 
         document.getElementById('addRevenueForm').addEventListener('submit', async (e) => {
@@ -651,10 +634,11 @@
             
             try {
                 if(table === 'subscriptions') {
-                    await window.supabase.from('subscriptions').update({
+                    const { error } = await window.supabase.from('subscriptions').update({
                         category: document.getElementById('addRevCategory').value,
                         admin_notes: document.getElementById('addRevNotes').value
                     }).eq('id', id);
+                    if(error) throw error;
                 } else {
                     const payload = {
                         amount: document.getElementById('addRevAmount').value,
@@ -666,16 +650,22 @@
                     const file = document.getElementById('addRevFile').files[0];
                     if(file) {
                         const fileName = `rev_${Date.now()}.${file.name.split('.').pop()}`;
-                        await window.supabase.storage.from('financial-receipts').upload(fileName, file);
+                        const { error: upErr } = await window.supabase.storage.from('financial-receipts').upload(fileName, file);
+                        if(upErr) throw upErr;
                         payload.receipt_url = fileName;
                     }
 
-                    if(id) { await window.supabase.from('manual_revenues').update(payload).eq('id', id); } 
-                    else { await window.supabase.from('manual_revenues').insert(payload); }
+                    if(id) { 
+                        const { error } = await window.supabase.from('manual_revenues').update(payload).eq('id', id); 
+                        if(error) throw error;
+                    } else { 
+                        const { error } = await window.supabase.from('manual_revenues').insert(payload); 
+                        if(error) throw error;
+                    }
                 }
                 closeModal('addRevenueModal');
                 loadFinances();
-            } catch (err) { alert('حدث خطأ أثناء الحفظ.'); }
+            } catch (err) { alert('خطأ في الحفظ: ' + err.message); }
             btn.disabled = false; btn.textContent = 'حفظ';
         });
 
@@ -696,15 +686,21 @@
             try {
                 if(file) {
                     const fileName = `exp_${Date.now()}.${file.name.split('.').pop()}`;
-                    await window.supabase.storage.from('financial-receipts').upload(fileName, file);
+                    const { error: upErr } = await window.supabase.storage.from('financial-receipts').upload(fileName, file);
+                    if(upErr) throw upErr;
                     payload.receipt_url = fileName;
                 }
-                if(id) { await window.supabase.from('expenses').update(payload).eq('id', id); } 
-                else { await window.supabase.from('expenses').insert(payload); }
+                if(id) { 
+                    const { error } = await window.supabase.from('expenses').update(payload).eq('id', id); 
+                    if(error) throw error;
+                } else { 
+                    const { error } = await window.supabase.from('expenses').insert(payload); 
+                    if(error) throw error;
+                }
                 
                 closeModal('addExpenseModal');
                 loadFinances();
-            } catch (err) { alert('حدث خطأ أثناء الحفظ.'); }
+            } catch (err) { alert('خطأ في الاعتماد: ' + err.message); }
             btn.disabled = false; btn.textContent = 'حفظ';
         });
 
