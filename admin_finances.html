@@ -8,11 +8,16 @@
     <style> 
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap'); 
         body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; } 
-        /* تحسين مظهر التمرير */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* تنسيق التبويبات المدمجة */
+        .tab-btn { border-bottom: 3px solid transparent; color: #64748b; }
+        .tab-btn.active-rev { border-bottom-color: #10b981; color: #047857; background-color: #ecfdf5; }
+        .tab-btn.active-exp { border-bottom-color: #ef4444; color: #b91c1c; background-color: #fef2f2; }
+        .tab-btn.active-rep { border-bottom-color: #3b82f6; color: #1d4ed8; background-color: #eff6ff; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -35,7 +40,6 @@
     </aside>
 
     <main class="flex-1 flex flex-col overflow-y-auto bg-gray-50/50 relative">
-        
         <header class="bg-white shadow-sm p-4 border-b flex justify-between items-center sticky top-0 z-10">
             <h2 class="text-xl font-black text-gray-800">النظام المالي والمحاسبي</h2>
             <button onclick="exportToExcel()" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold px-4 py-2 rounded-lg transition border border-emerald-200 shadow-sm flex items-center text-sm">
@@ -45,71 +49,67 @@
 
         <div class="p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
             
-            <!-- لوحة الفلاتر والبحث المركزية (Global Controls) -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-                <div class="flex items-center mb-4">
-                    <div class="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center ml-3"><i class="fas fa-sliders-h"></i></div>
-                    <h3 class="text-base font-black text-gray-800">لوحة التصفية والبحث</h3>
+            <!-- الفلاتر العلوية المركزية (بدون مربع خلفي) -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">من تاريخ</label>
+                    <input type="date" id="globalDateFrom" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-blue-500 bg-white transition shadow-sm" onchange="updateAll()">
                 </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">إلى تاريخ</label>
+                    <input type="date" id="globalDateTo" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-blue-500 bg-white transition shadow-sm" onchange="updateAll()">
+                </div>
+                <div id="dynamicFilterContainer">
+                    <label class="block text-xs font-bold text-gray-500 mb-1" id="dynamicFilterLabel">التصنيف</label>
+                    <select id="dynamicFilterSelect" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-blue-500 bg-white transition cursor-pointer shadow-sm" onchange="updateAll()">
+                        <option value="all">الكل</option>
+                    </select>
+                </div>
+                <div id="dynamicSearchContainer">
+                    <label class="block text-xs font-bold text-gray-500 mb-1">بحث</label>
+                    <div class="relative shadow-sm">
+                        <input type="text" id="globalSearch" placeholder="ابحث هنا..." class="w-full border border-gray-300 rounded-lg p-2.5 pl-10 text-sm font-bold outline-none focus:border-blue-500 bg-white transition" onkeyup="updateAll()">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- الحاوية الرئيسية (تبويبات مدمجة مع المحتوى) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col min-h-[500px]">
                 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">من تاريخ</label>
-                        <input type="date" id="globalDateFrom" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-blue-500 bg-gray-50 transition" onchange="updateAll()">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">إلى تاريخ</label>
-                        <input type="date" id="globalDateTo" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-blue-500 bg-gray-50 transition" onchange="updateAll()">
-                    </div>
-                    
-                    <div id="dynamicFilterContainer">
-                        <label class="block text-xs font-bold text-gray-500 mb-1" id="dynamicFilterLabel">التصنيف</label>
-                        <select id="dynamicFilterSelect" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-blue-500 bg-gray-50 transition cursor-pointer" onchange="updateAll()">
-                            <option value="all">الكل</option>
-                        </select>
-                    </div>
-                    
-                    <div id="dynamicSearchContainer">
-                        <label class="block text-xs font-bold text-gray-500 mb-1" id="dynamicSearchLabel">بحث</label>
-                        <div class="relative">
-                            <input type="text" id="globalSearch" placeholder="ابحث هنا..." class="w-full border border-gray-300 rounded-lg p-2.5 pl-10 text-sm font-bold outline-none focus:border-blue-500 bg-gray-50 transition" onkeyup="updateAll()">
-                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                <!-- أزرار التبويبات -->
+                <div class="flex border-b bg-gray-50/50">
+                    <button id="btn-revenues" onclick="switchTab('revenues')" class="tab-btn flex-1 py-4 font-bold text-sm md:text-base transition flex justify-center items-center">
+                        <i class="fas fa-arrow-down ml-2"></i> الإيرادات
+                    </button>
+                    <button id="btn-expenses" onclick="switchTab('expenses')" class="tab-btn flex-1 py-4 font-bold text-sm md:text-base transition flex justify-center items-center border-r border-l border-gray-200">
+                        <i class="fas fa-arrow-up ml-2"></i> المصروفات
+                    </button>
+                    <button id="btn-report" onclick="switchTab('report')" class="tab-btn flex-1 py-4 font-bold text-sm md:text-base transition flex justify-center items-center">
+                        <i class="fas fa-chart-pie ml-2"></i> التقرير المالي
+                    </button>
+                </div>
+
+                <!-- تبويب الإيرادات -->
+                <div id="tab-revenues" class="tab-content hidden flex-1 flex flex-col">
+                    <div class="p-4 bg-white border-b flex justify-between items-center">
+                        <h3 class="font-bold text-emerald-800"><i class="fas fa-list ml-1"></i> سجل الإيرادات</h3>
+                        <div class="flex space-x-2 space-x-reverse">
+                            <button onclick="openManageCategoriesModal('rev')" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-lg font-bold transition shadow-sm text-xs md:text-sm">
+                                <i class="fas fa-tags ml-1"></i> أصناف الإيرادات
+                            </button>
+                            <button onclick="openAddRevenueModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition text-xs md:text-sm">
+                                <i class="fas fa-plus ml-1"></i> إيراد يدوي
+                            </button>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- أزرار التبويبات -->
-            <div class="flex space-x-2 space-x-reverse">
-                <button id="btn-revenues" onclick="switchTab('revenues')" class="tab-btn bg-white text-gray-600 border border-gray-200 px-6 py-3.5 rounded-xl font-bold shadow-sm hover:bg-gray-50 transition flex-1 md:flex-none flex justify-center items-center">
-                    <i class="fas fa-arrow-down ml-2 text-emerald-500"></i> سجل الإيرادات
-                </button>
-                <button id="btn-expenses" onclick="switchTab('expenses')" class="tab-btn bg-white text-gray-600 border border-gray-200 px-6 py-3.5 rounded-xl font-bold shadow-sm hover:bg-gray-50 transition flex-1 md:flex-none flex justify-center items-center">
-                    <i class="fas fa-arrow-up ml-2 text-red-500"></i> سجل المصروفات
-                </button>
-                <button id="btn-report" onclick="switchTab('report')" class="tab-btn bg-white text-gray-600 border border-gray-200 px-6 py-3.5 rounded-xl font-bold shadow-sm hover:bg-gray-50 transition flex-1 md:flex-none flex justify-center items-center">
-                    <i class="fas fa-chart-pie ml-2 text-blue-500"></i> التقرير المالي
-                </button>
-            </div>
-
-            <!-- محتوى التبويبات -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden relative min-h-[400px]">
-                
-                <!-- تبويب الإيرادات -->
-                <div id="tab-revenues" class="tab-content hidden p-0">
-                    <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
-                        <h3 class="font-bold text-emerald-800"><i class="fas fa-list ml-1"></i> جدول الإيرادات</h3>
-                        <button onclick="openAddRevenueModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg font-bold shadow-sm transition text-sm">
-                            <i class="fas fa-plus ml-1"></i> تسجيل إيراد يدوي
-                        </button>
-                    </div>
-                    <div class="overflow-x-auto">
+                    <div class="overflow-x-auto flex-1">
                         <table class="w-full text-right text-sm" id="revenueTableExport">
-                            <thead class="bg-white text-gray-500 border-b">
+                            <thead class="bg-gray-50 text-gray-500 border-b sticky top-0">
                                 <tr>
                                     <th class="px-6 py-4 font-bold">التاريخ</th>
                                     <th class="px-6 py-4 font-bold">المصدر / الطالب</th>
-                                    <th class="px-6 py-4 font-bold">النوع والبيان</th>
+                                    <th class="px-6 py-4 font-bold">صنف الإيراد والبيان</th>
                                     <th class="px-6 py-4 font-bold text-emerald-600">المبلغ</th>
                                     <th class="px-6 py-4 font-bold">الإيصال</th>
                                     <th class="px-6 py-4 font-bold text-center">إجراءات</th>
@@ -121,21 +121,21 @@
                 </div>
 
                 <!-- تبويب المصروفات -->
-                <div id="tab-expenses" class="tab-content hidden p-0">
-                    <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
-                        <h3 class="font-bold text-red-800"><i class="fas fa-list ml-1"></i> جدول المصروفات</h3>
+                <div id="tab-expenses" class="tab-content hidden flex-1 flex flex-col">
+                    <div class="p-4 bg-white border-b flex justify-between items-center">
+                        <h3 class="font-bold text-red-800"><i class="fas fa-list ml-1"></i> سجل المصروفات</h3>
                         <div class="flex space-x-2 space-x-reverse">
-                            <button onclick="openManageCategoriesModal()" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-lg font-bold transition shadow-sm text-sm">
-                                <i class="fas fa-tags ml-1"></i> إدارة الأصناف
+                            <button onclick="openManageCategoriesModal('exp')" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-lg font-bold transition shadow-sm text-xs md:text-sm">
+                                <i class="fas fa-tags ml-1"></i> أصناف المصروفات
                             </button>
-                            <button onclick="openAddExpenseModal()" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-bold shadow-sm transition text-sm">
+                            <button onclick="openAddExpenseModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition text-xs md:text-sm">
                                 <i class="fas fa-minus ml-1"></i> تسجيل مصروف
                             </button>
                         </div>
                     </div>
-                    <div class="overflow-x-auto">
+                    <div class="overflow-x-auto flex-1">
                         <table class="w-full text-right text-sm" id="expenseTableExport">
-                            <thead class="bg-white text-gray-500 border-b">
+                            <thead class="bg-gray-50 text-gray-500 border-b sticky top-0">
                                 <tr>
                                     <th class="px-6 py-4 font-bold">التاريخ</th>
                                     <th class="px-6 py-4 font-bold">صنف الصرف</th>
@@ -150,50 +150,40 @@
                     </div>
                 </div>
 
-                <!-- تبويب التقرير المالي الذكي -->
-                <div id="tab-report" class="tab-content hidden p-8 bg-gray-50/50">
+                <!-- تبويب التقرير المالي -->
+                <div id="tab-report" class="tab-content hidden flex-1 bg-white p-6 md:p-10">
                     
-                    <div class="text-center mb-8">
-                        <h2 class="text-2xl font-black text-gray-800">الملخص المالي الشامل</h2>
-                        <p class="text-gray-500 font-bold text-sm mt-1" id="reportDateRange">للفترة المحددة</p>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
                         <!-- عمود الإيرادات -->
-                        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                            <div class="bg-emerald-50 border-b border-emerald-100 p-4">
-                                <h3 class="font-black text-emerald-800 text-lg"><i class="fas fa-arrow-down ml-2"></i> أولاً: تفصيل الإيرادات</h3>
-                            </div>
-                            <div class="p-6 space-y-3" id="report-revenues-content"></div>
-                            <div class="p-6 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
-                                <span class="font-black text-gray-700">إجمالي الإيرادات:</span>
-                                <span id="report-total-revenue" class="text-2xl font-black text-emerald-600">0.00 ر.ع</span>
+                        <div>
+                            <h3 class="font-black text-emerald-700 text-xl border-b-2 border-emerald-500 pb-2 mb-4 inline-block">أولاً: الإيرادات</h3>
+                            <div class="space-y-1 text-sm font-bold text-gray-700" id="report-revenues-content"></div>
+                            <div class="mt-4 pt-4 border-t-2 border-gray-200 flex justify-between items-center">
+                                <span class="font-black text-gray-800 text-lg">إجمالي الإيرادات</span>
+                                <span id="report-total-revenue" class="text-xl font-black text-emerald-600">0.00 ر.ع</span>
                             </div>
                         </div>
 
                         <!-- عمود المصروفات -->
-                        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                            <div class="bg-red-50 border-b border-red-100 p-4">
-                                <h3 class="font-black text-red-800 text-lg"><i class="fas fa-arrow-up ml-2"></i> ثانياً: تفصيل المصروفات</h3>
-                            </div>
-                            <div class="p-6 space-y-3" id="report-expenses-content"></div>
-                            <div class="p-6 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
-                                <span class="font-black text-gray-700">إجمالي المصروفات:</span>
-                                <span id="report-total-expense" class="text-2xl font-black text-red-600">0.00 ر.ع</span>
+                        <div>
+                            <h3 class="font-black text-red-700 text-xl border-b-2 border-red-500 pb-2 mb-4 inline-block">ثانياً: المصروفات</h3>
+                            <div class="space-y-1 text-sm font-bold text-gray-700" id="report-expenses-content"></div>
+                            <div class="mt-4 pt-4 border-t-2 border-gray-200 flex justify-between items-center">
+                                <span class="font-black text-gray-800 text-lg">إجمالي المصروفات</span>
+                                <span id="report-total-expense" class="text-xl font-black text-red-600">0.00 ر.ع</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- بطاقة صافي الربح / الخسارة -->
-                    <div id="report-net-container" class="bg-white border p-8 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-center relative overflow-hidden transition-all duration-500">
-                        <div class="z-10 text-center md:text-right">
-                            <h3 class="text-xl font-bold text-gray-600 mb-1" id="net-title">صافي نتيجة الفترة</h3>
-                            <p class="text-sm font-bold opacity-80" id="net-subtitle">الإيرادات مطروحاً منها المصروفات</p>
+                    <!-- صافي الربح -->
+                    <div class="mt-12 bg-gray-50 border border-gray-200 p-8 rounded-2xl flex flex-col md:flex-row justify-between items-center text-center md:text-right">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-600">صافي الربح</h3>
+                            <p class="text-sm font-bold text-gray-400 mt-1">الإيرادات مطروحاً منها المصروفات</p>
                         </div>
-                        <div class="z-10 mt-4 md:mt-0">
-                            <span id="report-net-profit" class="text-4xl font-black tracking-tight">0.00 ر.ع</span>
+                        <div class="mt-4 md:mt-0">
+                            <span id="report-net-profit" class="text-4xl font-black">0.00 ر.ع</span>
                         </div>
-                        <i id="net-icon" class="fas fa-coins text-8xl absolute left-8 top-1/2 transform -translate-y-1/2 opacity-5"></i>
                     </div>
 
                 </div>
@@ -202,29 +192,34 @@
     </main>
 
     <!-- نافذة الإيرادات (إضافة / تعديل) -->
-    <div id="addRevenueModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
+    <div id="addRevenueModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h3 class="text-xl font-black mb-4 text-emerald-700 border-b pb-3" id="revModalTitle"><i class="fas fa-plus-circle ml-2"></i> تسجيل إيراد يدوي</h3>
+            <h3 class="text-xl font-black mb-4 text-emerald-700 border-b pb-3" id="revModalTitle">تسجيل إيراد</h3>
             <form id="addRevenueForm" class="space-y-4">
                 <input type="hidden" id="addRevId">
+                <input type="hidden" id="addRevTable"> <!-- لمعرفة هل هو اشتراك أم إيراد يدوي -->
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">تاريخ الإيراد</label>
-                    <input type="date" id="addRevDate" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-emerald-500 bg-gray-50" required>
+                    <input type="date" id="addRevDate" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-emerald-500 bg-gray-50" required>
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">المبلغ (ريال عماني)</label>
-                    <input type="number" step="0.1" id="addRevAmount" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-emerald-500 font-bold" required>
+                    <input type="number" step="0.1" id="addRevAmount" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-emerald-500 font-bold" required>
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">المصدر / اسم المُودع</label>
-                    <input type="text" id="addRevSource" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-emerald-500" required>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">صنف الإيراد</label>
+                    <select id="addRevCategory" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-emerald-500 font-bold bg-gray-50" required></select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">المصدر / الطالب</label>
+                    <input type="text" id="addRevSource" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-emerald-500" required>
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">البيان والملاحظات</label>
-                    <textarea id="addRevNotes" rows="2" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-emerald-500"></textarea>
+                    <textarea id="addRevNotes" rows="2" class="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-emerald-500"></textarea>
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">صورة الإيصال (اختياري)</label>
+                    <label class="block text-sm font-bold text-gray-700 mb-1" id="addRevFileLabel">صورة الإيصال (اختياري)</label>
                     <input type="file" id="addRevFile" accept="image/*,.pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
                 </div>
                 <div class="flex space-x-3 space-x-reverse mt-6 pt-4 border-t">
@@ -235,51 +230,55 @@
         </div>
     </div>
 
-    <!-- نافذة المصروفات (إضافة / تعديل) -->
-    <div id="addExpenseModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h3 class="text-xl font-black mb-4 text-red-700 border-b pb-3" id="expModalTitle"><i class="fas fa-minus-circle ml-2"></i> تسجيل صرف مالي</h3>
-            <form id="addExpenseForm" class="space-y-4">
+    <!-- نافذة المصروفات (ملء الشاشة Full Screen) -->
+    <div id="addExpenseModal" class="fixed inset-0 bg-white z-50 hidden flex-col overflow-y-auto">
+        <div class="bg-red-600 p-4 flex justify-between items-center text-white shadow-md">
+            <h3 class="text-xl font-black" id="expModalTitle"><i class="fas fa-minus-circle ml-2"></i> تسجيل صرف مالي</h3>
+            <button onclick="closeModal('addExpenseModal')" class="text-white hover:text-red-200 font-bold text-xl"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="p-6 md:p-12 max-w-4xl mx-auto w-full flex-1">
+            <form id="addExpenseForm" class="space-y-6">
                 <input type="hidden" id="addExpId">
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">تاريخ الصرف</label>
-                    <input type="date" id="addExpDate" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-red-500 bg-gray-50" required>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">تاريخ الصرف</label>
+                        <input type="date" id="addExpDate" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-red-500 bg-gray-50" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">المبلغ المَصروف (ريال)</label>
+                        <input type="number" step="0.1" id="addExpAmount" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-red-500 font-bold text-lg text-red-600" required>
+                    </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">المبلغ المَصروف (ريال)</label>
-                    <input type="number" step="0.1" id="addExpAmount" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-red-500 font-bold" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">صنف الصرف</label>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">صنف الصرف</label>
                     <select id="addExpCategory" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-red-500 font-bold bg-gray-50" required></select>
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">البيان التفصيلي</label>
-                    <textarea id="addExpNotes" rows="2" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-red-500" required></textarea>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">البيان التفصيلي</label>
+                    <textarea id="addExpNotes" rows="4" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-red-500" required></textarea>
                 </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">الفاتورة / الإيصال (اختياري عند التعديل)</label>
+                <div class="bg-gray-50 p-6 rounded-lg border border-dashed border-gray-300">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">الفاتورة / الإيصال <span class="text-gray-400 font-normal">(اختياري)</span></label>
                     <input type="file" id="addExpFile" accept="image/*,.pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 cursor-pointer">
                 </div>
-                <div class="flex space-x-3 space-x-reverse mt-6 pt-4 border-t">
-                    <button type="submit" id="saveExpBtn" class="flex-1 bg-red-600 hover:bg-red-700 text-white p-3 rounded-xl font-bold transition shadow">اعتماد الصرف</button>
-                    <button type="button" onclick="closeModal('addExpenseModal')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 p-3 rounded-xl font-bold transition">إلغاء</button>
+                <div class="flex justify-end pt-6">
+                    <button type="submit" id="saveExpBtn" class="bg-red-600 hover:bg-red-700 text-white px-12 py-4 rounded-xl font-bold transition shadow-lg text-lg">اعتماد الصرف</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- نافذة إدارة أصناف المصروفات المصلحة -->
-    <div id="manageCategoriesModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
+    <!-- نافذة إدارة الأصناف (موحدة للإيرادات والمصروفات) -->
+    <div id="manageCategoriesModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <h3 class="text-xl font-black mb-4 text-gray-800 border-b pb-3"><i class="fas fa-tags ml-2"></i> إدارة أصناف المصروفات</h3>
+            <h3 class="text-xl font-black mb-4 text-gray-800 border-b pb-3" id="manageCatTitle"><i class="fas fa-tags ml-2"></i> إدارة الأصناف</h3>
+            <input type="hidden" id="manageCatType"> <!-- rev or exp -->
             <div class="flex mb-4 relative">
                 <input type="text" id="newCategoryInput" placeholder="اكتب اسم الصنف الجديد..." class="flex-1 border border-gray-300 rounded-r-lg p-3 outline-none focus:border-blue-500 text-sm font-bold">
-                <!-- تم إضافة type="button" لضمان عدم تحديث الصفحة -->
                 <button type="button" id="addCatBtn" onclick="addCategory()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 rounded-l-lg font-bold transition shadow"><i class="fas fa-plus"></i></button>
             </div>
             <ul id="categoriesList" class="max-h-56 overflow-y-auto pr-1"></ul>
-            <button type="button" onclick="closeModal('manageCategoriesModal')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 p-3 rounded-xl font-bold transition mt-4">إغلاق النافذة</button>
+            <button type="button" onclick="closeModal('manageCategoriesModal')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 p-3 rounded-xl font-bold transition mt-4">إغلاق</button>
         </div>
     </div>
 
@@ -287,11 +286,11 @@
     <script>
         let allRevenues = [];
         let allExpenses = [];
-        let allCategories = [];
+        let expCategories = [];
+        let revCategories = [];
         let currentTab = 'revenues';
 
         window.addEventListener('load', async () => {
-            // تهيئة واجهة التبويبات عند التحميل
             switchTab('revenues');
             await loadCategories();
             await loadFinances();
@@ -301,48 +300,41 @@
         function switchTab(tab) {
             currentTab = tab;
             
-            // إعادة ضبط شكل الأزرار
+            // إعادة ضبط الأزرار والمحتوى
             document.querySelectorAll('.tab-btn').forEach(b => {
-                b.className = "tab-btn bg-white text-gray-500 border border-gray-200 px-6 py-3.5 rounded-xl font-bold shadow-sm hover:bg-gray-50 transition flex-1 md:flex-none flex justify-center items-center opacity-70";
+                b.classList.remove('active-rev', 'active-exp', 'active-rep');
             });
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             
-            // تفعيل الزر والتبويب المطلوب
             const activeBtn = document.getElementById('btn-' + tab);
             document.getElementById('tab-' + tab).classList.remove('hidden');
 
             const filterContainer = document.getElementById('dynamicFilterContainer');
             const searchContainer = document.getElementById('dynamicSearchContainer');
-            const filterLabel = document.getElementById('dynamicFilterLabel');
             const filterSelect = document.getElementById('dynamicFilterSelect');
-            const searchLabel = document.getElementById('dynamicSearchLabel');
 
             if(tab === 'revenues') {
-                activeBtn.className = "tab-btn active bg-emerald-50 border border-emerald-200 text-emerald-800 px-6 py-3.5 rounded-xl font-black shadow transition flex-1 md:flex-none flex justify-center items-center ring-2 ring-emerald-500 ring-offset-1";
+                activeBtn.classList.add('active-rev');
                 filterContainer.classList.remove('hidden');
                 searchContainer.classList.remove('hidden');
-                filterLabel.innerText = 'تصفية حسب نوع الإيراد';
-                filterSelect.innerHTML = '<option value="all">كل الأنواع</option><option value="اشتراك/تجديد باقة">اشتراكات وتجديد الباقات</option><option value="إيراد يدوي">إيرادات أخرى (يدوية)</option>';
-                searchLabel.innerText = 'بحث في المصدر أو البيان';
+                filterSelect.innerHTML = '<option value="all">كل الأصناف</option>';
+                revCategories.forEach(c => filterSelect.innerHTML += `<option value="${c.name}">${c.name}</option>`);
             } 
             else if(tab === 'expenses') {
-                activeBtn.className = "tab-btn active bg-red-50 border border-red-200 text-red-800 px-6 py-3.5 rounded-xl font-black shadow transition flex-1 md:flex-none flex justify-center items-center ring-2 ring-red-500 ring-offset-1";
+                activeBtn.classList.add('active-exp');
                 filterContainer.classList.remove('hidden');
                 searchContainer.classList.remove('hidden');
-                filterLabel.innerText = 'تصفية حسب صنف الصرف';
                 filterSelect.innerHTML = '<option value="all">كل الأصناف</option>';
-                allCategories.forEach(c => filterSelect.innerHTML += `<option value="${c.name}">${c.name}</option>`);
+                expCategories.forEach(c => filterSelect.innerHTML += `<option value="${c.name}">${c.name}</option>`);
             } 
             else if(tab === 'report') {
-                activeBtn.className = "tab-btn active bg-blue-50 border border-blue-200 text-blue-800 px-6 py-3.5 rounded-xl font-black shadow transition flex-1 md:flex-none flex justify-center items-center ring-2 ring-blue-500 ring-offset-1";
+                activeBtn.classList.add('active-rep');
                 filterContainer.classList.add('hidden');
                 searchContainer.classList.add('hidden');
             }
             
-            // تصفير البحث والتصنيف عند التبديل، لكن نحتفظ بالتواريخ
             filterSelect.value = 'all';
             document.getElementById('globalSearch').value = '';
-            
             updateAll();
         }
 
@@ -354,33 +346,32 @@
 
         // ------------------ جلب البيانات ------------------ //
         async function loadFinances() {
-            // جلب الاشتراكات
             const { data: subs } = await window.supabase.from('subscriptions')
-                .select(`id, created_at, status, receipt_url, packages(price, name), users!subscriptions_user_id_fkey(full_name)`)
+                .select(`id, created_at, category, admin_notes, status, receipt_url, packages(price, name), users!subscriptions_user_id_fkey(full_name)`)
                 .eq('status', 'approved');
 
-            // جلب الإيرادات اليدوية
             const { data: manualRevs } = await window.supabase.from('manual_revenues').select('*');
 
             allRevenues = [];
             if(subs) {
                 subs.forEach(s => allRevenues.push({
                     id: s.id, db_table: 'subscriptions', date: s.created_at.split('T')[0],
-                    source: s.users?.full_name || 'غير معروف', type: 'اشتراك/تجديد باقة',
-                    notes: `باقة: ${s.packages?.name || ''}`, amount: s.packages?.price || 0,
+                    source: s.users?.full_name || 'غير معروف', 
+                    category: s.category || 'اشتراك/تجديد باقة', 
+                    notes: s.admin_notes || `باقة: ${s.packages?.name || ''}`, 
+                    amount: s.packages?.price || 0,
                     receipt_url: s.receipt_url, bucket: 'payment-receipts'
                 }));
             }
             if(manualRevs) {
                 manualRevs.forEach(m => allRevenues.push({
                     id: m.id, db_table: 'manual_revenues', date: m.revenue_date,
-                    source: m.source, type: 'إيراد يدوي', notes: m.notes,
+                    source: m.source, category: m.category || 'إيراد يدوي', notes: m.notes,
                     amount: m.amount, receipt_url: m.receipt_url, bucket: 'financial-receipts'
                 }));
             }
             allRevenues.sort((a,b) => new Date(b.date) - new Date(a.date));
 
-            // جلب المصروفات
             const { data: exps } = await window.supabase.from('expenses').select('*').order('expense_date', { ascending: false });
             allExpenses = exps || [];
 
@@ -388,39 +379,32 @@
         }
 
         async function loadCategories() {
-            const { data: cats } = await window.supabase.from('expense_categories').select('*').order('name');
-            allCategories = cats || [];
+            const { data: expsCats } = await window.supabase.from('expense_categories').select('*').order('name');
+            const { data: revsCats } = await window.supabase.from('revenue_categories').select('*').order('name');
             
+            expCategories = expsCats || [];
+            revCategories = revsCats || [];
+            
+            // تحديث دروب داون إضافة المصفوفات والإيرادات
             const expSelect = document.getElementById('addExpCategory');
-            const list = document.getElementById('categoriesList');
-            
             expSelect.innerHTML = '<option value="">-- اختر الصنف --</option>';
-            list.innerHTML = '';
+            expCategories.forEach(c => expSelect.innerHTML += `<option value="${c.name}">${c.name}</option>`);
 
-            if(allCategories.length === 0) {
-                list.innerHTML = '<li class="p-4 text-center text-sm text-gray-400 font-bold bg-gray-50 rounded-lg">لا توجد أصناف حالياً.</li>';
-            } else {
-                allCategories.forEach(c => {
-                    expSelect.innerHTML += `<option value="${c.name}">${c.name}</option>`;
-                    list.innerHTML += `
-                        <li class="p-3 mb-2 flex justify-between items-center text-sm font-bold text-gray-700 bg-gray-50 border border-gray-100 rounded-lg">
-                            <span>${c.name}</span>
-                            <button type="button" onclick="deleteCategory(${c.id})" class="text-red-500 hover:text-red-700 bg-white shadow-sm p-2 rounded transition"><i class="fas fa-trash-alt"></i></button>
-                        </li>`;
-                });
-            }
+            const revSelect = document.getElementById('addRevCategory');
+            revSelect.innerHTML = '<option value="">-- اختر الصنف --</option>';
+            revCategories.forEach(c => revSelect.innerHTML += `<option value="${c.name}">${c.name}</option>`);
 
-            // تحديث دروب داون الفلتر العام إذا كنا في تبويب المصروفات
-            if (currentTab === 'expenses') {
+            // تحديث الفلتر الحالي إن وجد
+            if (currentTab === 'expenses' || currentTab === 'revenues') {
                 const filterSelect = document.getElementById('dynamicFilterSelect');
                 const currVal = filterSelect.value;
                 filterSelect.innerHTML = '<option value="all">كل الأصناف</option>';
-                allCategories.forEach(c => filterSelect.innerHTML += `<option value="${c.name}">${c.name}</option>`);
+                const targetCats = currentTab === 'expenses' ? expCategories : revCategories;
+                targetCats.forEach(c => filterSelect.innerHTML += `<option value="${c.name}">${c.name}</option>`);
                 filterSelect.value = currVal;
             }
         }
 
-        // ------------------ الرسم والجداول ------------------ //
         function getFilteredData() {
             const dFrom = document.getElementById('globalDateFrom').value;
             const dTo = document.getElementById('globalDateTo').value;
@@ -431,7 +415,7 @@
                 let match = true;
                 if(dFrom && r.date < dFrom) match = false;
                 if(dTo && r.date > dTo) match = false;
-                if(currentTab === 'revenues' && filterVal !== 'all' && r.type !== filterVal) match = false;
+                if(currentTab === 'revenues' && filterVal !== 'all' && r.category !== filterVal) match = false;
                 if(currentTab === 'revenues' && searchVal && !r.source.toLowerCase().includes(searchVal) && !r.notes.toLowerCase().includes(searchVal)) match = false;
                 return match;
             });
@@ -448,47 +432,36 @@
             return { fRevs, fExps };
         }
 
+        // ------------------ رسم الجداول والتقارير ------------------ //
         function renderRevenues() {
             const { fRevs } = getFilteredData();
             const tbody = document.getElementById('revenuesTableBody');
             tbody.innerHTML = '';
 
             if(fRevs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-12 text-center text-gray-400 font-bold">لا توجد إيرادات مطابقة للفلاتر الحالية.</td></tr>';
-                return;
+                tbody.innerHTML = '<tr><td colspan="6" class="p-12 text-center text-gray-400 font-bold">لا توجد إيرادات مطابقة.</td></tr>'; return;
             }
 
             fRevs.forEach(r => {
                 const url = r.receipt_url ? window.supabase.storage.from(r.bucket).getPublicUrl(r.receipt_url).data.publicUrl : '#';
-                const receiptHtml = r.receipt_url 
-                    ? `<a href="${url}" target="_blank" class="text-blue-600 font-bold hover:underline bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 text-xs"><i class="fas fa-external-link-alt ml-1"></i> الإيصال</a>`
-                    : `<span class="text-gray-400 text-xs font-bold">بدون إيصال</span>`;
-                
-                const typeBadge = r.type === 'إيراد يدوي' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-emerald-100 text-emerald-700 border-emerald-200';
-
-                // إمكانية التعديل للإيراد اليدوي فقط
-                const editMenu = r.db_table === 'manual_revenues' ? `
-                    <div class="relative inline-block text-right">
-                        <button onclick="toggleActionMenu('rev-${r.id}')" class="text-gray-500 hover:bg-gray-100 p-2 rounded-lg transition"><i class="fas fa-ellipsis-v px-2"></i></button>
-                        <div id="menu-rev-${r.id}" class="action-menu hidden absolute left-0 mt-1 w-32 bg-white border shadow-xl rounded-xl z-50 overflow-hidden">
-                            <button onclick="editRecord('manual_revenues', '${r.id}')" class="w-full text-right px-4 py-3 text-sm text-gray-700 font-bold hover:bg-gray-50 border-b flex items-center"><i class="fas fa-edit ml-2 text-blue-500"></i> تعديل</button>
-                            <button onclick="deleteRecord('manual_revenues', '${r.id}')" class="w-full text-right px-4 py-3 text-sm text-red-600 font-bold hover:bg-red-50 flex items-center"><i class="fas fa-trash-alt ml-2"></i> حذف</button>
-                        </div>
-                    </div>` : '<span class="text-gray-400 text-xs font-bold px-3 py-1 bg-gray-50 rounded-lg">مقفل (آلي)</span>';
+                const receiptHtml = r.receipt_url ? `<a href="${url}" target="_blank" class="text-blue-600 font-bold hover:underline bg-blue-50 px-3 py-1.5 rounded-lg text-xs">الإيصال</a>` : `<span class="text-gray-400 text-xs">بدون</span>`;
+                const typeBadge = r.db_table === 'subscriptions' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700';
 
                 tbody.innerHTML += `
-                    <tr class="hover:bg-emerald-50/30 border-b border-gray-100 transition">
+                    <tr class="hover:bg-gray-50 border-b border-gray-100">
                         <td class="px-6 py-4 text-gray-500 font-bold">${r.date}</td>
-                        <td class="px-6 py-4 font-black text-gray-800 text-base">${r.source}</td>
+                        <td class="px-6 py-4 font-black text-gray-800">${r.source}</td>
                         <td class="px-6 py-4">
-                            <span class="${typeBadge} px-2.5 py-1 border rounded text-[10px] font-bold inline-block mb-1.5">${r.type}</span>
-                            <div class="text-xs text-gray-500 font-bold">${r.notes}</div>
+                            <span class="${typeBadge} px-2 py-1 rounded text-[10px] font-bold block w-max mb-1">${r.category}</span>
+                            <div class="text-xs text-gray-500">${r.notes || ''}</div>
                         </td>
-                        <td class="px-6 py-4 font-black text-emerald-600 text-lg">${parseFloat(r.amount).toFixed(2)}</td>
+                        <td class="px-6 py-4 font-black text-emerald-600">${parseFloat(r.amount).toFixed(2)}</td>
                         <td class="px-6 py-4">${receiptHtml}</td>
-                        <td class="px-6 py-4 text-center">${editMenu}</td>
-                    </tr>
-                `;
+                        <td class="px-6 py-4 text-center">
+                            <button onclick="editRecord('rev', '${r.id}', '${r.db_table}')" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition"><i class="fas fa-edit"></i></button>
+                            ${r.db_table === 'manual_revenues' ? `<button onclick="deleteRecord('manual_revenues', '${r.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition"><i class="fas fa-trash-alt"></i></button>` : ''}
+                        </td>
+                    </tr>`;
             });
         }
 
@@ -498,151 +471,126 @@
             tbody.innerHTML = '';
 
             if(fExps.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-12 text-center text-gray-400 font-bold">لا توجد مصروفات مطابقة للفلاتر الحالية.</td></tr>';
-                return;
+                tbody.innerHTML = '<tr><td colspan="6" class="p-12 text-center text-gray-400 font-bold">لا توجد مصروفات مطابقة.</td></tr>'; return;
             }
 
             fExps.forEach(e => {
                 const url = e.receipt_url ? window.supabase.storage.from('financial-receipts').getPublicUrl(e.receipt_url).data.publicUrl : '#';
-                const receiptHtml = e.receipt_url 
-                    ? `<a href="${url}" target="_blank" class="text-blue-600 font-bold hover:underline bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 text-xs"><i class="fas fa-external-link-alt ml-1"></i> الفاتورة</a>`
-                    : `<span class="text-gray-400 text-xs font-bold">بدون فاتورة</span>`;
-
-                const editMenu = `
-                    <div class="relative inline-block text-right">
-                        <button onclick="toggleActionMenu('exp-${e.id}')" class="text-gray-500 hover:bg-gray-100 p-2 rounded-lg transition"><i class="fas fa-ellipsis-v px-2"></i></button>
-                        <div id="menu-exp-${e.id}" class="action-menu hidden absolute left-0 mt-1 w-32 bg-white border shadow-xl rounded-xl z-50 overflow-hidden">
-                            <button onclick="editRecord('expenses', '${e.id}')" class="w-full text-right px-4 py-3 text-sm text-gray-700 font-bold hover:bg-gray-50 border-b flex items-center"><i class="fas fa-edit ml-2 text-blue-500"></i> تعديل</button>
-                            <button onclick="deleteRecord('expenses', '${e.id}')" class="w-full text-right px-4 py-3 text-sm text-red-600 font-bold hover:bg-red-50 flex items-center"><i class="fas fa-trash-alt ml-2"></i> حذف</button>
-                        </div>
-                    </div>`;
+                const receiptHtml = e.receipt_url ? `<a href="${url}" target="_blank" class="text-blue-600 font-bold hover:underline bg-blue-50 px-3 py-1.5 rounded-lg text-xs">الفاتورة</a>` : `<span class="text-gray-400 text-xs">بدون</span>`;
 
                 tbody.innerHTML += `
-                    <tr class="hover:bg-red-50/30 border-b border-gray-100 transition">
+                    <tr class="hover:bg-gray-50 border-b border-gray-100">
                         <td class="px-6 py-4 text-gray-500 font-bold">${e.expense_date}</td>
-                        <td class="px-6 py-4"><span class="font-black text-gray-800 bg-gray-100 px-3 py-1.5 rounded-lg border">${e.category}</span></td>
-                        <td class="px-6 py-4 text-xs font-bold text-gray-500 leading-relaxed max-w-xs">${e.notes}</td>
-                        <td class="px-6 py-4 font-black text-red-600 text-lg">${parseFloat(e.amount).toFixed(2)}</td>
+                        <td class="px-6 py-4 font-black text-gray-800">${e.category}</td>
+                        <td class="px-6 py-4 text-xs text-gray-600 max-w-xs">${e.notes}</td>
+                        <td class="px-6 py-4 font-black text-red-600">${parseFloat(e.amount).toFixed(2)}</td>
                         <td class="px-6 py-4">${receiptHtml}</td>
-                        <td class="px-6 py-4 text-center">${editMenu}</td>
-                    </tr>
-                `;
+                        <td class="px-6 py-4 text-center">
+                            <button onclick="editRecord('exp', '${e.id}')" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition"><i class="fas fa-edit"></i></button>
+                            <button onclick="deleteRecord('expenses', '${e.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                    </tr>`;
             });
         }
 
         function renderReport() {
             const { fRevs, fExps } = getFilteredData();
 
-            // تجميع الإيرادات حسب النوع
-            let revGroups = {};
-            let grandRev = 0;
-            fRevs.forEach(r => {
-                revGroups[r.type] = (revGroups[r.type] || 0) + parseFloat(r.amount);
-                grandRev += parseFloat(r.amount);
-            });
+            let revGroups = {}; let grandRev = 0;
+            fRevs.forEach(r => { revGroups[r.category] = (revGroups[r.category] || 0) + parseFloat(r.amount); grandRev += parseFloat(r.amount); });
 
-            // تجميع المصروفات حسب الصنف
-            let expGroups = {};
-            let grandExp = 0;
-            fExps.forEach(e => {
-                expGroups[e.category] = (expGroups[e.category] || 0) + parseFloat(e.amount);
-                grandExp += parseFloat(e.amount);
-            });
+            let expGroups = {}; let grandExp = 0;
+            fExps.forEach(e => { expGroups[e.category] = (expGroups[e.category] || 0) + parseFloat(e.amount); grandExp += parseFloat(e.amount); });
 
-            // رسم الإيرادات
             const revContainer = document.getElementById('report-revenues-content');
             if(Object.keys(revGroups).length > 0) {
-                revContainer.innerHTML = Object.keys(revGroups).map(k => `
-                    <div class="flex justify-between items-center p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
-                        <span class="font-bold text-gray-600">${k}</span>
-                        <span class="font-black text-emerald-600 text-lg">${revGroups[k].toFixed(2)} <span class="text-xs text-gray-400">ر.ع</span></span>
-                    </div>
-                `).join('');
-            } else {
-                revContainer.innerHTML = '<div class="p-6 text-center text-gray-400 font-bold border-2 border-dashed rounded-xl">لا توجد إيرادات مسجلة في هذه الفترة</div>';
-            }
+                revContainer.innerHTML = Object.keys(revGroups).map(k => `<div class="flex justify-between py-2 border-b border-gray-100 last:border-0"><span class="text-gray-700">${k}</span><span class="font-black text-gray-900">${revGroups[k].toFixed(2)}</span></div>`).join('');
+            } else { revContainer.innerHTML = '<div class="text-gray-400 text-center py-2">لا توجد إيرادات</div>'; }
             document.getElementById('report-total-revenue').innerText = `${grandRev.toFixed(2)} ر.ع`;
 
-            // رسم المصروفات
             const expContainer = document.getElementById('report-expenses-content');
             if(Object.keys(expGroups).length > 0) {
-                expContainer.innerHTML = Object.keys(expGroups).map(k => `
-                    <div class="flex justify-between items-center p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
-                        <span class="font-bold text-gray-600">${k}</span>
-                        <span class="font-black text-red-600 text-lg">${expGroups[k].toFixed(2)} <span class="text-xs text-gray-400">ر.ع</span></span>
-                    </div>
-                `).join('');
-            } else {
-                expContainer.innerHTML = '<div class="p-6 text-center text-gray-400 font-bold border-2 border-dashed rounded-xl">لا توجد مصروفات مسجلة في هذه الفترة</div>';
-            }
+                expContainer.innerHTML = Object.keys(expGroups).map(k => `<div class="flex justify-between py-2 border-b border-gray-100 last:border-0"><span class="text-gray-700">${k}</span><span class="font-black text-gray-900">${expGroups[k].toFixed(2)}</span></div>`).join('');
+            } else { expContainer.innerHTML = '<div class="text-gray-400 text-center py-2">لا توجد مصروفات</div>'; }
             document.getElementById('report-total-expense').innerText = `${grandExp.toFixed(2)} ر.ع`;
 
-            // صافي الربح
             const net = grandRev - grandExp;
             const netEl = document.getElementById('report-net-profit');
-            const netContainer = document.getElementById('report-net-container');
-            const netTitle = document.getElementById('net-title');
-            const netSub = document.getElementById('net-subtitle');
-            const netIcon = document.getElementById('net-icon');
             
             if (net >= 0) {
                 netEl.innerHTML = `${net.toFixed(2)} <span class="text-lg opacity-80">ر.ع</span>`;
-                netContainer.className = "bg-emerald-600 p-8 rounded-2xl shadow-lg flex flex-col md:flex-row justify-between items-center relative overflow-hidden transition-all text-white border-4 border-emerald-500";
-                netTitle.className = "text-2xl font-black text-emerald-100 mb-1";
-                netSub.className = "text-emerald-200 font-bold text-sm";
-                netIcon.className = "fas fa-arrow-trend-up text-8xl absolute left-4 top-1/2 transform -translate-y-1/2 opacity-20";
+                netEl.className = "text-4xl font-black text-emerald-600";
             } else {
                 netEl.innerHTML = `(${Math.abs(net).toFixed(2)}) <span class="text-lg opacity-80">ر.ع</span>`;
-                netContainer.className = "bg-red-600 p-8 rounded-2xl shadow-lg flex flex-col md:flex-row justify-between items-center relative overflow-hidden transition-all text-white border-4 border-red-500";
-                netTitle.className = "text-2xl font-black text-red-100 mb-1";
-                netSub.className = "text-red-200 font-bold text-sm";
-                netIcon.className = "fas fa-arrow-trend-down text-8xl absolute left-4 top-1/2 transform -translate-y-1/2 opacity-20";
+                netEl.className = "text-4xl font-black text-red-600";
             }
         }
 
-        // ------------------ الإضافات والتعديلات ------------------ //
-        function toggleActionMenu(id) {
-            const menu = document.getElementById('menu-' + id);
-            const isHidden = menu.classList.contains('hidden');
-            document.querySelectorAll('.action-menu').forEach(m => m.classList.add('hidden'));
-            if(isHidden) menu.classList.remove('hidden');
+        // ------------------ إدارة الأصناف (إضافة وتعديل مسميات) ------------------ //
+        function openManageCategoriesModal(type) {
+            document.getElementById('manageCatType').value = type;
+            document.getElementById('manageCatTitle').innerHTML = type === 'rev' ? '<i class="fas fa-tags ml-2"></i> أصناف الإيرادات' : '<i class="fas fa-tags ml-2"></i> أصناف المصروفات';
+            
+            const list = document.getElementById('categoriesList');
+            list.innerHTML = '';
+            const cats = type === 'rev' ? revCategories : expCategories;
+            
+            cats.forEach(c => {
+                list.innerHTML += `
+                    <li class="p-3 mb-2 flex justify-between items-center text-sm font-bold text-gray-700 bg-gray-50 border border-gray-100 rounded-lg">
+                        <span>${c.name}</span>
+                        <button type="button" onclick="editCategory('${type}', ${c.id}, '${c.name}')" class="text-blue-500 hover:text-blue-700 bg-white shadow-sm p-2 rounded transition"><i class="fas fa-edit"></i></button>
+                    </li>`;
+            });
+
+            document.getElementById('manageCategoriesModal').classList.remove('hidden');
+            document.getElementById('manageCategoriesModal').classList.add('flex');
         }
 
-        // --- إصلاح إضافة الصنف الجديد ---
         async function addCategory() {
             const input = document.getElementById('newCategoryInput');
             const val = input.value.trim();
-            if(!val) return alert("الرجاء إدخال اسم الصنف أولاً!");
+            if(!val) return;
             
-            const btn = document.getElementById('addCatBtn');
-            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            const type = document.getElementById('manageCatType').value;
+            const table = type === 'rev' ? 'revenue_categories' : 'expense_categories';
             
             try {
-                const { error } = await window.supabase.from('expense_categories').insert({ name: val });
-                if (error) throw error;
+                const { error } = await window.supabase.from(table).insert({ name: val });
+                if(error) throw error;
                 input.value = '';
-                await loadCategories(); 
-            } catch (err) {
-                alert('تعذر إضافة الصنف. قد يكون الاسم موجوداً مسبقاً. التفاصيل: ' + err.message);
-            }
+                await loadCategories();
+                openManageCategoriesModal(type); // تحديث القائمة المفتوحة
+            } catch (err) { alert('خطأ في الإضافة: ' + err.message); }
+        }
+
+        async function editCategory(type, id, oldName) {
+            const newName = prompt("تعديل اسم الصنف:", oldName);
+            if(!newName || newName.trim() === oldName) return;
             
-            btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus"></i>';
+            const table = type === 'rev' ? 'revenue_categories' : 'expense_categories';
+            try {
+                const { error } = await window.supabase.from(table).update({ name: newName.trim() }).eq('id', id);
+                if(error) throw error;
+                await loadCategories();
+                openManageCategoriesModal(type);
+                loadFinances(); // تحديث الجداول لعرض المسمى الجديد إن لزم
+            } catch (err) { alert('خطأ في التعديل: ' + err.message); }
         }
 
-        async function deleteCategory(id) {
-            if(!confirm('حذف هذا الصنف؟')) return;
-            await window.supabase.from('expense_categories').delete().eq('id', id);
-            loadCategories();
-        }
-
-        // --- إدارة النوافذ المنبثقة (إيراد / مصروف) ---
+        // ------------------ النوافذ والحفظ للمصروفات والإيرادات ------------------ //
         function openAddRevenueModal() {
             document.getElementById('addRevenueForm').reset();
             document.getElementById('addRevId').value = '';
+            document.getElementById('addRevTable').value = 'manual_revenues';
             document.getElementById('addRevDate').valueAsDate = new Date();
-            document.getElementById('revModalTitle').innerHTML = '<i class="fas fa-plus-circle ml-2"></i> تسجيل إيراد يدوي';
-            document.getElementById('saveRevBtn').textContent = 'حفظ الإيراد';
             
+            document.getElementById('addRevAmount').disabled = false;
+            document.getElementById('addRevSource').disabled = false;
+            document.getElementById('addRevFile').disabled = false;
+            document.getElementById('addRevFileLabel').innerText = "صورة الإيصال (اختياري)";
+            
+            document.getElementById('revModalTitle').innerHTML = 'تسجيل إيراد يدوي';
             document.getElementById('addRevenueModal').classList.remove('hidden');
             document.getElementById('addRevenueModal').classList.add('flex');
         }
@@ -651,36 +599,36 @@
             document.getElementById('addExpenseForm').reset();
             document.getElementById('addExpId').value = '';
             document.getElementById('addExpDate').valueAsDate = new Date();
-            document.getElementById('addExpFile').required = true; // مطلوب عند الإضافة
             document.getElementById('expModalTitle').innerHTML = '<i class="fas fa-minus-circle ml-2"></i> تسجيل صرف مالي';
-            document.getElementById('saveExpBtn').textContent = 'اعتماد الصرف';
-
             document.getElementById('addExpenseModal').classList.remove('hidden');
             document.getElementById('addExpenseModal').classList.add('flex');
         }
 
-        function openManageCategoriesModal() {
-            document.getElementById('manageCategoriesModal').classList.remove('hidden');
-            document.getElementById('manageCategoriesModal').classList.add('flex');
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.add('hidden');
-            document.getElementById(modalId).classList.remove('flex');
-        }
-
-        // --- التعديل والحذف ---
-        function editRecord(table, id) {
-            if(table === 'manual_revenues') {
-                const rec = allRevenues.find(r => r.id === id);
+        function editRecord(type, id, db_table = '') {
+            if(type === 'rev') {
+                const rec = allRevenues.find(r => r.id === id && r.db_table === db_table);
                 document.getElementById('addRevId').value = rec.id;
+                document.getElementById('addRevTable').value = rec.db_table;
                 document.getElementById('addRevDate').value = rec.date;
                 document.getElementById('addRevAmount').value = rec.amount;
                 document.getElementById('addRevSource').value = rec.source;
+                document.getElementById('addRevCategory').value = rec.category;
                 document.getElementById('addRevNotes').value = rec.notes;
                 
-                document.getElementById('revModalTitle').innerHTML = '<i class="fas fa-edit ml-2"></i> تعديل بيانات الإيراد';
-                document.getElementById('saveRevBtn').textContent = 'حفظ التعديلات';
+                // حماية الاشتراكات من التعديل المالي
+                if(rec.db_table === 'subscriptions') {
+                    document.getElementById('addRevAmount').disabled = true;
+                    document.getElementById('addRevSource').disabled = true;
+                    document.getElementById('addRevFile').disabled = true;
+                    document.getElementById('addRevFileLabel').innerText = "الإيصال (للقراءة فقط - مقفل)";
+                    document.getElementById('revModalTitle').innerHTML = 'تعديل بيانات اشتراك';
+                } else {
+                    document.getElementById('addRevAmount').disabled = false;
+                    document.getElementById('addRevSource').disabled = false;
+                    document.getElementById('addRevFile').disabled = false;
+                    document.getElementById('addRevFileLabel').innerText = "صورة الإيصال (اختياري للتعديل)";
+                    document.getElementById('revModalTitle').innerHTML = 'تعديل إيراد يدوي';
+                }
                 
                 document.getElementById('addRevenueModal').classList.remove('hidden');
                 document.getElementById('addRevenueModal').classList.add('flex');
@@ -691,67 +639,63 @@
                 document.getElementById('addExpAmount').value = rec.amount;
                 document.getElementById('addExpCategory').value = rec.category;
                 document.getElementById('addExpNotes').value = rec.notes;
-                document.getElementById('addExpFile').required = false; // الفاتورة غير مطلوبة في التعديل
-                
                 document.getElementById('expModalTitle').innerHTML = '<i class="fas fa-edit ml-2"></i> تعديل بيانات الصرف';
-                document.getElementById('saveExpBtn').textContent = 'حفظ التعديلات';
-
+                
                 document.getElementById('addExpenseModal').classList.remove('hidden');
                 document.getElementById('addExpenseModal').classList.add('flex');
             }
         }
 
         async function deleteRecord(table, id) {
-            if(!confirm('هل أنت متأكد من حذف هذا السجل المالي نهائياً؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+            if(!confirm('تأكيد الحذف نهائياً؟')) return;
             await window.supabase.from(table).delete().eq('id', id);
             loadFinances();
         }
 
-        // الحفظ (إضافة أو تحديث) - الإيرادات
         document.getElementById('addRevenueForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('saveRevBtn');
-            btn.disabled = true; btn.textContent = 'جاري المعالجة...';
+            btn.disabled = true; btn.textContent = 'جاري الحفظ...';
 
             const id = document.getElementById('addRevId').value;
-            const payload = {
-                amount: document.getElementById('addRevAmount').value,
-                revenue_date: document.getElementById('addRevDate').value,
-                source: document.getElementById('addRevSource').value,
-                notes: document.getElementById('addRevNotes').value
-            };
-            const file = document.getElementById('addRevFile').files[0];
-
+            const table = document.getElementById('addRevTable').value;
+            
             try {
-                if(file) {
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `rev_${Date.now()}.${fileExt}`;
-                    const { error: upErr } = await window.supabase.storage.from('financial-receipts').upload(fileName, file);
-                    if(upErr) throw upErr;
-                    payload.receipt_url = fileName;
-                }
-
-                if(id) {
-                    const { error } = await window.supabase.from('manual_revenues').update(payload).eq('id', id);
+                if(table === 'subscriptions') {
+                    // تحديث الصنف والملاحظات فقط للاشتراكات
+                    const { error } = await window.supabase.from('subscriptions').update({
+                        category: document.getElementById('addRevCategory').value,
+                        admin_notes: document.getElementById('addRevNotes').value
+                    }).eq('id', id);
                     if(error) throw error;
                 } else {
-                    const { error } = await window.supabase.from('manual_revenues').insert(payload);
-                    if(error) throw error;
+                    const payload = {
+                        amount: document.getElementById('addRevAmount').value,
+                        revenue_date: document.getElementById('addRevDate').value,
+                        source: document.getElementById('addRevSource').value,
+                        category: document.getElementById('addRevCategory').value,
+                        notes: document.getElementById('addRevNotes').value
+                    };
+                    const file = document.getElementById('addRevFile').files[0];
+                    if(file) {
+                        const fileName = `rev_${Date.now()}.${file.name.split('.').pop()}`;
+                        await window.supabase.storage.from('financial-receipts').upload(fileName, file);
+                        payload.receipt_url = fileName;
+                    }
+
+                    if(id) { await window.supabase.from('manual_revenues').update(payload).eq('id', id); } 
+                    else { await window.supabase.from('manual_revenues').insert(payload); }
                 }
-                
                 closeModal('addRevenueModal');
                 loadFinances();
-            } catch (err) {
-                alert('خطأ: ' + err.message);
-            }
-            btn.disabled = false; btn.textContent = id ? 'حفظ التعديلات' : 'حفظ الإيراد';
+            } catch (err) { alert('خطأ: ' + err.message); }
+            btn.disabled = false; btn.textContent = 'حفظ الإيراد';
         });
 
-        // الحفظ (إضافة أو تحديث) - المصروفات
         document.getElementById('addExpenseForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('saveExpBtn');
-            btn.disabled = true; btn.textContent = 'جاري المعالجة...';
+            btn.disabled = true; btn.textContent = 'جاري الاعتماد...';
 
             const id = document.getElementById('addExpId').value;
             const payload = {
@@ -764,57 +708,28 @@
 
             try {
                 if(file) {
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `exp_${Date.now()}.${fileExt}`;
-                    const { error: upErr } = await window.supabase.storage.from('financial-receipts').upload(fileName, file);
-                    if(upErr) throw upErr;
+                    const fileName = `exp_${Date.now()}.${file.name.split('.').pop()}`;
+                    await window.supabase.storage.from('financial-receipts').upload(fileName, file);
                     payload.receipt_url = fileName;
                 }
-
-                if(id) {
-                    const { error } = await window.supabase.from('expenses').update(payload).eq('id', id);
-                    if(error) throw error;
-                } else {
-                    const { error } = await window.supabase.from('expenses').insert(payload);
-                    if(error) throw error;
-                }
+                if(id) { await window.supabase.from('expenses').update(payload).eq('id', id); } 
+                else { await window.supabase.from('expenses').insert(payload); }
                 
                 closeModal('addExpenseModal');
                 loadFinances();
-            } catch (err) {
-                alert('خطأ: ' + err.message);
-            }
-            btn.disabled = false; btn.textContent = id ? 'حفظ التعديلات' : 'اعتماد الصرف';
+            } catch (err) { alert('خطأ: ' + err.message); }
+            btn.disabled = false; btn.textContent = 'اعتماد الصرف';
         });
 
-        // ------------------ التصدير ------------------ //
         function exportToExcel() {
-            let tableId = '';
-            let fileName = '';
-            
-            if(currentTab === 'revenues') {
-                tableId = 'revenueTableExport';
-                fileName = 'سجل_الإيرادات.xlsx';
-            } else if (currentTab === 'expenses') {
-                tableId = 'expenseTableExport';
-                fileName = 'سجل_المصروفات.xlsx';
-            } else {
-                alert('التصدير لملف إكسل متاح فقط لجدول الإيرادات والمصروفات. إذا أردت حفظ التقرير المالي، يرجى استخدام (طباعة الصفحة).');
-                return;
-            }
+            const tableId = currentTab === 'revenues' ? 'revenueTableExport' : (currentTab === 'expenses' ? 'expenseTableExport' : null);
+            if(!tableId) return alert('التصدير لملف إكسل متاح فقط لجدول الإيرادات والمصروفات.');
 
             const table = document.getElementById(tableId);
             const clone = table.cloneNode(true);
-            
-            Array.from(clone.rows).forEach(row => {
-                if(row.cells.length > 4) {
-                    row.deleteCell(-1); // حذف عمود الإجراءات
-                    row.deleteCell(-1); // حذف عمود الإيصال
-                }
-            });
-
+            Array.from(clone.rows).forEach(row => { if(row.cells.length > 4) { row.deleteCell(-1); row.deleteCell(-1); }});
             const wb = XLSX.utils.table_to_book(clone, {sheet: "السجل المالي"});
-            XLSX.writeFile(wb, fileName);
+            XLSX.writeFile(wb, currentTab === 'revenues' ? 'سجل_الإيرادات.xlsx' : 'سجل_المصروفات.xlsx');
         }
     </script>
 </body>
