@@ -233,9 +233,11 @@
             const notes = document.getElementById('adminNotes').value;
 
             // تحديث عمود admin_notes
-            const { error } = await window.supabase.from('sessions').update({
-                admin_notes: notes
-            }).eq('id', activeSessionId);
+// تحديث الملاحظات باستخدام دالة RPC لتجاوز حظر الـ PATCH
+const { error } = await window.supabase.rpc('update_admin_notes', {
+    p_session_id: activeSessionId,
+    p_notes: notes
+});
 
             if(error) { 
                 alert("خطأ: " + error.message + "\nتنبيه: تأكد من إضافة عمود 'admin_notes' (نوع text) في جدول sessions بقاعدة البيانات."); 
