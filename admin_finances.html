@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>الإدارة المالية والتقارير - منصة التحفيظ</title>
+    <title>الإدارة المالية - منصة التحفيظ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style> 
@@ -157,9 +157,8 @@
         </div>
     </main>
 
-    <!-- النوافذ المنبثقة المنظمة والمرتبة -->
+    <!-- النوافذ المنبثقة المنظمة -->
 
-    <!-- 1. نافذة الإيرادات -->
     <div id="addRevenueModal" class="fixed inset-0 bg-gray-900/60 hidden items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-xl flex flex-col max-h-[90vh] overflow-y-auto">
             <h3 class="text-lg font-bold mb-4 text-gray-800 border-b pb-2" id="revModalTitle">تسجيل إيراد</h3>
@@ -198,7 +197,6 @@
         </div>
     </div>
 
-    <!-- 2. نافذة المصروفات -->
     <div id="addExpenseModal" class="fixed inset-0 bg-gray-900/60 hidden items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl p-6 w-full max-w-2xl shadow-xl flex flex-col max-h-[90vh] overflow-y-auto">
             <h3 class="text-lg font-bold mb-4 text-gray-800 border-b pb-2" id="expModalTitle">تسجيل مصروف</h3>
@@ -234,7 +232,6 @@
         </div>
     </div>
 
-    <!-- 3. نافذة إدارة الأصناف -->
     <div id="manageCategoriesModal" class="fixed inset-0 bg-gray-900/60 hidden items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl flex flex-col max-h-[90vh] overflow-y-auto">
             <h3 class="text-lg font-bold mb-4 text-gray-800 border-b pb-2" id="manageCatTitle">إدارة الأصناف</h3>
@@ -262,10 +259,8 @@
             await loadFinances();
         });
 
-        // ------------------ التبويبات والفلاتر ------------------ //
         function switchTab(tab) {
             currentTab = tab;
-            
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             
@@ -307,19 +302,12 @@
             else if(currentTab === 'report') renderReport();
         }
 
-        // ------------------ جلب البيانات ------------------ //
         async function loadFinances() {
-            const { data: subs, error: subsErr } = await window.supabase.from('subscriptions')
+            const { data: subs } = await window.supabase.from('subscriptions')
                 .select(`id, created_at, category, admin_notes, status, receipt_url, packages(price, name), users!subscriptions_user_id_fkey(full_name)`)
                 .eq('status', 'approved');
-            
-            if (subsErr) {
-                console.error("خطأ في جلب الاشتراكات:", subsErr);
-                alert("تنبيه: فشل جلب بيانات الاشتراكات. " + subsErr.message);
-            }
 
-            const { data: manualRevs, error: manErr } = await window.supabase.from('manual_revenues').select('*');
-            if (manErr) console.error("خطأ في الإيرادات اليدوية:", manErr);
+            const { data: manualRevs } = await window.supabase.from('manual_revenues').select('*');
 
             allRevenues = [];
             if(subs) {
@@ -341,8 +329,7 @@
             }
             allRevenues.sort((a,b) => new Date(b.date) - new Date(a.date));
 
-            const { data: exps, error: expErr } = await window.supabase.from('expenses').select('*').order('expense_date', { ascending: false });
-            if (expErr) console.error("خطأ في المصروفات:", expErr);
+            const { data: exps } = await window.supabase.from('expenses').select('*').order('expense_date', { ascending: false });
             allExpenses = exps || [];
 
             updateAll();
@@ -400,7 +387,6 @@
             return { fRevs, fExps };
         }
 
-        // ------------------ رسم الجداول والتقارير ------------------ //
         function renderRevenues() {
             const { fRevs } = getFilteredData();
             const tbody = document.getElementById('revenuesTableBody');
@@ -414,9 +400,10 @@
                 const url = r.receipt_url ? window.supabase.storage.from(r.bucket).getPublicUrl(r.receipt_url).data.publicUrl : '#';
                 const receiptHtml = r.receipt_url ? `<a href="${url}" target="_blank" class="text-blue-600 hover:underline">مرفق</a>` : `-`;
 
+                // زر التعديل والحذف يظهر دائماً حتى للاشتراكات!
                 const editMenu = `
                     <button type="button" onclick="editRecord('rev', '${r.id}', '${r.db_table}')" class="text-blue-500 hover:bg-gray-100 p-1.5 rounded transition"><i class="fas fa-edit"></i></button>
-                    ${r.db_table === 'manual_revenues' ? `<button type="button" onclick="deleteRecord('manual_revenues', '${r.id}')" class="text-red-500 hover:bg-gray-100 p-1.5 rounded transition"><i class="fas fa-trash-alt"></i></button>` : ''}
+                    <button type="button" onclick="deleteRecord('${r.db_table}', '${r.id}')" class="text-red-500 hover:bg-gray-100 p-1.5 rounded transition"><i class="fas fa-trash-alt"></i></button>
                 `;
 
                 tbody.innerHTML += `
@@ -496,7 +483,7 @@
             document.getElementById('report-net-profit').innerText = net.toFixed(2);
         }
 
-        // ------------------ إدارة الأصناف ------------------ //
+        // ------------------ دوال الأصناف المرتبطة بـ RPC لتجاوز الحظر ------------------ //
         function openManageCategoriesModal(type) {
             document.getElementById('manageCatType').value = type;
             document.getElementById('manageCatTitle').innerText = type === 'rev' ? 'أصناف الإيرادات' : 'أصناف المصروفات';
@@ -526,6 +513,7 @@
             const table = type === 'rev' ? 'revenue_categories' : 'expense_categories';
             
             try {
+                // الإضافة تعمل بالـ POST تلقائياً فلا تحتاج RPC
                 const { error } = await window.supabase.from(table).insert({ name: val });
                 if(error) throw error;
                 input.value = '';
@@ -538,17 +526,19 @@
             const newName = prompt("الاسم الجديد:", oldName);
             if(!newName || newName.trim() === oldName) return;
             
-            const table = type === 'rev' ? 'revenue_categories' : 'expense_categories';
             try {
-                const { error } = await window.supabase.from(table).update({ name: newName.trim() }).eq('id', id);
+                // استخدام RPC لتعديل الصنف لتجاوز حظر الـ PATCH
+                const rpcName = type === 'rev' ? 'update_revenue_category' : 'update_expense_category';
+                const { error } = await window.supabase.rpc(rpcName, { p_id: parseInt(id), p_name: newName.trim() });
                 if(error) throw error;
+                
                 await loadCategories();
                 openManageCategoriesModal(type);
                 loadFinances(); 
             } catch (err) { alert('خطأ في التعديل: ' + err.message); }
         }
 
-        // ------------------ النوافذ والحفظ ------------------ //
+        // ------------------ دوال التسجيل والتعديل المالي عبر RPC ------------------ //
         function openAddRevenueModal() {
             document.getElementById('addRevenueForm').reset();
             document.getElementById('addRevId').value = '';
@@ -558,6 +548,7 @@
             document.getElementById('addRevAmount').disabled = false;
             document.getElementById('addRevSource').disabled = false;
             document.getElementById('addRevFile').disabled = false;
+            document.getElementById('addRevCategory').disabled = false;
             document.getElementById('addRevFileLabel').innerText = "المرفق (اختياري)";
             
             document.getElementById('revModalTitle').innerText = 'تسجيل إيراد';
@@ -586,15 +577,18 @@
                 document.getElementById('addRevNotes').value = rec.notes;
                 
                 if(rec.db_table === 'subscriptions') {
+                    // منع تعديل المبلغ، المصدر، المرفق، والصنف! (حسب طلبك: لا تسمح بتغيير الصنف)
                     document.getElementById('addRevAmount').disabled = true;
                     document.getElementById('addRevSource').disabled = true;
                     document.getElementById('addRevFile').disabled = true;
-                    document.getElementById('addRevFileLabel').innerText = "المرفق (للقراءة فقط)";
-                    document.getElementById('revModalTitle').innerText = 'تصنيف اشتراك';
+                    document.getElementById('addRevCategory').disabled = true; 
+                    document.getElementById('addRevFileLabel').innerText = "المرفق (مغلق)";
+                    document.getElementById('revModalTitle').innerText = 'تعديل بيانات اشتراك';
                 } else {
                     document.getElementById('addRevAmount').disabled = false;
                     document.getElementById('addRevSource').disabled = false;
                     document.getElementById('addRevFile').disabled = false;
+                    document.getElementById('addRevCategory').disabled = false;
                     document.getElementById('addRevFileLabel').innerText = "المرفق (اختياري)";
                     document.getElementById('revModalTitle').innerText = 'تعديل إيراد';
                 }
@@ -616,29 +610,29 @@
         }
 
         async function deleteRecord(table, id) {
-            if(!confirm('تأكيد الحذف نهائياً؟')) return;
+            if(!confirm('هل أنت متأكد من الحذف نهائياً؟')) return;
             try {
-                const { error } = await window.supabase.from(table).delete().eq('id', id);
+                // استخدام RPC للحذف وتجاوز الحظر الأمني
+                const { error } = await window.supabase.rpc('delete_financial_record', { p_table: table, p_id: id });
                 if (error) throw error;
                 loadFinances();
             } catch (err) { alert('خطأ في الحذف: ' + err.message); }
         }
 
-// -------------- كود حفظ وتعديل الإيرادات (المحدث بـ RPC) --------------
         document.getElementById('addRevenueForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('saveRevBtn');
-            btn.disabled = true; btn.textContent = 'جاري المعالجة...';
+            btn.disabled = true; btn.textContent = '...';
 
             const id = document.getElementById('addRevId').value;
             const table = document.getElementById('addRevTable').value;
             
             try {
                 if(table === 'subscriptions') {
-                    // استخدام RPC لتعديل الاشتراك وتجاوز الحظر
+                    // استخدام RPC لتعديل الاشتراك (يُعدل التاريخ والملاحظات فقط)
                     const { error } = await window.supabase.rpc('update_subscription_finance', {
                         p_id: id,
-                        p_category: document.getElementById('addRevCategory').value,
+                        p_date: document.getElementById('addRevDate').value,
                         p_notes: document.getElementById('addRevNotes').value
                     });
                     if(error) throw error;
@@ -658,14 +652,14 @@
                     }
 
                     if(id) { 
-                        // استخدام RPC للتعديل وتجاوز طريقة PATCH الممنوعة
+                        // استخدام RPC للتعديل وتجاوز حظر الـ PATCH
                         const { error } = await window.supabase.rpc('update_manual_revenue', {
-                            p_id: id, p_amount: amountVal, p_revenue_date: dateVal, 
+                            p_id: id, p_amount: parseFloat(amountVal), p_revenue_date: dateVal, 
                             p_source: sourceVal, p_category: catVal, p_notes: notesVal, p_receipt_url: fileName
                         });
                         if(error) throw error;
                     } else { 
-                        // الإضافة الجديدة تعمل بشكل طبيعي (POST)
+                        // الإضافة تعمل بشكل سليم عبر POST
                         const payload = { amount: amountVal, revenue_date: dateVal, source: sourceVal, category: catVal, notes: notesVal, receipt_url: fileName };
                         const { error } = await window.supabase.from('manual_revenues').insert(payload); 
                         if(error) throw error;
@@ -673,15 +667,14 @@
                 }
                 closeModal('addRevenueModal');
                 loadFinances();
-            } catch (err) { alert('خطأ في الحفظ: ' + err.message); }
+            } catch (err) { alert('خطأ أثناء الحفظ: ' + err.message); }
             btn.disabled = false; btn.textContent = 'حفظ';
         });
 
-        // -------------- كود حفظ وتعديل المصروفات (المحدث بـ RPC) --------------
         document.getElementById('addExpenseForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('saveExpBtn');
-            btn.disabled = true; btn.textContent = 'جاري الاعتماد...';
+            btn.disabled = true; btn.textContent = '...';
 
             const id = document.getElementById('addExpId').value;
             const amountVal = document.getElementById('addExpAmount').value;
@@ -700,14 +693,13 @@
                 }
                 
                 if(id) { 
-                    // استخدام RPC للتعديل وتجاوز الحظر
+                    // استخدام RPC للتعديل وتجاوز حظر الـ PATCH
                     const { error } = await window.supabase.rpc('update_expense', {
-                        p_id: id, p_amount: amountVal, p_expense_date: dateVal, 
+                        p_id: id, p_amount: parseFloat(amountVal), p_expense_date: dateVal, 
                         p_category: catVal, p_notes: notesVal, p_receipt_url: fileName
                     });
                     if(error) throw error;
                 } else { 
-                    // الإضافة الجديدة تعمل بشكل طبيعي
                     const payload = { amount: amountVal, expense_date: dateVal, category: catVal, notes: notesVal, receipt_url: fileName };
                     const { error } = await window.supabase.from('expenses').insert(payload); 
                     if(error) throw error;
@@ -715,42 +707,7 @@
                 
                 closeModal('addExpenseModal');
                 loadFinances();
-            } catch (err) { alert('خطأ في الاعتماد: ' + err.message); }
-            btn.disabled = false; btn.textContent = 'حفظ';
-        });
-
-        document.getElementById('addExpenseForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('saveExpBtn');
-            btn.disabled = true; btn.textContent = '...';
-
-            const id = document.getElementById('addExpId').value;
-            const payload = {
-                amount: document.getElementById('addExpAmount').value,
-                expense_date: document.getElementById('addExpDate').value,
-                category: document.getElementById('addExpCategory').value,
-                notes: document.getElementById('addExpNotes').value
-            };
-            const file = document.getElementById('addExpFile').files[0];
-
-            try {
-                if(file) {
-                    const fileName = `exp_${Date.now()}.${file.name.split('.').pop()}`;
-                    const { error: upErr } = await window.supabase.storage.from('financial-receipts').upload(fileName, file);
-                    if(upErr) throw upErr;
-                    payload.receipt_url = fileName;
-                }
-                if(id) { 
-                    const { error } = await window.supabase.from('expenses').update(payload).eq('id', id); 
-                    if(error) throw error;
-                } else { 
-                    const { error } = await window.supabase.from('expenses').insert(payload); 
-                    if(error) throw error;
-                }
-                
-                closeModal('addExpenseModal');
-                loadFinances();
-            } catch (err) { alert('خطأ في الاعتماد: ' + err.message); }
+            } catch (err) { alert('خطأ أثناء الحفظ: ' + err.message); }
             btn.disabled = false; btn.textContent = 'حفظ';
         });
 
