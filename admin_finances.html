@@ -624,41 +624,49 @@
             } catch (err) { alert('خطأ في الحذف: ' + err.message); }
         }
 
+// -------------- كود حفظ وتعديل الإيرادات (المحدث بـ RPC) --------------
         document.getElementById('addRevenueForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('saveRevBtn');
-            btn.disabled = true; btn.textContent = '...';
+            btn.disabled = true; btn.textContent = 'جاري المعالجة...';
 
             const id = document.getElementById('addRevId').value;
             const table = document.getElementById('addRevTable').value;
             
             try {
                 if(table === 'subscriptions') {
-                    const { error } = await window.supabase.from('subscriptions').update({
-                        category: document.getElementById('addRevCategory').value,
-                        admin_notes: document.getElementById('addRevNotes').value
-                    }).eq('id', id);
+                    // استخدام RPC لتعديل الاشتراك وتجاوز الحظر
+                    const { error } = await window.supabase.rpc('update_subscription_finance', {
+                        p_id: id,
+                        p_category: document.getElementById('addRevCategory').value,
+                        p_notes: document.getElementById('addRevNotes').value
+                    });
                     if(error) throw error;
                 } else {
-                    const payload = {
-                        amount: document.getElementById('addRevAmount').value,
-                        revenue_date: document.getElementById('addRevDate').value,
-                        source: document.getElementById('addRevSource').value,
-                        category: document.getElementById('addRevCategory').value,
-                        notes: document.getElementById('addRevNotes').value
-                    };
+                    const amountVal = document.getElementById('addRevAmount').value;
+                    const dateVal = document.getElementById('addRevDate').value;
+                    const sourceVal = document.getElementById('addRevSource').value;
+                    const catVal = document.getElementById('addRevCategory').value;
+                    const notesVal = document.getElementById('addRevNotes').value;
+                    
                     const file = document.getElementById('addRevFile').files[0];
+                    let fileName = null;
                     if(file) {
-                        const fileName = `rev_${Date.now()}.${file.name.split('.').pop()}`;
+                        fileName = `rev_${Date.now()}.${file.name.split('.').pop()}`;
                         const { error: upErr } = await window.supabase.storage.from('financial-receipts').upload(fileName, file);
                         if(upErr) throw upErr;
-                        payload.receipt_url = fileName;
                     }
 
                     if(id) { 
-                        const { error } = await window.supabase.from('manual_revenues').update(payload).eq('id', id); 
+                        // استخدام RPC للتعديل وتجاوز طريقة PATCH الممنوعة
+                        const { error } = await window.supabase.rpc('update_manual_revenue', {
+                            p_id: id, p_amount: amountVal, p_revenue_date: dateVal, 
+                            p_source: sourceVal, p_category: catVal, p_notes: notesVal, p_receipt_url: fileName
+                        });
                         if(error) throw error;
                     } else { 
+                        // الإضافة الجديدة تعمل بشكل طبيعي (POST)
+                        const payload = { amount: amountVal, revenue_date: dateVal, source: sourceVal, category: catVal, notes: notesVal, receipt_url: fileName };
                         const { error } = await window.supabase.from('manual_revenues').insert(payload); 
                         if(error) throw error;
                     }
@@ -666,6 +674,48 @@
                 closeModal('addRevenueModal');
                 loadFinances();
             } catch (err) { alert('خطأ في الحفظ: ' + err.message); }
+            btn.disabled = false; btn.textContent = 'حفظ';
+        });
+
+        // -------------- كود حفظ وتعديل المصروفات (المحدث بـ RPC) --------------
+        document.getElementById('addExpenseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveExpBtn');
+            btn.disabled = true; btn.textContent = 'جاري الاعتماد...';
+
+            const id = document.getElementById('addExpId').value;
+            const amountVal = document.getElementById('addExpAmount').value;
+            const dateVal = document.getElementById('addExpDate').value;
+            const catVal = document.getElementById('addExpCategory').value;
+            const notesVal = document.getElementById('addExpNotes').value;
+            
+            const file = document.getElementById('addExpFile').files[0];
+            let fileName = null;
+
+            try {
+                if(file) {
+                    fileName = `exp_${Date.now()}.${file.name.split('.').pop()}`;
+                    const { error: upErr } = await window.supabase.storage.from('financial-receipts').upload(fileName, file);
+                    if(upErr) throw upErr;
+                }
+                
+                if(id) { 
+                    // استخدام RPC للتعديل وتجاوز الحظر
+                    const { error } = await window.supabase.rpc('update_expense', {
+                        p_id: id, p_amount: amountVal, p_expense_date: dateVal, 
+                        p_category: catVal, p_notes: notesVal, p_receipt_url: fileName
+                    });
+                    if(error) throw error;
+                } else { 
+                    // الإضافة الجديدة تعمل بشكل طبيعي
+                    const payload = { amount: amountVal, expense_date: dateVal, category: catVal, notes: notesVal, receipt_url: fileName };
+                    const { error } = await window.supabase.from('expenses').insert(payload); 
+                    if(error) throw error;
+                }
+                
+                closeModal('addExpenseModal');
+                loadFinances();
+            } catch (err) { alert('خطأ في الاعتماد: ' + err.message); }
             btn.disabled = false; btn.textContent = 'حفظ';
         });
 
