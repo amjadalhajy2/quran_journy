@@ -154,6 +154,7 @@
     <script>
         let myMeetLink = ""; 
         let activeSessionId = null;
+        let nextSessionId = null; // أضف هذا السطر
         let studentPlans = [];
         window.quranChapters = [];
 
@@ -328,14 +329,17 @@
                         .order('session_date', {ascending: true})
                         .limit(1);
 
-                    const hasNextSession = nextSessions && nextSessions.length > 0;
-                    if (!hasNextSession) {
-                        const nf = document.getElementById('nextFrom');
-                        const nt = document.getElementById('nextTo');
-                        nf.disabled = true; nt.disabled = true;
-                        nf.title = "لا يوجد حصة قادمة مجدولة للطالب";
-                        nt.title = "لا يوجد حصة قادمة مجدولة للطالب";
-                    }
+const hasNextSession = nextSessions && nextSessions.length > 0;
+if (hasNextSession) {
+    // إذا كان هناك حصة قادمة، نقوم بتخزين الـ ID الخاص بها
+    nextSessionId = nextSessions[0].id;
+} else {
+    const nf = document.getElementById('nextFrom');
+    const nt = document.getElementById('nextTo');
+    nf.disabled = true; nt.disabled = true;
+    nf.title = "لا يوجد حصة قادمة مجدولة للطالب";
+    nt.title = "لا يوجد حصة قادمة مجدولة للطالب";
+}
 
                     const { data: profile } = await window.supabase.from('student_profiles')
                         .select('target_parts, custom_plan_type, target_surahs')
@@ -455,6 +459,13 @@
             const { error } = await window.supabase.from('sessions').update({
                 next_assignment: targetStr, memorized_from: actualStr, teacher_notes: notes, status: 'completed', evaluation: null
             }).eq('id', activeSessionId);
+            // تحديث الحصة القادمة بالمقرر الجديد إذا تم تحديده
+if (nextSessionId && !document.getElementById('nextFrom').disabled && nf && nt) {
+    const nextTargetStr = `${opt.getAttribute('data-plan')} - ص ${nf} إلى ${nt}`;
+    await window.supabase.from('sessions').update({
+        next_assignment: nextTargetStr
+    }).eq('id', nextSessionId);
+}
 
             if(error) { alert("خطأ: " + error.message); btn.disabled = false; btn.textContent = 'حفظ السجل وإنهاء الحصة'; }
             else window.location.href = 'teacher_dashboard.html';
