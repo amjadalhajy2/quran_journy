@@ -231,8 +231,8 @@
                                 </div>
                             </div>`;
                         } else {
-                            colHtml += `<a href="teacher_virtual_session.html?session_id=${sess.id}" class="block ${cardStyle} border p-2 rounded-lg text-sm relative transition hover:shadow-md flex flex-col cursor-pointer">
-                                <div class="font-bold text-gray-800 text-xs mb-1.5 text-center">${sess.users.full_name}</div>
+                            colHtml += `<a onclick="confirmStartSession(event, '${sess.id}')" class="block ${cardStyle} border p-2 rounded-lg text-sm relative transition hover:shadow-md flex flex-col cursor-pointer">
+                            <div class="font-bold text-gray-800 text-xs mb-1.5 text-center">${sess.users.full_name}</div>
                                 
                                 <div class="border-t border-gray-200/60 pt-1.5 pb-1.5 text-center w-full whitespace-nowrap">
                                     <span class="font-bold text-gray-500 text-[11px] inline-block"><i class="far fa-clock ml-1"></i>${sTime} - ${eTime}</span>
@@ -272,6 +272,15 @@
             await window.supabase.auth.signOut();
             window.location.href = 'login.html';
         }
+        function confirmStartSession(e, sessionId) {
+    e.preventDefault(); // لمنع أي سلوك افتراضي
+    
+    const isConfirmed = confirm("هل أنت متأكد من بدء هذه الحصة ودخول غرفة الإقراء الافتراضية؟");
+    
+    if (isConfirmed) {
+        window.location.href = `teacher_virtual_session.html?session_id=${sessionId}`;
+    }
+}
     </script>
 </body>
 </html>
