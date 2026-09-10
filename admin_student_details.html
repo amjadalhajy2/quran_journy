@@ -255,7 +255,7 @@ function formatTime12(timeStr) {
 
                         tbody.innerHTML += `
                             <tr class="hover:bg-gray-50 transition border-b border-gray-100">
-                                <td class="px-6 py-4 font-bold text-gray-700"><div>${sess.session_date}</div><div class="text-xs text-gray-400 mt-1" dir="ltr" style="text-align: right;"><i class="far fa-clock"></i> ${sess.start_time ? sess.start_time.substring(0,5) : ''}</div></td>
+                                <td class="px-6 py-4 font-bold text-gray-700"><div>${sess.session_date}</div><div class="text-xs text-gray-400 mt-1" dir="ltr" style="text-align: right;"><i class="far fa-clock"></i> ${sess.start_time ? formatTime12(sess.start_time) : ''}</div></td>
                                 <td class="px-6 py-4 text-xs font-bold text-gray-800 max-w-[200px] leading-relaxed">${target}</td>
                                 <td class="px-6 py-4 text-xs font-bold text-emerald-700">${actual}</td>
                                 <td class="px-6 py-4 text-xs text-gray-600 leading-relaxed max-w-xs">${notes}</td>
