@@ -79,6 +79,16 @@
 
         if(!teacherId) window.location.href = 'admin_teachers.html';
 
+        function formatTime12(timeStr) {
+    if (!timeStr) return '';
+    let [hours, minutes] = timeStr.substring(0, 5).split(':');
+    hours = parseInt(hours, 10);
+    let ampm = hours >= 12 ? 'م' : 'ص';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // تحويل الصفر (منتصف الليل) إلى 12
+    return hours + ':' + minutes + ' ' + ampm;
+}
+        
         function getLocalDateString(date) {
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
