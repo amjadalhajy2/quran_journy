@@ -173,17 +173,100 @@
             document.getElementById('assignModal').classList.add('flex');
         }
 
-        async function saveTeacher() {
+async function saveTeacher() {
             const stuId = document.getElementById('modalStudentId').value;
-            const tId = document.getElementById('teacherSelect').value;
-            if(!tId) return alert('الرجاء اختيار معلم!');
-            
-            const { error } = await window.supabase.rpc('assign_teacher', { p_student_id: stuId, p_teacher_id: tId });
-            if(error) alert('خطأ: ' + error.message);
-            else {
+            const newTeacherId = document.getElementById('teacherSelect').value;
+            const selectElement = document.getElementById('teacherSelect');
+            const newTeacherName = selectElement.options[selectElement.selectedIndex].text;
+
+            if(!newTeacherId) return alert('الرجاء اختيار معلم!');
+
+            const btn = document.querySelector('#assignModal button[onclick="saveTeacher()"]');
+            const originalBtnText = btn.innerHTML;
+            btn.disabled = true; btn.textContent = 'جاري الفحص...';
+
+            try {
+                // 1. جلب الحصص المتبقية للطالب (المجدولة أو الجارية)
+                const { data: studentSessions, error: sErr } = await window.supabase.from('sessions')
+                    .select('id, session_date, start_time, end_time')
+                    .eq('student_id', stuId)
+                    .in('status', ['scheduled', 'ongoing']);
+
+                if (sErr) throw new Error('تعذر جلب حصص الطالب: ' + sErr.message);
+
+                // 2. جلب حصص المعلم الجديد لفحص التعارض
+                const { data: teacherSessions, error: tErr } = await window.supabase.from('sessions')
+                    .select('session_date, start_time, end_time')
+                    .eq('teacher_id', newTeacherId)
+                    .in('status', ['scheduled', 'ongoing']);
+
+                if (tErr) throw new Error('تعذر فحص حصص المعلم الجديد: ' + tErr.message);
+
+                // 3. فحص التعارض الزمني
+                let hasConflict = false;
+                let conflictDetails = '';
+
+                if (studentSessions && studentSessions.length > 0 && teacherSessions && teacherSessions.length > 0) {
+                    for (let sSess of studentSessions) {
+                        let sStart = sSess.start_time;
+                        let sEnd = sSess.end_time;
+                        
+                        let conflict = teacherSessions.find(tSess => {
+                            return tSess.session_date === sSess.session_date &&
+                                   (sStart < tSess.end_time && sEnd > tSess.start_time);
+                        });
+
+                        if (conflict) {
+                            hasConflict = true;
+                            // استخدام الدالة formatTime12 إذا كنت أضفتها، أو عرض الوقت مباشرة
+                            let startTimeDisp = typeof formatTime12 === 'function' ? formatTime12(sStart) : sStart.substring(0,5);
+                            let endTimeDisp = typeof formatTime12 === 'function' ? formatTime12(sEnd) : sEnd.substring(0,5);
+                            
+                            conflictDetails = `تعارض يوم ${sSess.session_date} من ${startTimeDisp} إلى ${endTimeDisp}`;
+                            break;
+                        }
+                    }
+                }
+
+                if (hasConflict) {
+                    btn.disabled = false; btn.innerHTML = originalBtnText;
+                    return alert(`لا يمكن نقل الطالب!\nيوجد تعارض في جدول المعلم الجديد:\n[ ${conflictDetails} ]\nيرجى تعديل أوقات حصص الطالب قبل النقل.`);
+                }
+
+                // 4. رسالة التأكيد للإدارة
+                const sessionsCount = studentSessions ? studentSessions.length : 0;
+                const confirmMsg = `تأكيد نقل الطالب:\nهل أنت متأكد من نقل الطالب إلى المعلم "${newTeacherName}"؟\nسيتم أيضاً ترحيل (${sessionsCount}) حصص مجدولة/جارية إلى المعلم الجديد تلقائياً.`;
+                
+                if (!confirm(confirmMsg)) {
+                    btn.disabled = false; btn.innerHTML = originalBtnText;
+                    return;
+                }
+
+                btn.textContent = 'جاري النقل...';
+
+                // 5. تنفيذ النقل (تحديث ملف الطالب)
+                const { error: assignErr } = await window.supabase.rpc('assign_teacher', { p_student_id: stuId, p_teacher_id: newTeacherId });
+                if(assignErr) throw new Error('خطأ في نقل الطالب: ' + assignErr.message);
+
+                // 6. ترحيل الحصص للمعلم الجديد
+                if (sessionsCount > 0) {
+                    const sessionIds = studentSessions.map(s => s.id);
+                    const { error: updateSessErr } = await window.supabase.from('sessions')
+                        .update({ teacher_id: newTeacherId })
+                        .in('id', sessionIds);
+                        
+                    if (updateSessErr) throw new Error('تم نقل الطالب ولكن حدث خطأ في ترحيل الحصص: ' + updateSessErr.message);
+                }
+
+                alert('تم نقل الطالب وترحيل الحصص بنجاح!');
                 document.getElementById('assignModal').classList.add('hidden');
                 loadStudents();
+
+            } catch (error) {
+                alert(error.message);
             }
+            
+            btn.disabled = false; btn.innerHTML = originalBtnText;
         }
 
         function openEditStudentModal(id, name, phone) {
