@@ -56,12 +56,13 @@
                 <div class="flex justify-between items-center mb-6 border-b pb-4">
                     <h3 class="font-bold text-lg text-emerald-700"><i class="fas fa-calendar-week ml-2"></i> الجدول الأسبوعي للحصص</h3>
                     <div class="flex items-center bg-gray-100 rounded-lg p-1 space-x-1 space-x-reverse">
-                        <button onclick="changeWeek(1)" class="px-4 py-1.5 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition">التالي <i class="fas fa-chevron-left mr-1 text-xs"></i></button>
+                        <!-- تم تبديل أماكن الأزرار هنا بناءً على طلبك -->
+                        <button onclick="changeWeek(-1)" class="px-4 py-1.5 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition"><i class="fas fa-chevron-right ml-1 text-xs"></i> السابق</button>
                         
                         <span id="weekDisplay" class="px-4 font-bold text-emerald-700 text-sm border-x border-gray-300">الأسبوع الحالي</span>
                         <button onclick="resetToToday()" class="px-3 py-1.5 hover:bg-white rounded text-emerald-600 font-bold shadow-sm transition border border-emerald-200 bg-emerald-50">اليوم</button>
                         
-                        <button onclick="changeWeek(-1)" class="px-4 py-1.5 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition"><i class="fas fa-chevron-right ml-1 text-xs"></i> السابق</button>
+                        <button onclick="changeWeek(1)" class="px-4 py-1.5 hover:bg-white rounded text-gray-600 font-bold shadow-sm transition">التالي <i class="fas fa-chevron-left mr-1 text-xs"></i></button>
                     </div>
                 </div>
                 <div class="grid grid-cols-7 gap-3 min-w-[800px] overflow-x-auto" id="calendarGrid"></div>
@@ -154,6 +155,7 @@
             const currentDateString = getLocalDateString(now);
             const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
+            // منطق التحويل الآلي للحصص الفائتة لا زال موجوداً هنا
             if (sessions) {
                 for (let sess of sessions) {
                     if (sess.status === 'scheduled' || sess.status === 'ongoing') {
@@ -166,9 +168,10 @@
                                 isPast = true;
                             }
                         }
-                        if (isPast) {
-                            await window.supabase.from('sessions').update({ status: 'completed' }).eq('id', sess.id);
-                            sess.status = 'completed'; 
+                        // نحن نعتمد على الدالة المجدولة بالخلفية الآن لتسجيل غياب المعلم، لكن نترك هذا للتحديث الفوري للواجهة كإجراء احتياطي.
+                        if (isPast && sess.status === 'scheduled') {
+                             await window.supabase.from('sessions').update({ status: 'missed_by_teacher' }).eq('id', sess.id);
+                             sess.status = 'missed_by_teacher';
                         }
                     }
                 }
@@ -217,7 +220,6 @@
                 if(daySessions.length > 0) {
                     daySessions.sort((a,b) => a.start_time.localeCompare(b.start_time)).forEach(sess => {
                         
-                        // حساب مدة الحصة لعرضها في نموذج التعديل
                         const sParts = sess.start_time.split(':').map(Number);
                         const eParts = sess.end_time.split(':').map(Number);
                         const durationMins = (eParts[0]*60 + eParts[1]) - (sParts[0]*60 + sParts[1]);
@@ -227,20 +229,31 @@
                         
                         let statusBadge = '';
                         let cardStyle = '';
+                        let isClickable = false;
                         
                         switch(sess.status) {
                             case 'scheduled': 
                                 statusBadge = '<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">مجدولة</span>'; 
                                 cardStyle = 'bg-white border-blue-200 shadow-sm';
+                                isClickable = true;
                                 break;
                             case 'ongoing': 
                                 statusBadge = '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold animate-pulse">جارية الآن</span>'; 
                                 cardStyle = 'bg-red-50 border-red-300 shadow-md ring-1 ring-red-200';
+                                isClickable = true;
                                 break;
                             case 'completed': 
                                 statusBadge = '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-[10px] font-bold">انتهت</span>'; 
                                 cardStyle = 'bg-gray-50 border-green-200 opacity-80';
                                 break;
+                            case 'missed_by_student': 
+                                statusBadge = '<span class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-[10px] font-bold">غياب الطالب</span>'; 
+                                cardStyle = 'bg-orange-50 border-orange-200 opacity-80';
+                                break;
+                            case 'missed_by_teacher': 
+                                statusBadge = '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold">غياب المعلم</span>'; 
+                                cardStyle = 'bg-red-50 border-red-200 opacity-80';
+                                break;    
                             case 'cancelled': 
                                 statusBadge = '<span class="bg-gray-200 text-gray-500 px-2 py-0.5 rounded text-[10px] font-bold line-through">ملغية</span>'; 
                                 cardStyle = 'bg-gray-100 border-gray-200 opacity-60 grayscale';
@@ -250,19 +263,25 @@
                                 cardStyle = 'bg-emerald-50 border-emerald-200';
                         }
                         
-                        // قائمة الخيارات (تعديل الحصة)
-                        let menuHtml = `
-                            <div class="absolute top-1 left-1 z-20">
-                                <button onclick="toggleSessionMenu(event, '${sess.id}')" class="menu-btn text-gray-400 hover:text-emerald-600 bg-white/60 hover:bg-white rounded p-1 shadow-sm transition">
-                                    <i class="fas fa-ellipsis-v px-1"></i>
-                                </button>
-                                <div id="menu-${sess.id}" class="hidden absolute left-0 mt-1 w-28 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
-                                    <button type="button" onclick="openEditSessionTimeModal(event, '${sess.id}', '${sess.student_id}', '${sess.session_date}', '${sess.start_time}', ${durationMins})" class="w-full text-right px-3 py-2 text-[11px] font-bold text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition flex items-center">
-                                        <i class="fas fa-edit ml-1.5"></i> تعديل الحصة
+                        // بناء قائمة الخيارات (نقاط التعديل) - تظهر فقط للحصص المجدولة والجارية
+                        let menuHtml = '';
+                        if (sess.status === 'scheduled' || sess.status === 'ongoing') {
+                            menuHtml = `
+                                <div class="absolute top-1 left-1 z-20">
+                                    <button onclick="toggleSessionMenu(event, '${sess.id}')" class="menu-btn text-gray-400 hover:text-emerald-600 bg-white/60 hover:bg-white rounded p-1 shadow-sm transition">
+                                        <i class="fas fa-ellipsis-v px-1"></i>
                                     </button>
+                                    <div id="menu-${sess.id}" class="hidden absolute left-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
+                                        <button type="button" onclick="openEditSessionTimeModal(event, '${sess.id}', '${sess.student_id}', '${sess.session_date}', '${sess.start_time}', ${durationMins})" class="w-full text-right px-3 py-2 text-[11px] font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition flex items-center border-b border-gray-100">
+                                            <i class="fas fa-edit ml-1.5"></i> تعديل الموعد
+                                        </button>
+                                        <button type="button" onclick="markStudentAbsent(event, '${sess.id}')" class="w-full text-right px-3 py-2 text-[11px] font-bold text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition flex items-center">
+                                            <i class="fas fa-user-times ml-1.5"></i> غياب الطالب
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        `;
+                            `;
+                        }
 
                         // محتوى البطاقة الداخلي
                         const innerContent = `
@@ -275,15 +294,15 @@
                             </div>
                         `;
                         
-                        // رسم البطاقة بناءً على الحالة
-                        if (sess.status === 'completed' || sess.status === 'cancelled') {
+                        // رسم البطاقة بناءً على قابلية الدخول
+                        if (!isClickable) {
                             colHtml += `<div class="block ${cardStyle} border p-2 rounded-lg text-sm relative flex flex-col">
                                 ${innerContent}
                             </div>`;
                         } else {
                             colHtml += `<div class="relative block ${cardStyle} border rounded-lg text-sm transition hover:shadow-md flex flex-col">
                                 ${menuHtml}
-                                <a onclick="confirmStartSession(event, '${sess.id}')" class="p-2 flex flex-col h-full w-full cursor-pointer">
+                                <a onclick="confirmStartSession(event, '${sess.id}', '${sess.status}')" class="p-2 flex flex-col h-full w-full cursor-pointer">
                                     ${innerContent}
                                 </a>
                             </div>`;
@@ -318,13 +337,51 @@
             window.location.href = 'login.html';
         }
 
-        // --- دوال وتفاعلات تعديل الحصة ورسالة التأكيد --- //
+        // --- دوال وتفاعلات بدء الحصة وغياب الطالب --- //
         
-        function confirmStartSession(e, sessionId) {
+        async function confirmStartSession(e, sessionId, currentStatus) {
             e.preventDefault(); 
-            const isConfirmed = confirm("هل أنت متأكد من بدء هذه الحصة ودخول غرفة الإقراء الافتراضية؟");
+            
+            // إذا كانت جارية بالفعل، يدخل مباشرة دون رسالة تأكيد جديدة
+            if (currentStatus === 'ongoing') {
+                 window.location.href = `teacher_virtual_session.html?session_id=${sessionId}`;
+                 return;
+            }
+
+            // إذا كانت مجدولة، نطلب التأكيد
+            const isConfirmed = confirm("هل أنت متأكد من بدء هذه الحصة ودخول غرفة الإقراء الافتراضية؟\n(سيتم تغيير حالة الحصة إلى 'جارية')");
+            
             if (isConfirmed) {
-                window.location.href = `teacher_virtual_session.html?session_id=${sessionId}`;
+                // تغيير الحالة إلى ongoing قبل التوجيه
+                const { error } = await window.supabase.from('sessions')
+                    .update({ status: 'ongoing' })
+                    .eq('id', sessionId);
+                
+                if (error) {
+                    alert("حدث خطأ أثناء محاولة بدء الحصة: " + error.message);
+                } else {
+                    window.location.href = `teacher_virtual_session.html?session_id=${sessionId}`;
+                }
+            }
+        }
+
+        async function markStudentAbsent(e, sessionId) {
+            e.preventDefault();
+            e.stopPropagation(); // لمنع تفعيل البطاقة بالكامل
+            document.querySelectorAll('[id^="menu-"]').forEach(el => el.classList.add('hidden'));
+
+            const isConfirmed = confirm("هل أنت متأكد من تسجيل 'غياب الطالب' لهذه الحصة؟\nهذا الإجراء سيقوم بإنهاء الحصة واعتمادها كحصة مسجلة ضمن حصص الطالب.");
+            
+            if (isConfirmed) {
+                const { error } = await window.supabase.from('sessions')
+                    .update({ status: 'missed_by_student', teacher_notes: 'لم يحضر الطالب للحصة.' })
+                    .eq('id', sessionId);
+                
+                if (error) {
+                    alert("حدث خطأ: " + error.message);
+                } else {
+                    loadCalendar(); // تحديث الجدول لعرض الحالة الجديدة
+                }
             }
         }
 
