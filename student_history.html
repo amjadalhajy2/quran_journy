@@ -47,6 +47,17 @@
 
     <script src="supabase.js"></script>
     <script>
+
+function formatTime12(timeStr) {
+    if (!timeStr) return '';
+    let [hours, minutes] = timeStr.substring(0, 5).split(':');
+    hours = parseInt(hours, 10);
+    let ampm = hours >= 12 ? 'م' : 'ص';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // تحويل الصفر (منتصف الليل) إلى 12
+    return hours + ':' + minutes + ' ' + ampm;
+}
+        
         window.addEventListener('load', async () => {
             const { data: { user } } = await window.supabase.auth.getUser();
             if (!user) return window.location.href = 'login.html';
