@@ -234,8 +234,8 @@ function formatTime12(timeStr) {
                         const eParts = sess.end_time.split(':').map(Number);
                         const durationMins = (eParts[0]*60 + eParts[1]) - (sParts[0]*60 + sParts[1]);
 
-                        const sTime = sess.start_time.substring(0,5);
-                        const eTime = sess.end_time.substring(0,5);
+const sTime = formatTime12(sess.start_time); 
+const eTime = formatTime12(sess.end_time);
                         
                         let statusBadge = '';
                         let cardStyle = '';
