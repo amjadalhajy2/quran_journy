@@ -245,8 +245,13 @@ async function saveTeacher() {
                 btn.textContent = 'جاري النقل...';
 
                 // 5. تنفيذ النقل (تحديث ملف الطالب)
-                const { error: assignErr } = await window.supabase.rpc('assign_teacher', { p_student_id: stuId, p_teacher_id: newTeacherId });
-                if(assignErr) throw new Error('خطأ في نقل الطالب: ' + assignErr.message);
+// 5. تنفيذ نقل الطالب وترحيل الحصص معاً بطلب واحد
+const { error: transferErr } = await window.supabase.rpc('transfer_student_to_teacher', { 
+    p_student_id: stuId, 
+    p_new_teacher_id: newTeacherId 
+});
+
+if (transferErr) throw new Error('حدث خطأ أثناء نقل الطالب وترحيل الحصص: ' + transferErr.message);
 
                 // 6. ترحيل الحصص للمعلم الجديد
 // 6. ترحيل الحصص للمعلم الجديد
