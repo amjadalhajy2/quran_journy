@@ -253,17 +253,6 @@ const { error: transferErr } = await window.supabase.rpc('transfer_student_to_te
 
 if (transferErr) throw new Error('حدث خطأ أثناء نقل الطالب وترحيل الحصص: ' + transferErr.message);
 
-                // 6. ترحيل الحصص للمعلم الجديد
-// 6. ترحيل الحصص للمعلم الجديد
-if (sessionsCount > 0) {
-    // استخدام RPC لتجاوز حظر الـ PATCH الذي يسبب خطأ Failed to fetch
-    const { error: updateSessErr } = await window.supabase.rpc('transfer_student_sessions', { 
-        p_student_id: stuId, 
-        p_new_teacher_id: newTeacherId 
-    });
-    
-    if (updateSessErr) throw new Error('تم نقل الطالب ولكن حدث خطأ في ترحيل الحصص: ' + updateSessErr.message);
-}
 
                 alert('تم نقل الطالب وترحيل الحصص بنجاح!');
                 document.getElementById('assignModal').classList.add('hidden');
