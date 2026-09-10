@@ -249,14 +249,16 @@ async function saveTeacher() {
                 if(assignErr) throw new Error('خطأ في نقل الطالب: ' + assignErr.message);
 
                 // 6. ترحيل الحصص للمعلم الجديد
-                if (sessionsCount > 0) {
-                    const sessionIds = studentSessions.map(s => s.id);
-                    const { error: updateSessErr } = await window.supabase.from('sessions')
-                        .update({ teacher_id: newTeacherId })
-                        .in('id', sessionIds);
-                        
-                    if (updateSessErr) throw new Error('تم نقل الطالب ولكن حدث خطأ في ترحيل الحصص: ' + updateSessErr.message);
-                }
+// 6. ترحيل الحصص للمعلم الجديد
+if (sessionsCount > 0) {
+    // استخدام RPC لتجاوز حظر الـ PATCH الذي يسبب خطأ Failed to fetch
+    const { error: updateSessErr } = await window.supabase.rpc('transfer_student_sessions', { 
+        p_student_id: stuId, 
+        p_new_teacher_id: newTeacherId 
+    });
+    
+    if (updateSessErr) throw new Error('تم نقل الطالب ولكن حدث خطأ في ترحيل الحصص: ' + updateSessErr.message);
+}
 
                 alert('تم نقل الطالب وترحيل الحصص بنجاح!');
                 document.getElementById('assignModal').classList.add('hidden');
