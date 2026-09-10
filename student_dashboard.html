@@ -236,7 +236,7 @@ async function loadStudentSchedule() {
                 
                 document.getElementById('nextTeacherName').innerText = `المعلم: ${teacherName}`;
                 document.getElementById('nextSessionDate').innerText = nextSession.session_date;
-                const timeOnly = nextSession.start_time.substring(0, 5);
+                const timeOnly = formatTime12(nextSession.start_time);
                 document.getElementById('nextSessionTime').innerText = timeOnly;
 
                 // إعداد زر الدخول للحصة القادمة 
