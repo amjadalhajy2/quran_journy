@@ -248,8 +248,9 @@ async function loadStudentSchedule() {
                 // تعبئة الجدول بباقي الحصص
                 sessions.forEach(session => {
                     const tName = session.teacher?.full_name || "معلم القرآن";
-                    const sTime = session.start_time.substring(0, 5);
-                    const eTime = session.end_time.substring(0, 5);
+const sTime = session.start_time.substring(0, 5);
+const eTime = session.end_time.substring(0, 5);
+const sTimeDisplay = formatTime12(session.start_time);
                     
                     // تحديد ما إذا كانت الحصة جارية الآن برمجياً بدون الاعتماد على حالة الداتا بيز
                     let isOngoing = false;
