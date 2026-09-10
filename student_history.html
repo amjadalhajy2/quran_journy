@@ -81,7 +81,7 @@ function formatTime12(timeStr) {
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4">
                                 <div class="font-bold text-gray-800">${sess.session_date}</div>
-                                <div class="text-xs text-gray-500 mt-1" dir="ltr" style="text-align: right;">${sess.start_time.substring(0,5)} <i class="far fa-clock"></i></div>
+                                <div class="text-xs text-gray-500 mt-1" dir="ltr" style="text-align: right;">${formatTime12(sess.start_time)} <i class="far fa-clock"></i></div>
                             </td>
                             <td class="px-6 py-4 font-bold text-gray-700">${sess.users?.full_name}</td>
                             <td class="px-6 py-4 text-gray-600 leading-relaxed text-xs">${sess.teacher_notes || 'لا توجد ملاحظات مسجلة.'}</td>
