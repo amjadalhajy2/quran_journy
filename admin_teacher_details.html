@@ -338,12 +338,19 @@ const eTime = formatTime12(sess.end_time);
                  return;
             }
 
+async function confirmStartSession(e, sessionId, currentStatus) {
+            e.preventDefault(); 
+            
+            if (currentStatus === 'ongoing') {
+                 window.location.href = `admin_virtual_session.html?session_id=${sessionId}`;
+                 return;
+            }
+
             const isConfirmed = confirm("هل أنت متأكد من الدخول لغرفة الإشراف الافتراضية لهذه الحصة؟\n(كإدارة، الدخول سيغير حالة الحصة إلى 'جارية' إذا لم يقم المعلم بذلك)");
             
             if (isConfirmed) {
-                const { error } = await window.supabase.from('sessions')
-                    .update({ status: 'ongoing' })
-                    .eq('id', sessionId);
+                // استخدام RPC لتجاوز الحظر
+                const { error } = await window.supabase.rpc('set_session_ongoing', { p_session_id: sessionId });
                 
                 if (error) {
                     alert("حدث خطأ أثناء محاولة بدء الحصة: " + error.message);
@@ -361,9 +368,8 @@ const eTime = formatTime12(sess.end_time);
             const isConfirmed = confirm("هل أنت متأكد من تسجيل 'غياب الطالب' لهذه الحصة كإجراء إداري؟\nهذا الإجراء سيقوم بإنهاء الحصة واعتمادها كحصة مسجلة ضمن حصص الطالب.");
             
             if (isConfirmed) {
-                const { error } = await window.supabase.from('sessions')
-                    .update({ status: 'missed_by_student', admin_notes: 'تم تسجيل غياب الطالب بواسطة الإدارة.' })
-                    .eq('id', sessionId);
+                // استخدام RPC لتجاوز الحظر
+                const { error } = await window.supabase.rpc('set_student_absent_admin', { p_session_id: sessionId });
                 
                 if (error) {
                     alert("حدث خطأ: " + error.message);
