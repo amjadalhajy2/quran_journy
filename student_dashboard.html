@@ -130,15 +130,19 @@ function formatTime12(timeStr) {
     return hours + ':' + minutes + ' ' + ampm;
 }
         
-        async function checkAuth() {
+async function checkAuth() {
             const { data: { user } } = await window.supabase.auth.getUser();
             if (!user) return window.location.href = 'login.html';
             
             studentUserId = user.id;
             const fullName = user.user_metadata?.full_name || "طالبنا العزيز";
             
-            document.getElementById('sidebarStudentName').innerText = fullName;
-            document.getElementById('welcomeName').innerText = fullName.split(' ')[0]; // الاسم الأول
+            // قمنا بحذف السطر الخاص بـ sidebarStudentName لأنه تم إزالة القائمة الجانبية
+            // وتحديث الشريط العلوي فقط:
+            const welcomeEl = document.getElementById('welcomeName');
+            if (welcomeEl) {
+                welcomeEl.innerText = fullName.split(' ')[0]; // الاسم الأول
+            }
 
             // استدعاء الدوال (تعمل بشكل متوازٍ)
             loadStudentSchedule();
