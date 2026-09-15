@@ -11,15 +11,15 @@
 </head>
 <body class="flex h-screen overflow-hidden text-gray-800">
 
-
     <main class="flex-1 flex flex-col overflow-y-auto bg-gray-50">
-<header class="bg-white shadow-sm p-4 flex justify-between items-center border-b z-20 sticky top-0 relative">
+        <!-- الشريط العلوي الموحد مع زر القائمة -->
+        <header class="bg-white shadow-sm p-4 flex justify-between items-center border-b z-20 sticky top-0 relative">
             <div class="flex items-center gap-3">
                 <!-- زر القائمة لجميع الأجهزة -->
                 <button onclick="document.getElementById('studentMenu').classList.toggle('hidden')" class="text-gray-600 hover:text-emerald-600 focus:outline-none text-2xl transition">
                     <i class="fas fa-bars"></i>
                 </button>
-                <h2 class="text-xl md:text-2xl font-bold text-gray-700">مرحباً بك، <span id="welcomeName" class="text-emerald-600">...</span></h2>
+                <h2 class="text-xl md:text-2xl font-bold text-gray-700">الأرشيف وسجل الحصص المنجزة</h2>
             </div>
             
             <button onclick="logout()" class="text-red-500 hover:bg-red-50 px-3 py-2 rounded-lg font-bold transition flex items-center text-sm md:text-base"><i class="fas fa-sign-out-alt ml-2"></i> خروج</button>
@@ -53,34 +53,23 @@
 
     <script src="supabase.js"></script>
     <script>
-async function checkAuth() {
-            const { data: { user } } = await window.supabase.auth.getUser();
-            if (!user) return window.location.href = 'login.html';
-            
-            studentUserId = user.id;
-            const fullName = user.user_metadata?.full_name || "طالبنا العزيز";
-            
-            // قمنا بحذف السطر الخاص بـ sidebarStudentName لأنه تم إزالة القائمة الجانبية
-            // وتحديث الشريط العلوي فقط:
-            const welcomeEl = document.getElementById('welcomeName');
-            if (welcomeEl) {
-                welcomeEl.innerText = fullName.split(' ')[0]; // الاسم الأول
-            }
-
-            // استدعاء الدوال (تعمل بشكل متوازٍ)
-            loadStudentSchedule();
-            loadProgress();
+        // دالة تحويل الوقت لنظام 12 ساعة
+        function formatTime12(timeStr) {
+            if (!timeStr) return '';
+            let [hours, minutes] = timeStr.substring(0, 5).split(':');
+            hours = parseInt(hours, 10);
+            let ampm = hours >= 12 ? 'م' : 'ص';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // تحويل الصفر (منتصف الليل) إلى 12
+            return hours + ':' + minutes + ' ' + ampm;
         }
-function formatTime12(timeStr) {
-    if (!timeStr) return '';
-    let [hours, minutes] = timeStr.substring(0, 5).split(':');
-    hours = parseInt(hours, 10);
-    let ampm = hours >= 12 ? 'م' : 'ص';
-    hours = hours % 12;
-    hours = hours ? hours : 12; // تحويل الصفر (منتصف الليل) إلى 12
-    return hours + ':' + minutes + ' ' + ampm;
-}
-        
+
+        // دالة تسجيل الخروج
+        async function logout() {
+            await window.supabase.auth.signOut();
+            window.location.href = 'login.html';
+        }
+
         window.addEventListener('load', async () => {
             const { data: { user } } = await window.supabase.auth.getUser();
             if (!user) return window.location.href = 'login.html';
