@@ -353,23 +353,19 @@ const eTime = formatTime12(sess.end_time);
 
         // --- دوال وتفاعلات بدء الحصة وغياب الطالب --- //
         
-        async function confirmStartSession(e, sessionId, currentStatus) {
+async function confirmStartSession(e, sessionId, currentStatus) {
             e.preventDefault(); 
             
-            // إذا كانت جارية بالفعل، يدخل مباشرة دون رسالة تأكيد جديدة
             if (currentStatus === 'ongoing') {
                  window.location.href = `teacher_virtual_session.html?session_id=${sessionId}`;
                  return;
             }
 
-            // إذا كانت مجدولة، نطلب التأكيد
             const isConfirmed = confirm("هل أنت متأكد من بدء هذه الحصة ودخول غرفة الإقراء الافتراضية؟\n(سيتم تغيير حالة الحصة إلى 'جارية')");
             
             if (isConfirmed) {
-                // تغيير الحالة إلى ongoing قبل التوجيه
-                const { error } = await window.supabase.from('sessions')
-                    .update({ status: 'ongoing' })
-                    .eq('id', sessionId);
+                // استخدام RPC لتجاوز الحظر
+                const { error } = await window.supabase.rpc('set_session_ongoing', { p_session_id: sessionId });
                 
                 if (error) {
                     alert("حدث خطأ أثناء محاولة بدء الحصة: " + error.message);
@@ -381,20 +377,19 @@ const eTime = formatTime12(sess.end_time);
 
         async function markStudentAbsent(e, sessionId) {
             e.preventDefault();
-            e.stopPropagation(); // لمنع تفعيل البطاقة بالكامل
+            e.stopPropagation(); 
             document.querySelectorAll('[id^="menu-"]').forEach(el => el.classList.add('hidden'));
 
             const isConfirmed = confirm("هل أنت متأكد من تسجيل 'غياب الطالب' لهذه الحصة؟\nهذا الإجراء سيقوم بإنهاء الحصة واعتمادها كحصة مسجلة ضمن حصص الطالب.");
             
             if (isConfirmed) {
-                const { error } = await window.supabase.from('sessions')
-                    .update({ status: 'missed_by_student', teacher_notes: 'لم يحضر الطالب للحصة.' })
-                    .eq('id', sessionId);
+                // استخدام RPC لتجاوز الحظر
+                const { error } = await window.supabase.rpc('set_student_absent_teacher', { p_session_id: sessionId });
                 
                 if (error) {
                     alert("حدث خطأ: " + error.message);
                 } else {
-                    loadCalendar(); // تحديث الجدول لعرض الحالة الجديدة
+                    loadCalendar(); 
                 }
             }
         }
