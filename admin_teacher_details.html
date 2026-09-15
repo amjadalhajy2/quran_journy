@@ -70,7 +70,7 @@
         </div>
     </div>
 
-    <script src="supabase.js"></script>
+<script src="supabase.js"></script>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const teacherId = urlParams.get('id');
@@ -79,16 +79,17 @@
 
         if(!teacherId) window.location.href = 'admin_teachers.html';
 
+        // دالة تحويل الوقت
         function formatTime12(timeStr) {
-    if (!timeStr) return '';
-    let [hours, minutes] = timeStr.substring(0, 5).split(':');
-    hours = parseInt(hours, 10);
-    let ampm = hours >= 12 ? 'م' : 'ص';
-    hours = hours % 12;
-    hours = hours ? hours : 12; // تحويل الصفر (منتصف الليل) إلى 12
-    return hours + ':' + minutes + ' ' + ampm;
-}
-        
+            if (!timeStr) return '--:--';
+            let [hours, minutes] = timeStr.substring(0, 5).split(':');
+            hours = parseInt(hours, 10);
+            let ampm = hours >= 12 ? 'م' : 'ص';
+            hours = hours % 12;
+            hours = hours ? hours : 12; 
+            return hours + ':' + minutes + ' ' + ampm;
+        }
+
         function getLocalDateString(date) {
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -97,248 +98,251 @@
         }
 
         async function initPage() {
-            const { data: teacher } = await window.supabase.from('users').select('full_name').eq('id', teacherId).single();
-            if(teacher) document.getElementById('teacherNameHeader').textContent = teacher.full_name;
+            try {
+                const { data: teacher } = await window.supabase.from('users').select('full_name').eq('id', teacherId).single();
+                if(teacher) document.getElementById('teacherNameHeader').textContent = teacher.full_name;
 
-            const { data: students } = await window.supabase.from('student_profiles')
-                .select(`user_id, users!student_profiles_user_id_fkey(full_name), curriculums(name)`)
-                .eq('teacher_id', teacherId);
-            
-            let subs = [];
-            if (students && students.length > 0) {
-                const studentIds = students.map(s => s.user_id);
-                const { data: subscriptions } = await window.supabase.from('subscriptions')
-                    .select('student_id, packages(sessions_per_week)')
-                    .eq('status', 'approved')
-                    .in('student_id', studentIds);
-                subs = subscriptions || [];
+                const { data: students } = await window.supabase.from('student_profiles')
+                    .select(`user_id, users!student_profiles_user_id_fkey(full_name), curriculums(name)`)
+                    .eq('teacher_id', teacherId);
+                
+                let subs = [];
+                if (students && students.length > 0) {
+                    const studentIds = students.map(s => s.user_id);
+                    const { data: subscriptions } = await window.supabase.from('subscriptions')
+                        .select('student_id, packages(sessions_per_week)')
+                        .eq('status', 'approved')
+                        .in('student_id', studentIds);
+                    subs = subscriptions || [];
+                }
+
+                const sList = document.getElementById('studentsList');
+                sList.innerHTML = '';
+                
+                if(students && students.length > 0) {
+                    students.forEach(s => {
+                        const cName = s.curriculums ? s.curriculums.name : 'بانتظار تحديد المقرر';
+                        const studentSub = subs.find(sub => sub.student_id === s.user_id);
+                        const sessionsCount = studentSub?.packages?.sessions_per_week || 0;
+                        
+                        const sessionsBadge = sessionsCount > 0 
+                            ? `<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-[10px] font-bold shadow-sm">${sessionsCount} حصص / أسبوعياً</span>` 
+                            : `<span class="bg-red-50 text-red-600 px-2 py-1 rounded text-[10px] font-bold border border-red-100">بدون باقة نشطة</span>`;
+
+                        // استخدام التخطي الآمن (?.users?.full_name) لمنع تعطل الكود إذا كان الطالب غير مسجل بشكل صحيح
+                        sList.innerHTML += `
+                            <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl shadow-sm flex flex-col transition hover:shadow-md">
+                                <h4 class="font-bold text-gray-800 mb-3 text-sm">${s.users?.full_name || 'طالب غير معروف'}</h4>
+                                <div class="flex items-center justify-between mt-auto border-t border-blue-200/50 pt-2">
+                                    <p class="text-xs font-bold text-blue-600 truncate max-w-[50%]">${cName}</p>
+                                    ${sessionsBadge}
+                                </div>
+                            </div>`;
+                    });
+                } else {
+                    sList.innerHTML = '<p class="text-gray-400 font-bold col-span-3 text-center py-6">لا يوجد طلاب موكلين لهذا المعلم بعد.</p>';
+                }
+
+                await loadCalendar();
+            } catch (error) {
+                console.error("خطأ في التحميل الأساسي:", error);
+                document.getElementById('teacherNameHeader').textContent = "خطأ في استرجاع البيانات";
+                document.getElementById('studentsList').innerHTML = '<p class="text-red-500 font-bold col-span-3 text-center py-6">حدث خطأ. يرجى مراجعة لوحة تحكم المتصفح (Console) للتفاصيل.</p>';
             }
-
-            const sList = document.getElementById('studentsList');
-            sList.innerHTML = '';
-            
-            if(students && students.length > 0) {
-                students.forEach(s => {
-                    const cName = s.curriculums ? s.curriculums.name : 'بانتظار تحديد المقرر';
-                    const studentSub = subs.find(sub => sub.student_id === s.user_id);
-                    const sessionsCount = studentSub?.packages?.sessions_per_week || 0;
-                    
-                    const sessionsBadge = sessionsCount > 0 
-                        ? `<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-[10px] font-bold shadow-sm">${sessionsCount} حصص / أسبوعياً</span>` 
-                        : `<span class="bg-red-50 text-red-600 px-2 py-1 rounded text-[10px] font-bold border border-red-100">بدون باقة نشطة</span>`;
-
-                    sList.innerHTML += `
-                        <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl shadow-sm flex flex-col transition hover:shadow-md">
-                            <h4 class="font-bold text-gray-800 mb-3 text-sm">${s.users.full_name}</h4>
-                            <div class="flex items-center justify-between mt-auto border-t border-blue-200/50 pt-2">
-                                <p class="text-xs font-bold text-blue-600 truncate max-w-[50%]">${cName}</p>
-                                ${sessionsBadge}
-                            </div>
-                        </div>`;
-                });
-            } else {
-                sList.innerHTML = '<p class="text-gray-400 font-bold col-span-3 text-center py-6">لا يوجد طلاب موكلين لهذا المعلم بعد.</p>';
-            }
-
-            loadCalendar();
         }
 
         async function loadCalendar() {
-            const today = new Date();
-            const currentDay = today.getDay(); 
-            
-            const actualToday = new Date();
-            actualToday.setHours(0,0,0,0);
+            try {
+                const today = new Date();
+                const currentDay = today.getDay(); 
+                
+                const actualToday = new Date();
+                actualToday.setHours(0,0,0,0);
 
-            const startOfWeek = new Date(today);
-            startOfWeek.setDate(today.getDate() - currentDay + (currentWeekOffset * 7));
-            startOfWeek.setHours(0,0,0,0);
-            
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
-            endOfWeek.setHours(23,59,59,999);
+                const startOfWeek = new Date(today);
+                startOfWeek.setDate(today.getDate() - currentDay + (currentWeekOffset * 7));
+                startOfWeek.setHours(0,0,0,0);
+                
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                endOfWeek.setHours(23,59,59,999);
 
-            const startStr = getLocalDateString(startOfWeek);
-            const endStr = getLocalDateString(endOfWeek);
+                const startStr = getLocalDateString(startOfWeek);
+                const endStr = getLocalDateString(endOfWeek);
 
-            document.getElementById('weekDisplay').textContent = `${startOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})} - ${endOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})}`;
+                document.getElementById('weekDisplay').textContent = `${startOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})} - ${endOfWeek.toLocaleDateString('ar-OM', {month:'short', day:'numeric'})}`;
 
-            let { data: sessions } = await window.supabase.from('sessions')
-                .select('id, student_id, session_date, start_time, end_time, status, users!sessions_student_id_fkey(full_name)')
-                .eq('teacher_id', teacherId)
-                .gte('session_date', startStr)
-                .lte('session_date', endStr);
+                let { data: sessions } = await window.supabase.from('sessions')
+                    .select('id, student_id, session_date, start_time, end_time, status, users!sessions_student_id_fkey(full_name)')
+                    .eq('teacher_id', teacherId)
+                    .gte('session_date', startStr)
+                    .lte('session_date', endStr);
 
-            const now = new Date();
-            const currentDateString = getLocalDateString(now);
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                const now = new Date();
+                const currentDateString = getLocalDateString(now);
+                const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-            if (sessions) {
-                for (let sess of sessions) {
-                    if (sess.status === 'scheduled' || sess.status === 'ongoing') {
-                        let isPast = false;
-                        if (sess.session_date < currentDateString) {
-                            isPast = true;
-                        } else if (sess.session_date === currentDateString) {
-                            const [endH, endM] = sess.end_time.substring(0,5).split(':').map(Number);
-                            if ((endH * 60 + endM) < currentMinutes) {
+                if (sessions) {
+                    for (let sess of sessions) {
+                        if (sess.status === 'scheduled' || sess.status === 'ongoing') {
+                            let isPast = false;
+                            if (sess.session_date < currentDateString) {
                                 isPast = true;
+                            } else if (sess.session_date === currentDateString) {
+                                const endT = sess.end_time || "00:00";
+                                const [endH, endM] = endT.substring(0,5).split(':').map(Number);
+                                if ((endH * 60 + endM) < currentMinutes) {
+                                    isPast = true;
+                                }
                             }
-                        }
-                        if (isPast && sess.status === 'scheduled') {
-                             // التحديث الفوري للواجهة
-                             sess.status = 'missed_by_teacher';
+                            if (isPast && sess.status === 'scheduled') {
+                                 sess.status = 'missed_by_teacher';
+                            }
                         }
                     }
                 }
-            }
 
-            const daysNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-            const grid = document.getElementById('calendarGrid');
-            grid.innerHTML = '';
+                const daysNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+                const grid = document.getElementById('calendarGrid');
+                grid.innerHTML = '';
 
-            const actualTodayString = getLocalDateString(new Date());
+                for(let i=0; i<7; i++) {
+                    const dayDate = new Date(startOfWeek);
+                    dayDate.setDate(startOfWeek.getDate() + i);
+                    dayDate.setHours(0,0,0,0);
+                    
+                    const dateString = getLocalDateString(dayDate);
+                    const daySessions = (sessions || []).filter(s => s.session_date === dateString);
+                    
+                    let headerClass = 'bg-gray-200 text-gray-700';
+                    let bodyClass = 'border border-gray-200 bg-gray-50';
+                    
+                    if (dayDate.getTime() === actualToday.getTime()) {
+                        headerClass = 'bg-emerald-500 text-white shadow-md border-b-4 border-emerald-700';
+                        bodyClass = 'border-2 border-emerald-500 bg-emerald-50 shadow-md'; 
+                    } else if (dayDate.getTime() < actualToday.getTime()) {
+                        headerClass = 'bg-gray-100 text-gray-400';
+                        bodyClass = 'border border-gray-200 bg-gray-100 opacity-60'; 
+                    } else {
+                        headerClass = 'bg-blue-50 text-blue-800 border-b-2 border-blue-200';
+                        bodyClass = 'border border-gray-200 bg-white';
+                    }
 
-            for(let i=0; i<7; i++) {
-                const dayDate = new Date(startOfWeek);
-                dayDate.setDate(startOfWeek.getDate() + i);
-                dayDate.setHours(0,0,0,0);
-                
-                const dateString = getLocalDateString(dayDate);
-                const daySessions = (sessions || []).filter(s => s.session_date === dateString);
-                
-                let headerClass = 'bg-gray-200 text-gray-700';
-                let bodyClass = 'border border-gray-200 bg-gray-50';
-                
-                if (dayDate.getTime() === actualToday.getTime()) {
-                    headerClass = 'bg-emerald-500 text-white shadow-md border-b-4 border-emerald-700';
-                    bodyClass = 'border-2 border-emerald-500 bg-emerald-50 shadow-md'; 
-                } else if (dayDate.getTime() < actualToday.getTime()) {
-                    headerClass = 'bg-gray-100 text-gray-400';
-                    bodyClass = 'border border-gray-200 bg-gray-100 opacity-60'; 
-                } else {
-                    headerClass = 'bg-blue-50 text-blue-800 border-b-2 border-blue-200';
-                    bodyClass = 'border border-gray-200 bg-white';
-                }
-
-                let colHtml = `<div class="rounded-xl overflow-hidden min-h-[350px] flex flex-col ${bodyClass} transition-all">
-                                <div class="text-center py-2 ${headerClass} rounded-t-xl">
-                                    <h4 class="font-bold">${daysNames[i]}</h4>
-                                    <span class="text-xs font-medium opacity-90">${dayDate.toLocaleDateString('ar-OM', {month:'numeric', day:'numeric'})}</span>
-                                </div>
-                                <div class="p-2 space-y-2 flex-1">`;
-                
-                if(daySessions.length > 0) {
-                    daySessions.sort((a,b) => a.start_time.localeCompare(b.start_time)).forEach(sess => {
-                        const sParts = sess.start_time.split(':').map(Number);
-                        const eParts = sess.end_time.split(':').map(Number);
-                        const durationMins = (eParts[0]*60 + eParts[1]) - (sParts[0]*60 + sParts[1]);
-
-                        const sTime = formatTime12(sess.start_time); 
-const eTime = formatTime12(sess.end_time);
-                        
-                        let statusBadge = '';
-                        let cardStyle = '';
-                        let isClickable = false;
-                        
-                        switch(sess.status) {
-                            case 'scheduled': 
-                                statusBadge = '<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">مجدولة</span>'; 
-                                cardStyle = 'bg-white border-blue-200 shadow-sm';
-                                isClickable = true;
-                                break;
-                            case 'ongoing': 
-                                statusBadge = '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold animate-pulse">جارية الآن</span>'; 
-                                cardStyle = 'bg-red-50 border-red-300 shadow-md ring-1 ring-red-200';
-                                isClickable = true;
-                                break;
-                            case 'completed': 
-                                statusBadge = '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-[10px] font-bold">انتهت</span>'; 
-                                cardStyle = 'bg-gray-50 border-green-200 opacity-80';
-                                break;
-                            case 'missed_by_student': 
-                                statusBadge = '<span class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-[10px] font-bold">غياب الطالب</span>'; 
-                                cardStyle = 'bg-orange-50 border-orange-200 opacity-80';
-                                break;
-                            case 'missed_by_teacher': 
-                                statusBadge = '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold">غياب المعلم</span>'; 
-                                cardStyle = 'bg-red-50 border-red-200 opacity-80';
-                                break;    
-                            case 'cancelled': 
-                                statusBadge = '<span class="bg-gray-200 text-gray-500 px-2 py-0.5 rounded text-[10px] font-bold line-through">ملغية</span>'; 
-                                cardStyle = 'bg-gray-100 border-gray-200 opacity-60 grayscale';
-                                break;
-                            default:
-                                statusBadge = `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">${sess.status}</span>`; 
-                                cardStyle = 'bg-emerald-50 border-emerald-200';
-                        }
-
-                        // قائمة الخيارات الجديدة للإدارة
-                        let menuHtml = '';
-                        if (sess.status === 'scheduled' || sess.status === 'ongoing') {
-                            menuHtml = `
-                                <div class="absolute top-1 left-1 z-20">
-                                    <button onclick="toggleSessionMenu(event, '${sess.id}')" class="menu-btn text-gray-400 hover:text-emerald-600 bg-white/60 hover:bg-white rounded p-1 shadow-sm transition">
-                                        <i class="fas fa-ellipsis-v px-1"></i>
-                                    </button>
-                                    <div id="menu-${sess.id}" class="hidden absolute left-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
-                                        <button type="button" onclick="openEditSessionTimeModal(event, '${sess.id}', '${sess.student_id}', '${sess.session_date}', '${sess.start_time}', ${durationMins})" class="w-full text-right px-3 py-2 text-[11px] font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition flex items-center border-b border-gray-100">
-                                            <i class="fas fa-edit ml-1.5"></i> تعديل الموعد
-                                        </button>
-                                        <button type="button" onclick="markStudentAbsent(event, '${sess.id}')" class="w-full text-right px-3 py-2 text-[11px] font-bold text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition flex items-center">
-                                            <i class="fas fa-user-times ml-1.5"></i> غياب الطالب
-                                        </button>
+                    let colHtml = `<div class="rounded-xl overflow-hidden min-h-[350px] flex flex-col ${bodyClass} transition-all">
+                                    <div class="text-center py-2 ${headerClass} rounded-t-xl">
+                                        <h4 class="font-bold">${daysNames[i]}</h4>
+                                        <span class="text-xs font-medium opacity-90">${dayDate.toLocaleDateString('ar-OM', {month:'numeric', day:'numeric'})}</span>
                                     </div>
+                                    <div class="p-2 space-y-2 flex-1">`;
+                    
+                    if(daySessions.length > 0) {
+                        daySessions.sort((a,b) => (a.start_time || "").localeCompare(b.start_time || "")).forEach(sess => {
+                            
+                            // توفير بديل "00:00" إذا كانت البيانات فارغة لضمان عدم توقف النظام
+                            const st = sess.start_time || "00:00";
+                            const et = sess.end_time || "00:00";
+                            const sParts = st.split(':').map(Number);
+                            const eParts = et.split(':').map(Number);
+                            const durationMins = (eParts[0]*60 + eParts[1]) - (sParts[0]*60 + sParts[1]);
+
+                            const sTime = formatTime12(st); 
+                            const eTime = formatTime12(et);
+                            
+                            let statusBadge = '';
+                            let cardStyle = '';
+                            let isClickable = false;
+                            
+                            switch(sess.status) {
+                                case 'scheduled': 
+                                    statusBadge = '<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">مجدولة</span>'; 
+                                    cardStyle = 'bg-white border-blue-200 shadow-sm';
+                                    isClickable = true;
+                                    break;
+                                case 'ongoing': 
+                                    statusBadge = '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold animate-pulse">جارية الآن</span>'; 
+                                    cardStyle = 'bg-red-50 border-red-300 shadow-md ring-1 ring-red-200';
+                                    isClickable = true;
+                                    break;
+                                case 'completed': 
+                                    statusBadge = '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-[10px] font-bold">انتهت</span>'; 
+                                    cardStyle = 'bg-gray-50 border-green-200 opacity-80';
+                                    break;
+                                case 'missed_by_student': 
+                                    statusBadge = '<span class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-[10px] font-bold">غياب الطالب</span>'; 
+                                    cardStyle = 'bg-orange-50 border-orange-200 opacity-80';
+                                    break;
+                                case 'missed_by_teacher': 
+                                    statusBadge = '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold">غياب المعلم</span>'; 
+                                    cardStyle = 'bg-red-50 border-red-200 opacity-80';
+                                    break;    
+                                case 'cancelled': 
+                                    statusBadge = '<span class="bg-gray-200 text-gray-500 px-2 py-0.5 rounded text-[10px] font-bold line-through">ملغية</span>'; 
+                                    cardStyle = 'bg-gray-100 border-gray-200 opacity-60 grayscale';
+                                    break;
+                                default:
+                                    statusBadge = `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">${sess.status}</span>`; 
+                                    cardStyle = 'bg-emerald-50 border-emerald-200';
+                            }
+
+                            let menuHtml = '';
+                            if (sess.status === 'scheduled' || sess.status === 'ongoing') {
+                                menuHtml = `
+                                    <div class="absolute top-1 left-1 z-20">
+                                        <button onclick="toggleSessionMenu(event, '${sess.id}')" class="menu-btn text-gray-400 hover:text-emerald-600 bg-white/60 hover:bg-white rounded p-1 shadow-sm transition">
+                                            <i class="fas fa-ellipsis-v px-1"></i>
+                                        </button>
+                                        <div id="menu-${sess.id}" class="hidden absolute left-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
+                                            <button type="button" onclick="openEditSessionTimeModal(event, '${sess.id}', '${sess.student_id}', '${sess.session_date}', '${st}', ${durationMins})" class="w-full text-right px-3 py-2 text-[11px] font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition flex items-center border-b border-gray-100">
+                                                <i class="fas fa-edit ml-1.5"></i> تعديل الموعد
+                                            </button>
+                                            <button type="button" onclick="markStudentAbsent(event, '${sess.id}')" class="w-full text-right px-3 py-2 text-[11px] font-bold text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition flex items-center">
+                                                <i class="fas fa-user-times ml-1.5"></i> غياب الطالب
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+
+                            const innerContent = `
+                                <div class="font-bold text-gray-800 text-xs mb-1.5 text-center px-4">${sess.users?.full_name || 'طالب غير معروف'}</div>
+                                <div class="border-t border-gray-200/60 pt-1.5 pb-1.5 text-center w-full whitespace-nowrap">
+                                    <span class="font-bold text-gray-500 text-[11px] inline-block"><i class="far fa-clock ml-1"></i>${sTime} - ${eTime}</span>
+                                </div>
+                                <div class="border-t border-gray-200/60 pt-1.5 mt-auto text-center w-full">
+                                    ${statusBadge}
                                 </div>
                             `;
-                        }
 
-                        const innerContent = `
-                            <div class="font-bold text-gray-800 text-xs mb-1.5 text-center px-4">${sess.users.full_name}</div>
-                            <div class="border-t border-gray-200/60 pt-1.5 pb-1.5 text-center w-full whitespace-nowrap">
-                                <span class="font-bold text-gray-500 text-[11px] inline-block"><i class="far fa-clock ml-1"></i>${sTime} - ${eTime}</span>
-                            </div>
-                            <div class="border-t border-gray-200/60 pt-1.5 mt-auto text-center w-full">
-                                ${statusBadge}
-                            </div>
-                        `;
-
-                        if (!isClickable) {
-                            colHtml += `<div class="block ${cardStyle} border p-2 rounded-lg text-sm relative flex flex-col">
-                                ${innerContent}
-                            </div>`;
-                        } else {
-                            colHtml += `<div class="relative block ${cardStyle} border rounded-lg text-sm transition hover:shadow-md flex flex-col">
-                                ${menuHtml}
-                                <a onclick="confirmStartSession(event, '${sess.id}', '${sess.status}')" class="p-2 flex flex-col h-full w-full cursor-pointer" title="انقر للدخول للحصة ووضع ملاحظات إشرافية">
+                            if (!isClickable) {
+                                colHtml += `<div class="block ${cardStyle} border p-2 rounded-lg text-sm relative flex flex-col">
                                     ${innerContent}
-                                </a>
-                            </div>`;
-                        }
-                    });
-                } else {
-                    colHtml += `<div class="text-center text-gray-400 font-bold text-xs mt-6 flex flex-col items-center">
-                        <i class="far fa-calendar-times text-2xl mb-2 opacity-50"></i>
-                        لا توجد حلقات
-                    </div>`;
-                }
+                                </div>`;
+                            } else {
+                                colHtml += `<div class="relative block ${cardStyle} border rounded-lg text-sm transition hover:shadow-md flex flex-col">
+                                    ${menuHtml}
+                                    <a onclick="confirmStartSession(event, '${sess.id}', '${sess.status}')" class="p-2 flex flex-col h-full w-full cursor-pointer" title="انقر للدخول للحصة ووضع ملاحظات إشرافية">
+                                        ${innerContent}
+                                    </a>
+                                </div>`;
+                            }
+                        });
+                    } else {
+                        colHtml += `<div class="text-center text-gray-400 font-bold text-xs mt-6 flex flex-col items-center">
+                            <i class="far fa-calendar-times text-2xl mb-2 opacity-50"></i>
+                            لا توجد حلقات
+                        </div>`;
+                    }
 
-                colHtml += `</div></div>`;
-                grid.innerHTML += colHtml;
+                    colHtml += `</div></div>`;
+                    grid.innerHTML += colHtml;
+                }
+            } catch (error) {
+                console.error("خطأ في بناء الجدول:", error);
+                document.getElementById('calendarGrid').innerHTML = '<p class="text-red-500 font-bold col-span-7 text-center py-6">حدث خطأ أثناء تحميل جدول الحصص.</p>';
             }
         }
 
-        // --- دوال وتفاعلات بدء الحصة وغياب الطالب (لنسخة الإدارة) --- //
-
         async function confirmStartSession(e, sessionId, currentStatus) {
-            e.preventDefault(); 
-            
-            if (currentStatus === 'ongoing') {
-                 window.location.href = `admin_virtual_session.html?session_id=${sessionId}`;
-                 return;
-            }
-
-async function confirmStartSession(e, sessionId, currentStatus) {
             e.preventDefault(); 
             
             if (currentStatus === 'ongoing') {
@@ -349,9 +353,7 @@ async function confirmStartSession(e, sessionId, currentStatus) {
             const isConfirmed = confirm("هل أنت متأكد من الدخول لغرفة الإشراف الافتراضية لهذه الحصة؟\n(كإدارة، الدخول سيغير حالة الحصة إلى 'جارية' إذا لم يقم المعلم بذلك)");
             
             if (isConfirmed) {
-                // استخدام RPC لتجاوز الحظر
                 const { error } = await window.supabase.rpc('set_session_ongoing', { p_session_id: sessionId });
-                
                 if (error) {
                     alert("حدث خطأ أثناء محاولة بدء الحصة: " + error.message);
                 } else {
@@ -368,9 +370,7 @@ async function confirmStartSession(e, sessionId, currentStatus) {
             const isConfirmed = confirm("هل أنت متأكد من تسجيل 'غياب الطالب' لهذه الحصة كإجراء إداري؟\nهذا الإجراء سيقوم بإنهاء الحصة واعتمادها كحصة مسجلة ضمن حصص الطالب.");
             
             if (isConfirmed) {
-                // استخدام RPC لتجاوز الحظر
                 const { error } = await window.supabase.rpc('set_student_absent_admin', { p_session_id: sessionId });
-                
                 if (error) {
                     alert("حدث خطأ: " + error.message);
                 } else {
@@ -463,7 +463,6 @@ async function confirmStartSession(e, sessionId, currentStatus) {
                     if (studentSessions) allExistingSessions = [...allExistingSessions, ...studentSessions];
                 }
 
-                // حساب التعارض
                 if (allExistingSessions.length > 0) {
                     let conflict = allExistingSessions.find(ex => {
                         let exStartParts = ex.start_time.split(':').map(Number);
